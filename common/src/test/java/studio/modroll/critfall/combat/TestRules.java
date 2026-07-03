@@ -31,6 +31,18 @@ final class TestRules {
 
     static Rules.Fumbles fumbles(boolean enabled, boolean nat1AlwaysMisses, boolean confirmation, int dc) {
         return new Rules.Fumbles(
-                enabled, nat1AlwaysMisses, confirmation, dc, 200, true, Rules.DurabilityMode.SET_TO_1, 25);
+                enabled,
+                nat1AlwaysMisses,
+                confirmation,
+                dc,
+                200,
+                true,
+                Rules.DurabilityMode.SET_TO_1,
+                25,
+                Rules.HitNearestAlly.DEFAULTS,
+                Rules.SelfDamage.DEFAULTS,
+                false,
+                Rules.Stumble.DEFAULTS,
+                Rules.AppliesTo.PLAYERS_AND_MOBS);
     }
 }

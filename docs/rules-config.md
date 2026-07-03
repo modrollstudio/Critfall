@@ -13,13 +13,24 @@ Default file:
   "format_version": 1,
   "attack_rolls": { "enabled": true, "players": true, "mobs": true, "projectiles": true, "spells": true },
   "damage_dice": { "enabled": true },
-  "crits": { "enabled": true, "rule": "max_dice", "nat20_always_hits": true },
+  "crits": {
+    "enabled": true,
+    "rule": "max_dice",
+    "nat20_always_hits": true,
+    "apply_effect": { "enabled": true },
+    "knockback": { "enabled": true }
+  },
   "fumbles": {
     "enabled": true,
     "nat1_always_misses": true,
     "confirmation_roll": { "enabled": true, "dc": 10 },
     "cooldown_ticks": 200,
-    "durability_break": { "enabled": true, "mode": "set_to_1", "percent": 25 }
+    "durability_break": { "enabled": true, "mode": "set_to_1", "percent": 25 },
+    "hit_nearest_ally": { "enabled": true, "radius": 4, "can_hit_players": true, "respect_pvp_rules": true },
+    "self_damage": { "enabled": false, "dice": "1d4" },
+    "drop_weapon": { "enabled": false },
+    "stumble": { "enabled": false, "slowness_ticks": 40 },
+    "applies_to": "players_and_mobs"
   },
   "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive" },
   "feedback": { "roll_visibility": "everyone" },
@@ -45,6 +56,10 @@ dice are drawn from the RNG at all.
   everything).
 - `nat20_always_hits` — a natural 20 hits regardless of AC. Raised crit ranges from profiles
   (e.g. `crit_range: 19`) still need the attack to actually hit; only the natural 20 auto-hits.
+- `apply_effect` / `knockback` — gates for the matching outcome-table effects (the nat-20
+  "shot in the eye" status effect and the extra shove; see docs/datapack-formats.md). Disabling
+  one turns that consequence into a no-op wherever a table picks it, without changing the odds of
+  the table's other entries. `crits.enabled: false` silences whole `nat_20` tables as well.
 
 ## fumbles — with real-time frequency safeguards
 
@@ -61,9 +76,21 @@ consequence would fire constantly (PLAN.md §9.1). Three safeguards ship **on by
   also accepted. Neither mode ever fully breaks the weapon mid-swing.
 - `nat1_always_misses: false` lets a high attack bonus land even on a natural 1 (house rule).
 
-`hit_nearest_ally`, `self_damage`, `drop_weapon`, `stumble`, and `applies_to` are part of the
-spec but land with the M4 outcome-table executor — they are recognized (no "unknown key" warning)
-and inert for now.
+A **confirmed** fumble fires the attacker's fumble outcome table (held item profile first, then
+entity profile — see docs/datapack-formats.md). Each consequence the table can pick is gated here
+individually; a disabled consequence is a no-op when picked, leaving the rest of the table's odds
+untouched:
+
+- `durability_break` — gates `critfall:damage_durability` and supplies its mode/percent.
+- `hit_nearest_ally` — gates `critfall:hit_nearest_ally` and supplies the default `radius`
+  (1–64). `can_hit_players: false` never redirects a fumble into a player;
+  `respect_pvp_rules: true` additionally honors the server's PvP setting and team friendly-fire
+  rules when one player's fumble would hit another.
+- `self_damage` — gates `critfall:self_damage` and supplies the default `dice`.
+- `drop_weapon` — gates `critfall:drop_weapon` (ships disabled — it is the most disruptive).
+- `stumble` — gates `critfall:stumble` and supplies the default `slowness_ticks`.
+- `applies_to` — `players`, `mobs`, or `players_and_mobs`: whose nat 1s can become fumbles at
+  all. Outside the set, a nat 1 is a plain miss (no confirmation roll, no consequences).
 
 ## fallbacks
 

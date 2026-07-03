@@ -201,7 +201,7 @@ public class CombatGameTests {
     public void critsDisabledRollsNormalDamageOnNatTwenty(GameTestHelper helper) {
         Husk husk = spawnCalm(helper, EntityType.HUSK, 1, 1);
         Pig pig = spawnCalm(helper, EntityType.PIG, 3, 3);
-        Rules rules = withCrits(new Rules.Crits(false, Rules.CritRule.MAX_DICE, true));
+        Rules rules = withCrits(new Rules.Crits(false, Rules.CritRule.MAX_DICE, true, true, true));
         withRolls(
                 helper,
                 rules,
@@ -257,6 +257,8 @@ public class CombatGameTests {
                                 + (weapon.getMaxDamage() - weapon.getDamageValue()));
                     }
                 },
+                // nat 1, then the default_melee weighted pick (d5): face 1 = damage_durability
+                1,
                 1);
         helper.succeed();
     }
@@ -290,7 +292,7 @@ public class CombatGameTests {
                 helper,
                 Rules.DEFAULTS,
                 () -> {
-                    // nat 1, then confirmation 5 < 10 fails -> fumble confirmed
+                    // nat 1, confirmation 5 < 10 fails -> fumble confirmed, table pick 1 = durability
                     pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
                     ItemStack weapon = husk.getMainHandItem();
                     if (weapon.getDamageValue() != weapon.getMaxDamage() - 1) {
@@ -298,7 +300,8 @@ public class CombatGameTests {
                     }
                 },
                 1,
-                5);
+                5,
+                1);
         helper.succeed();
     }
 
@@ -314,7 +317,7 @@ public class CombatGameTests {
                 helper,
                 rules,
                 () -> {
-                    // first nat 1 fumbles: percent_loss takes 25% of max durability
+                    // first nat 1 fumbles: table pick 1 = durability, percent_loss takes 25% of max
                     pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
                     if (husk.getMainHandItem().getDamageValue() != expectedLoss) {
                         helper.fail("percent_loss fumble must cost 25% durability, damage was "
@@ -326,6 +329,7 @@ public class CombatGameTests {
                         helper.fail("a nat 1 on cooldown must not damage the weapon again");
                     }
                 },
+                1,
                 1,
                 1);
         helper.succeed();
@@ -480,6 +484,19 @@ public class CombatGameTests {
             boolean durabilityBreak,
             Rules.DurabilityMode mode,
             int percent) {
-        return new Rules.Fumbles(enabled, true, confirmation, dc, cooldownTicks, durabilityBreak, mode, percent);
+        return new Rules.Fumbles(
+                enabled,
+                true,
+                confirmation,
+                dc,
+                cooldownTicks,
+                durabilityBreak,
+                mode,
+                percent,
+                Rules.HitNearestAlly.DEFAULTS,
+                Rules.SelfDamage.DEFAULTS,
+                false,
+                Rules.Stumble.DEFAULTS,
+                Rules.AppliesTo.PLAYERS_AND_MOBS);
     }
 }

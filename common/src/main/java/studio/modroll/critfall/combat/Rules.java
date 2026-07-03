@@ -1,5 +1,7 @@
 package studio.modroll.critfall.combat;
 
+import studio.modroll.critfall.dice.DiceExpression;
+
 /**
  * Feature flags for every combat mechanic, loaded from {@code config/critfall/rules.json} (see
  * docs/rules-config.md). Turning any flag off must cleanly restore vanilla behavior for that
@@ -34,8 +36,14 @@ public record Rules(
         DOUBLE_TOTAL
     }
 
-    public record Crits(boolean enabled, CritRule rule, boolean nat20AlwaysHits) {
-        public static final Crits DEFAULTS = new Crits(true, CritRule.MAX_DICE, true);
+    /**
+     * @param applyEffect gates the {@code critfall:apply_effect} outcome effect (status effect on
+     *     the target, e.g. the nat-20 "shot in the eye" slowness)
+     * @param knockback gates the {@code critfall:knockback} outcome effect
+     */
+    public record Crits(
+            boolean enabled, CritRule rule, boolean nat20AlwaysHits, boolean applyEffect, boolean knockback) {
+        public static final Crits DEFAULTS = new Crits(true, CritRule.MAX_DICE, true, true, true);
     }
 
     /** How a fumble damages the attacker's weapon. */
@@ -46,10 +54,37 @@ public record Rules(
         PERCENT_LOSS
     }
 
+    /** Whose nat 1s can trigger fumble consequences at all. */
+    public enum AppliesTo {
+        PLAYERS,
+        MOBS,
+        PLAYERS_AND_MOBS
+    }
+
+    /**
+     * Gate + defaults for the {@code critfall:hit_nearest_ally} effect: the fumbled swing lands
+     * on the nearest bystander around the attacker instead. {@code canHitPlayers} and
+     * {@code respectPvpRules} are server policy, never overridable from datapack tables.
+     */
+    public record HitNearestAlly(boolean enabled, int radius, boolean canHitPlayers, boolean respectPvpRules) {
+        public static final HitNearestAlly DEFAULTS = new HitNearestAlly(true, 4, true, true);
+    }
+
+    /** Gate + default dice for the {@code critfall:self_damage} effect. */
+    public record SelfDamage(boolean enabled, DiceExpression dice) {
+        public static final SelfDamage DEFAULTS = new SelfDamage(false, DiceExpression.parse("1d4"));
+    }
+
+    /** Gate + default duration for the {@code critfall:stumble} effect (slowness on the attacker). */
+    public record Stumble(boolean enabled, int slownessTicks) {
+        public static final Stumble DEFAULTS = new Stumble(false, 40);
+    }
+
     /**
      * @param confirmationRoll a nat 1 only triggers consequences if a second d20 rolls below
      *     {@code confirmationDc} — roughly halves real-time fumble frequency
      * @param cooldownTicks after a triggered fumble, further nat 1s are plain misses this long
+     * @param dropWeapon gates the {@code critfall:drop_weapon} outcome effect
      */
     public record Fumbles(
             boolean enabled,
@@ -59,9 +94,26 @@ public record Rules(
             int cooldownTicks,
             boolean durabilityBreak,
             DurabilityMode durabilityMode,
-            int durabilityPercent) {
-        public static final Fumbles DEFAULTS =
-                new Fumbles(true, true, true, 10, 200, true, DurabilityMode.SET_TO_1, 25);
+            int durabilityPercent,
+            HitNearestAlly hitNearestAlly,
+            SelfDamage selfDamage,
+            boolean dropWeapon,
+            Stumble stumble,
+            AppliesTo appliesTo) {
+        public static final Fumbles DEFAULTS = new Fumbles(
+                true,
+                true,
+                true,
+                10,
+                200,
+                true,
+                DurabilityMode.SET_TO_1,
+                25,
+                HitNearestAlly.DEFAULTS,
+                SelfDamage.DEFAULTS,
+                false,
+                Stumble.DEFAULTS,
+                AppliesTo.PLAYERS_AND_MOBS);
     }
 
     /** What happens for entities/items no profile matches. */

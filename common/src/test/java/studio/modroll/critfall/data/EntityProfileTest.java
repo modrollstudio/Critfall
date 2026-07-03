@@ -36,6 +36,8 @@ class EntityProfileTest {
                             "immune": [],
                             "vulnerable": ["minecraft:fire"]
                           },
+                          "fumble_table": "critfall:default_melee",
+                          "crit_table": "critfall:default_crit",
                           "priority": 10
                         }
                         """), warnings::add);
@@ -46,6 +48,9 @@ class EntityProfileTest {
         assertEquals(10, profile.priority());
         assertEquals(1, profile.damageModifiers().resist().size());
         assertEquals(1, profile.damageModifiers().vulnerable().size());
+        assertEquals(
+                "critfall:default_melee", profile.fumbleTable().orElseThrow().toString());
+        assertEquals("critfall:default_crit", profile.critTable().orElseThrow().toString());
         assertTrue(warnings.isEmpty(), "spec-shaped profile must parse without warnings: " + warnings);
     }
 
@@ -57,6 +62,8 @@ class EntityProfileTest {
         assertTrue(profile.meleeDamage().isEmpty());
         assertTrue(profile.critRange().isEmpty());
         assertTrue(profile.damageModifiers().isEmpty());
+        assertTrue(profile.fumbleTable().isEmpty());
+        assertTrue(profile.critTable().isEmpty());
         assertEquals(0, profile.priority());
     }
 

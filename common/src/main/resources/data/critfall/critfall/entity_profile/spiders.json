@@ -3,5 +3,6 @@
   "matches": ["minecraft:spider", "minecraft:cave_spider"],
   "armor_class": 13,
   "attack_bonus": 4,
+  "fumble_table": "critfall:default_unarmed",
   "damage": { "melee": "1d8+1" }
 }

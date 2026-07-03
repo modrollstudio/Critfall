@@ -19,8 +19,9 @@ public final class CombatEngine {
      *
      * @param critRange lowest natural roll that crits (20 = only nat 20); a raised range still
      *     needs the attack to hit — only nat 20 auto-hits
-     * @param fumbleOnCooldown a fumble triggered within {@code fumbles.cooldown_ticks}; nat 1s
-     *     downgrade to plain misses while true
+     * @param fumbleSuppressed nat 1s downgrade to plain misses while true — set when a fumble
+     *     triggered within {@code fumbles.cooldown_ticks} or the attacker is outside
+     *     {@code fumbles.applies_to}
      */
     public record AttackInput(
             int attackBonus,
@@ -28,7 +29,7 @@ public final class CombatEngine {
             RollMode mode,
             DiceExpression damageDice,
             int critRange,
-            boolean fumbleOnCooldown) {
+            boolean fumbleSuppressed) {
 
         public AttackInput(int attackBonus, int armorClass, RollMode mode, DiceExpression damageDice) {
             this(attackBonus, armorClass, mode, damageDice, 20, false);
@@ -39,7 +40,7 @@ public final class CombatEngine {
      * Rolls the attack and, when it lands, the damage.
      *
      * <p>Outcome rules (each individually toggleable via {@link Rules}): a natural 1 always misses
-     * and becomes a {@link AttackOutcome#FUMBLE} when fumbles are enabled, not on cooldown, and
+     * and becomes a {@link AttackOutcome#FUMBLE} when fumbles are enabled, not suppressed, and
      * the confirmation roll (a second d20 vs the configured DC) fails; a natural 20 always hits;
      * naturals at or above the crit range crit on a hit, with damage per the configured crit rule;
      * otherwise {@code natural + attackBonus >= armorClass} hits.
@@ -55,7 +56,7 @@ public final class CombatEngine {
         if (misses) {
             boolean fumble = natural == 1
                     && rules.fumbles().enabled()
-                    && !input.fumbleOnCooldown()
+                    && !input.fumbleSuppressed()
                     && confirmFumble(roller, rules.fumbles());
             AttackOutcome outcome = fumble ? AttackOutcome.FUMBLE : AttackOutcome.MISS;
             return new AttackResult(outcome, natural, attackTotal, input.armorClass(), 0);

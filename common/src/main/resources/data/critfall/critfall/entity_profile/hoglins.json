@@ -3,5 +3,6 @@
   "matches": ["minecraft:hoglin", "minecraft:zoglin"],
   "armor_class": 13,
   "attack_bonus": 5,
+  "fumble_table": "critfall:default_unarmed",
   "damage": { "melee": "2d6+2" }
 }

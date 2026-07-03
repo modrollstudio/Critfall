@@ -3,5 +3,6 @@
   "matches": ["minecraft:enderman"],
   "armor_class": 14,
   "attack_bonus": 6,
+  "fumble_table": "critfall:default_unarmed",
   "damage": { "melee": "2d6+3" }
 }

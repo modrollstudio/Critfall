@@ -18,7 +18,12 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 import studio.modroll.critfall.RollService;
 import studio.modroll.critfall.combat.AttackDice;
 import studio.modroll.critfall.combat.Derivation;
@@ -29,11 +34,15 @@ import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.data.ProfileStore;
 
 /**
- * Debug commands for pack devs (PLAN.md §8.2): {@code /critfall inspect <entity>} shows the
- * effective combat stats and which profile file won; {@code /critfall check [item]} does the
- * same for the held (or named) item. Both are read-only and require permission level 2.
+ * Debug commands for pack devs (PLAN.md §8.2): {@code /critfall inspect [entity]} shows the
+ * effective combat stats and which profile file won (no argument = whatever the caller's
+ * crosshair points at); {@code /critfall check [item]} does the same for the held (or named)
+ * item. Both are read-only and require permission level 2.
  */
 public final class CritfallCommands {
+
+    /** How far {@code /critfall inspect} with no argument looks for an entity, in blocks. */
+    private static final double INSPECT_RANGE = 32.0;
 
     private CritfallCommands() {}
 
@@ -41,6 +50,7 @@ public final class CritfallCommands {
         dispatcher.register(Commands.literal("critfall")
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("inspect")
+                        .executes(ctx -> inspectLookedAt(ctx.getSource()))
                         .then(Commands.argument("target", EntityArgument.entity())
                                 .executes(ctx -> inspect(ctx.getSource(), EntityArgument.getEntity(ctx, "target")))))
                 .then(Commands.literal("check")
@@ -49,6 +59,36 @@ public final class CritfallCommands {
                                 .executes(ctx -> check(
                                         ctx.getSource(),
                                         ItemArgument.getItem(ctx, "item").createItemStack(1, false))))));
+    }
+
+    /** Raycasts along the caller's view (blocks occlude) and inspects the first living entity hit. */
+    private static int inspectLookedAt(CommandSourceStack source) {
+        Entity caller = source.getEntity();
+        if (caller == null) {
+            source.sendFailure(
+                    Component.literal("Only an entity can look at something — use /critfall inspect <entity>"));
+            return 0;
+        }
+        Vec3 eye = caller.getEyePosition();
+        Vec3 view = caller.getViewVector(1.0F);
+        Vec3 reach = eye.add(view.scale(INSPECT_RANGE));
+        // Stop at the first block so an entity behind a wall isn't inspected through it.
+        HitResult blockHit = caller.level()
+                .clip(new ClipContext(eye, reach, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, caller));
+        Vec3 end = blockHit.getType() == HitResult.Type.MISS ? reach : blockHit.getLocation();
+        EntityHitResult hit = ProjectileUtil.getEntityHitResult(
+                caller,
+                eye,
+                end,
+                caller.getBoundingBox().expandTowards(end.subtract(eye)).inflate(1.0),
+                entity -> entity instanceof LivingEntity && entity.isPickable(),
+                eye.distanceToSqr(end));
+        if (hit == null) {
+            source.sendFailure(Component.literal("Not looking at a living entity (within " + (int) INSPECT_RANGE
+                    + " blocks) — aim at one or use /critfall inspect <entity>"));
+            return 0;
+        }
+        return inspect(source, hit.getEntity());
     }
 
     private static int inspect(CommandSourceStack source, Entity entity) {
@@ -116,6 +156,10 @@ public final class CritfallCommands {
                             + ", immune " + describe(p.damageModifiers().immune())
                             + ", vulnerable " + describe(p.damageModifiers().vulnerable()));
         });
+        profile.flatMap(EntityProfile::fumbleTable)
+                .ifPresent(table -> send(source, "  Fumble table: " + table + tableStatus(table)));
+        profile.flatMap(EntityProfile::critTable)
+                .ifPresent(table -> send(source, "  Crit table: " + table + tableStatus(table)));
         return 1;
     }
 

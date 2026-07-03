@@ -27,4 +27,12 @@ public final class DiceRoller {
     public RollResult d20(RollMode mode) {
         return roll(mode.d20Expression());
     }
+
+    /** One raw die face in {@code 1..sides} — used for weighted outcome-table picks. */
+    public int die(int sides) {
+        if (sides < 1) {
+            throw new IllegalArgumentException("a die needs at least 1 side");
+        }
+        return rng.nextInt(sides) + 1;
+    }
 }

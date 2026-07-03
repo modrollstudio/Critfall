@@ -39,6 +39,10 @@ public final class ProfileStore {
         return itemProfiles;
     }
 
+    public static Map<ResourceLocation, OutcomeTable> outcomeTables() {
+        return outcomeTables;
+    }
+
     public static Optional<OutcomeTable> outcomeTable(ResourceLocation id) {
         return Optional.ofNullable(outcomeTables.get(id));
     }

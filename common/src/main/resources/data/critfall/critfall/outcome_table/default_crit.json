@@ -3,6 +3,7 @@
   "trigger": "nat_20",
   "effects": [
     { "type": "critfall:apply_effect", "weight": 1, "effect": "minecraft:slowness", "ticks": 60 },
+    { "type": "critfall:knockback", "weight": 1, "strength": 1.5 },
     { "type": "critfall:nothing", "weight": 2 }
   ]
 }

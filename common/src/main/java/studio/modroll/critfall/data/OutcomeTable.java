@@ -4,26 +4,22 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import net.minecraft.resources.ResourceLocation;
 
 /**
  * A trigger bound to a weighted list of effects, loaded from
  * {@code data/<ns>/critfall/outcome_table/*.json}. One generic system for fumbles AND crit
- * effects — profiles reference tables per trigger ({@code fumble_table}, {@code crit_table}).
- * M3 loads and validates these; the executor that actually applies effects is M4, so effect
- * parameters are kept as raw JSON here.
+ * effects — profiles reference tables per trigger ({@code fumble_table}, {@code crit_table}) and
+ * the M4 executor applies whichever table's trigger matches the roll.
  */
 public record OutcomeTable(ResourceLocation id, Trigger trigger, List<WeightedEffect> effects) {
 
     public static final int FORMAT_VERSION = 1;
 
-    /**
-     * One effect candidate. {@code type} is an effect id the M4 executor will interpret (e.g.
-     * {@code critfall:damage_durability}); {@code params} carries every other key of the effect
-     * object, uninterpreted until M4.
-     */
-    public record WeightedEffect(ResourceLocation type, int weight, JsonObject params) {}
+    /** One effect candidate; the chance of being picked is {@code weight / totalWeight()}. */
+    public record WeightedEffect(OutcomeEffect effect, int weight) {}
 
     public int totalWeight() {
         int total = 0;
@@ -34,10 +30,11 @@ public record OutcomeTable(ResourceLocation id, Trigger trigger, List<WeightedEf
     }
 
     public static OutcomeTable parse(ResourceLocation id, JsonObject json, Consumer<String> warn) {
-        LenientJson j = new LenientJson(json, "outcome_table " + id, warn);
+        String context = "outcome_table " + id;
+        LenientJson j = new LenientJson(json, context, warn);
         j.checkFormatVersion(FORMAT_VERSION);
 
-        Trigger trigger = Trigger.parse(j.raw("trigger"), "outcome_table " + id);
+        Trigger trigger = Trigger.parse(j.raw("trigger"), context);
 
         JsonElement effectsElement = j.raw("effects");
         if (effectsElement == null
@@ -50,13 +47,16 @@ public record OutcomeTable(ResourceLocation id, Trigger trigger, List<WeightedEf
             if (!element.isJsonObject()) {
                 throw new IllegalArgumentException("every effect must be an object, found " + element);
             }
-            effects.add(parseEffect(element.getAsJsonObject()));
+            parseEffect(element.getAsJsonObject(), context, warn).ifPresent(effects::add);
+        }
+        if (effects.isEmpty()) {
+            throw new IllegalArgumentException("no effect in 'effects' is of a known type");
         }
         j.finish();
         return new OutcomeTable(id, trigger, List.copyOf(effects));
     }
 
-    private static WeightedEffect parseEffect(JsonObject json) {
+    private static Optional<WeightedEffect> parseEffect(JsonObject json, String context, Consumer<String> warn) {
         JsonElement typeElement = json.get("type");
         if (typeElement == null || !typeElement.isJsonPrimitive()) {
             throw new IllegalArgumentException("effect needs a 'type' id");
@@ -83,6 +83,7 @@ public record OutcomeTable(ResourceLocation id, Trigger trigger, List<WeightedEf
                 params.add(key, json.get(key).deepCopy());
             }
         }
-        return new WeightedEffect(type, weight, params);
+        int finalWeight = weight;
+        return OutcomeEffect.parse(type, params, context, warn).map(effect -> new WeightedEffect(effect, finalWeight));
     }
 }

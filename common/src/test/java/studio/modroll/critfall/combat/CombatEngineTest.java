@@ -69,7 +69,7 @@ class CombatEngineTest {
 
     @Test
     void critRuleDoubleDiceRollsTwiceAddsModifierOnce() {
-        Rules rules = TestRules.withCrits(new Rules.Crits(true, Rules.CritRule.DOUBLE_DICE, true));
+        Rules rules = TestRules.withCrits(new Rules.Crits(true, Rules.CritRule.DOUBLE_DICE, true, true, true));
         SequenceRandom rng = SequenceRandom.ofDieFaces(20, 3, 4, 5, 6);
         AttackResult result = resolve(rng, rules, 0, 10, RollMode.NORMAL, DiceExpression.parse("2d6+1"));
         assertEquals(AttackOutcome.CRIT, result.outcome());
@@ -79,7 +79,7 @@ class CombatEngineTest {
 
     @Test
     void critRuleDoubleTotalDoublesEverything() {
-        Rules rules = TestRules.withCrits(new Rules.Crits(true, Rules.CritRule.DOUBLE_TOTAL, true));
+        Rules rules = TestRules.withCrits(new Rules.Crits(true, Rules.CritRule.DOUBLE_TOTAL, true, true, true));
         SequenceRandom rng = SequenceRandom.ofDieFaces(20, 4);
         AttackResult result = resolve(rng, rules, 0, 10, RollMode.NORMAL, DiceExpression.parse("1d6+2"));
         assertEquals(AttackOutcome.CRIT, result.outcome());
@@ -131,7 +131,7 @@ class CombatEngineTest {
 
     @Test
     void critsDisabledTurnsNatTwentyIntoNormalHit() {
-        Rules noCrits = TestRules.withCrits(new Rules.Crits(false, Rules.CritRule.MAX_DICE, true));
+        Rules noCrits = TestRules.withCrits(new Rules.Crits(false, Rules.CritRule.MAX_DICE, true, true, true));
         SequenceRandom rng = SequenceRandom.ofDieFaces(20, 3);
         AttackResult result = resolve(rng, noCrits, 0, 50, RollMode.NORMAL, D6);
         assertEquals(AttackOutcome.HIT, result.outcome(), "nat20_always_hits still applies");

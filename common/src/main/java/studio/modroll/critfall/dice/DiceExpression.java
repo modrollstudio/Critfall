@@ -202,6 +202,17 @@ public final class DiceExpression {
         return canonical;
     }
 
+    /** Two expressions are equal when their canonical forms match (the canonical form determines the terms). */
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof DiceExpression expression && canonical.equals(expression.canonical);
+    }
+
+    @Override
+    public int hashCode() {
+        return canonical.hashCode();
+    }
+
     private enum KeepMode {
         ALL,
         HIGHEST,

@@ -1,4 +1,4 @@
-# Datapack formats (M3)
+# Datapack formats
 
 Critfall loads three kinds of JSON from datapacks, reloadable with `/reload`:
 
@@ -15,6 +15,11 @@ server.
 
 The mod ships a default pack (namespace `critfall`) covering **every vanilla mob** and the vanilla
 melee weapon classes — override any of it from your own datapack (see *Matching & priority*).
+Three outcome tables ship with it: `critfall:default_melee` / `default_crit` (referenced by the
+weapon item profiles) and `critfall:default_unarmed` (referenced by the barehanded melee mob
+profiles — zombies, spiders, slimes, endermites, hoglins, endermen, ravagers, phantoms — so a
+zombie horde can fumble into itself; mobs that hold weapons get their tables from the weapon's
+item profile instead).
 
 ## Matching & priority
 
@@ -33,8 +38,9 @@ When several profiles match the same entity/item, the winner is chosen by:
 2. then the most specific matching entry (exact id beats tag beats wildcard),
 3. then the lexicographically smaller file id, so resolution is deterministic.
 
-Use `/critfall inspect <entity>` and `/critfall check [<item>]` (permission level 2) to see the
-effective stats and which file won.
+Use `/critfall inspect [<entity>]` and `/critfall check [<item>]` (permission level 2) to see
+the effective stats and which file won. `inspect` without an argument inspects whatever your
+crosshair points at (up to 32 blocks, blocks occlude).
 
 ## Entity profile
 
@@ -51,6 +57,8 @@ effective stats and which file won.
     "immune": [],
     "vulnerable": ["minecraft:in_fire"]
   },
+  "fumble_table": "critfall:default_melee",
+  "crit_table": "critfall:default_crit",
   "priority": 0
 }
 ```
@@ -60,6 +68,16 @@ only (PLAN.md §4.3), so you can pin just the AC and leave the rest derived. Con
 `armor_class` ≥ 1, `crit_range` in 2–20. `damage` currently understands only `melee` (ranged and
 spell keys come with M5). `damage_modifiers` lists match damage type ids or `#tags`; immunity
 zeroes damage, resist halves, vulnerable doubles, resist+vulnerable cancel.
+
+> **Profile AC is pinned.** A profile's `armor_class` is the entity's AC, full stop — equipped
+> armor does NOT raise it. Derived entities (no profile, or profile without `armor_class`) are the
+> opposite: their AC is computed from the live armor/toughness attributes, so gear counts. Pin AC
+> for mobs whose difficulty you want stable (bosses, tuned encounters); leave it derived where an
+> armored zombie should genuinely be harder to hit.
+
+`fumble_table` / `crit_table` name outcome tables for the entity's own attacks (a zombie's flailing
+claws). When the attacker's **held item** has a profile with tables, the item's tables win — same
+precedence as damage dice.
 
 ## Item profile
 
@@ -97,17 +115,50 @@ Dice precedence for an attack: held item profile → attacker entity profile `da
   "trigger": "nat_1",
   "effects": [
     { "type": "critfall:damage_durability", "weight": 3 },
+    { "type": "critfall:hit_nearest_ally", "weight": 1 },
     { "type": "critfall:nothing", "weight": 1 }
   ]
 }
 ```
 
 One generic system for fumbles and crit effects — a table binds a trigger to a weighted effect
-list, and profiles reference tables per trigger. Triggers: `"nat_1"`, `"nat_20"`,
-`{"type": "miss_by_at_least", "margin": 5}`, `{"type": "roll_range", "min": 2, "max": 5}`.
-`weight` defaults to 1 (must be ≥ 1); all keys of an effect other than `type`/`weight` are that
-effect's parameters.
+list, and profiles reference tables per trigger slot (`fumble_table`, `crit_table`). Both slots
+are consulted on **every** attack and each table fires when its own trigger matches the roll, so a
+`miss_by_at_least` table in the fumble slot works fine. When a table fires, ONE effect is picked
+from the list (chance = `weight / total weight`; `weight` defaults to 1, must be ≥ 1). All keys of
+an effect other than `type`/`weight` are that effect's parameters. An unknown effect `type` is
+skipped with a load warning (forward compatibility); bad parameters of a known type reject the
+file.
 
-> **M3 status:** tables are loaded, validated, and referenced by item profiles, but the executor
-> that actually applies effects lands in **M4** — effect `type` ids are provisional until then.
-> The M3 fumble consequence (weapon durability) is driven by `rules.json` directly.
+### Triggers
+
+| Trigger | Fires when |
+|---|---|
+| `"nat_1"` | the natural roll is 1 **and** the fumble was confirmed — the rules.json confirmation roll, cooldown, `applies_to`, and `fumbles.enabled` safeguards all apply first |
+| `"nat_20"` | the natural roll is 20 **and** the attack critted (`crits.enabled` off silences it) |
+| `{"type": "miss_by_at_least", "margin": 5}` | the attack missed and `AC − attack total ≥ margin` |
+| `{"type": "roll_range", "min": 2, "max": 5}` | the natural d20 face is in `[min, max]`, on any outcome |
+
+### Effects
+
+Every effect is individually toggleable in `rules.json` (see docs/rules-config.md). A disabled
+effect that gets picked is a no-op — it is not filtered from the table, so turning one consequence
+off never changes the odds of the others. Parameters marked *(rules default)* fall back to the
+rules.json value when omitted.
+
+| Effect `type` | Affects | Parameters | rules.json gate |
+|---|---|---|---|
+| `critfall:nothing` | — | — | always on |
+| `critfall:damage_durability` | attacker's held weapon | — (mode/percent come from rules.json) | `fumbles.durability_break` |
+| `critfall:hit_nearest_ally` | nearest bystander around the attacker | `radius` 1–64 *(rules default)* | `fumbles.hit_nearest_ally` |
+| `critfall:self_damage` | attacker | `dice` *(rules default)* | `fumbles.self_damage` |
+| `critfall:drop_weapon` | attacker's held weapon | — | `fumbles.drop_weapon` |
+| `critfall:stumble` | attacker (slowness) | `slowness_ticks` ≥ 1 *(rules default)* | `fumbles.stumble` |
+| `critfall:apply_effect` | target (status effect) | `effect` id (required), `ticks` ≥ 1 (required), `amplifier` 0–255 (default 0) | `crits.apply_effect` |
+| `critfall:knockback` | target | `strength` in (0, 10] (default 1, in vanilla knockback-enchantment levels) | `crits.knockback` |
+
+`hit_nearest_ally` redirects the fumbled swing: the nearest attackable living entity around the
+attacker — excluding the attacker and the original target — takes a fresh roll of the attack's
+damage dice. Player bystanders are policy-gated by rules.json (`can_hit_players`, and
+`respect_pvp_rules` honors the server PvP setting and team friendly-fire rules); redirected damage
+never triggers another attack roll.

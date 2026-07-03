@@ -23,6 +23,8 @@ public record EntityProfile(
         Optional<DiceExpression> meleeDamage,
         OptionalInt critRange,
         DamageModifiers damageModifiers,
+        Optional<ResourceLocation> fumbleTable,
+        Optional<ResourceLocation> critTable,
         int priority)
         implements Profile {
 
@@ -59,10 +61,23 @@ public record EntityProfile(
         validateCritRange(critRange);
 
         DamageModifiers modifiers = DamageModifiers.parse(j.object("damage_modifiers"));
+        // A weaponless mob's fumble/crit tables — a held weapon's item profile takes precedence.
+        Optional<ResourceLocation> fumbleTable =
+                j.optionalString("fumble_table").map(ItemProfile::parseTableId);
+        Optional<ResourceLocation> critTable = j.optionalString("crit_table").map(ItemProfile::parseTableId);
         int priority = j.getInt("priority", 0);
         j.finish();
         return new EntityProfile(
-                id, List.copyOf(matches), armorClass, attackBonus, meleeDamage, critRange, modifiers, priority);
+                id,
+                List.copyOf(matches),
+                armorClass,
+                attackBonus,
+                meleeDamage,
+                critRange,
+                modifiers,
+                fumbleTable,
+                critTable,
+                priority);
     }
 
     static void validateCritRange(OptionalInt critRange) {

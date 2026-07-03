@@ -11,6 +11,8 @@ import java.util.OptionalInt;
 import java.util.function.Consumer;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.combat.Rules;
+import studio.modroll.critfall.dice.DiceExpression;
+import studio.modroll.critfall.dice.DiceParseException;
 
 /**
  * Reads {@code config/critfall/rules.json}. A missing file is created with the defaults; a
@@ -25,13 +27,24 @@ public final class RulesLoader {
               "format_version": 1,
               "attack_rolls": { "enabled": true, "players": true, "mobs": true, "projectiles": true, "spells": true },
               "damage_dice": { "enabled": true },
-              "crits": { "enabled": true, "rule": "max_dice", "nat20_always_hits": true },
+              "crits": {
+                "enabled": true,
+                "rule": "max_dice",
+                "nat20_always_hits": true,
+                "apply_effect": { "enabled": true },
+                "knockback": { "enabled": true }
+              },
               "fumbles": {
                 "enabled": true,
                 "nat1_always_misses": true,
                 "confirmation_roll": { "enabled": true, "dc": 10 },
                 "cooldown_ticks": 200,
-                "durability_break": { "enabled": true, "mode": "set_to_1", "percent": 25 }
+                "durability_break": { "enabled": true, "mode": "set_to_1", "percent": 25 },
+                "hit_nearest_ally": { "enabled": true, "radius": 4, "can_hit_players": true, "respect_pvp_rules": true },
+                "self_damage": { "enabled": false, "dice": "1d4" },
+                "drop_weapon": { "enabled": false },
+                "stumble": { "enabled": false, "slowness_ticks": 40 },
+                "applies_to": "players_and_mobs"
               },
               "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive" },
               "feedback": { "roll_visibility": "everyone" },
@@ -78,19 +91,19 @@ public final class RulesLoader {
         Rules.Crits critRules = new Rules.Crits(
                 crits.getBool("enabled", true),
                 parseEnum(crits, "rule", Rules.CritRule.class, Rules.CritRule.MAX_DICE, warn),
-                crits.getBool("nat20_always_hits", true));
+                crits.getBool("nat20_always_hits", true),
+                crits.object("apply_effect").getBool("enabled", true),
+                crits.object("knockback").getBool("enabled", true));
 
         LenientJson fumbles = j.object("fumbles");
-        fumbles.reserved("hit_nearest_ally", "outcome table executor lands in M4");
-        fumbles.reserved("self_damage", "outcome table executor lands in M4");
-        fumbles.reserved("drop_weapon", "outcome table executor lands in M4");
-        fumbles.reserved("stumble", "outcome table executor lands in M4");
-        fumbles.reserved("applies_to", "outcome table executor lands in M4");
         LenientJson confirmation = fumbles.object("confirmation_roll");
         LenientJson durability = fumbles.object("durability_break");
         String modeText = durability.getString("mode", "set_to_1");
         Rules.DurabilityMode durabilityMode = parseDurabilityMode(modeText, warn);
         int defaultPercent = shorthandPercent(modeText).orElse(25);
+        LenientJson hitNearestAlly = fumbles.object("hit_nearest_ally");
+        LenientJson selfDamage = fumbles.object("self_damage");
+        LenientJson stumble = fumbles.object("stumble");
         Rules.Fumbles fumbleRules = new Rules.Fumbles(
                 fumbles.getBool("enabled", true),
                 fumbles.getBool("nat1_always_misses", true),
@@ -99,7 +112,20 @@ public final class RulesLoader {
                 intInRange(fumbles, "cooldown_ticks", 200, 0, Integer.MAX_VALUE, warn),
                 durability.getBool("enabled", true),
                 durabilityMode,
-                intInRange(durability, "percent", defaultPercent, 1, 100, warn));
+                intInRange(durability, "percent", defaultPercent, 1, 100, warn),
+                new Rules.HitNearestAlly(
+                        hitNearestAlly.getBool("enabled", true),
+                        intInRange(hitNearestAlly, "radius", 4, 1, 64, warn),
+                        hitNearestAlly.getBool("can_hit_players", true),
+                        hitNearestAlly.getBool("respect_pvp_rules", true)),
+                new Rules.SelfDamage(
+                        selfDamage.getBool("enabled", false),
+                        parseDice(selfDamage, "dice", Rules.SelfDamage.DEFAULTS.dice(), warn)),
+                fumbles.object("drop_weapon").getBool("enabled", false),
+                new Rules.Stumble(
+                        stumble.getBool("enabled", false),
+                        intInRange(stumble, "slowness_ticks", 40, 1, Integer.MAX_VALUE, warn)),
+                parseEnum(fumbles, "applies_to", Rules.AppliesTo.class, Rules.AppliesTo.PLAYERS_AND_MOBS, warn));
 
         LenientJson fallbacks = j.object("fallbacks");
         Rules.Fallbacks fallbackRules = new Rules.Fallbacks(
@@ -149,6 +175,20 @@ public final class RulesLoader {
         } catch (NumberFormatException e) {
             return OptionalInt.empty();
         }
+    }
+
+    private static DiceExpression parseDice(LenientJson json, String key, DiceExpression def, Consumer<String> warn) {
+        return json.optionalString(key)
+                .map(text -> {
+                    try {
+                        return DiceExpression.parse(text);
+                    } catch (DiceParseException e) {
+                        warn.accept("rules.json: bad dice \"" + text + "\" for '" + key + "' (" + e.getMessage()
+                                + "), using " + def);
+                        return def;
+                    }
+                })
+                .orElse(def);
     }
 
     private static <E extends Enum<E>> E parseEnum(

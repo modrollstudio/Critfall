@@ -102,14 +102,48 @@ class RulesLoaderTest {
         RulesLoader.parse(json("""
                         {
                           "advantage_sources": { "attack_from_behind": true },
-                          "fumbles": { "hit_nearest_ally": { "enabled": true, "radius": 4 }, "applies_to": "players" },
                           "feedback": { "sounds": true, "particles": true }
                         }
                         """), warnings::add);
         assertTrue(
                 warnings.stream().allMatch(w -> w.contains("not implemented yet")),
                 "spec'd future keys must be recognized, not 'unknown': " + warnings);
-        assertEquals(5, warnings.size(), warnings.toString());
+        assertEquals(3, warnings.size(), warnings.toString());
+    }
+
+    @Test
+    void fumbleConsequenceKeysParse() {
+        Rules rules = RulesLoader.parse(json("""
+                        {
+                          "crits": { "apply_effect": { "enabled": false }, "knockback": { "enabled": false } },
+                          "fumbles": {
+                            "hit_nearest_ally": { "enabled": false, "radius": 8, "can_hit_players": false, "respect_pvp_rules": false },
+                            "self_damage": { "enabled": true, "dice": "2d6" },
+                            "drop_weapon": { "enabled": true },
+                            "stumble": { "enabled": true, "slowness_ticks": 100 },
+                            "applies_to": "players"
+                          }
+                        }
+                        """), w -> {});
+        assertFalse(rules.crits().applyEffect());
+        assertFalse(rules.crits().knockback());
+        assertEquals(
+                new Rules.HitNearestAlly(false, 8, false, false),
+                rules.fumbles().hitNearestAlly());
+        assertTrue(rules.fumbles().selfDamage().enabled());
+        assertEquals("2d6", rules.fumbles().selfDamage().dice().toString());
+        assertTrue(rules.fumbles().dropWeapon());
+        assertEquals(new Rules.Stumble(true, 100), rules.fumbles().stumble());
+        assertEquals(Rules.AppliesTo.PLAYERS, rules.fumbles().appliesTo());
+    }
+
+    @Test
+    void badSelfDamageDiceWarnsAndFallsBack() {
+        List<String> warnings = new ArrayList<>();
+        Rules rules = RulesLoader.parse(
+                json("{\"fumbles\": {\"self_damage\": {\"enabled\": true, \"dice\": \"garbage\"}}}"), warnings::add);
+        assertEquals("1d4", rules.fumbles().selfDamage().dice().toString());
+        assertEquals(1, warnings.size(), warnings.toString());
     }
 
     @Test

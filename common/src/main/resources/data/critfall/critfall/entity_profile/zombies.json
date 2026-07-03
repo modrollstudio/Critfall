@@ -3,5 +3,6 @@
   "matches": ["minecraft:zombie", "minecraft:zombie_villager", "minecraft:husk", "minecraft:drowned", "minecraft:giant"],
   "armor_class": 9,
   "attack_bonus": 3,
+  "fumble_table": "critfall:default_unarmed",
   "damage": { "melee": "1d6+1" }
 }

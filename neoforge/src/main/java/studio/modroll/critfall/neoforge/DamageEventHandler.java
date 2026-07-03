@@ -7,7 +7,6 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.damagesource.DamageContainer;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import studio.modroll.critfall.RollService;
@@ -25,6 +24,7 @@ import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.dice.DiceExpression;
 import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
  * Intercepts {@code LivingIncomingDamageEvent} — the earliest point in NeoForge's damage sequence
@@ -41,6 +41,9 @@ public final class DamageEventHandler {
         LivingEntity target = event.getEntity();
         if (target.level().isClientSide()) {
             return;
+        }
+        if (OutcomeExecutor.isApplyingEffects()) {
+            return; // damage dealt BY an outcome effect (redirected swing, self damage) never re-rolls
         }
         Rules rules = RollService.rules();
         if (!rules.attackRolls().enabled()) {
@@ -90,21 +93,21 @@ public final class DamageEventHandler {
         }
 
         long gameTime = target.level().getGameTime();
-        boolean fumbleOnCooldown = FumbleCooldowns.isOnCooldown(
-                attacker.getUUID(), gameTime, rules.fumbles().cooldownTicks());
+        boolean fumbleSuppressed = !fumbleAppliesTo(rules.fumbles().appliesTo(), playerAttacker)
+                || FumbleCooldowns.isOnCooldown(
+                        attacker.getUUID(), gameTime, rules.fumbles().cooldownTicks());
 
         AttackResult result = CombatEngine.resolveAttack(
                 RollService.roller(),
                 rules,
                 new CombatEngine.AttackInput(
-                        attackBonus, armorClass, RollMode.NORMAL, damageDice, critRange, fumbleOnCooldown));
+                        attackBonus, armorClass, RollMode.NORMAL, damageDice, critRange, fumbleSuppressed));
 
         switch (result.outcome()) {
             case MISS -> event.setCanceled(true);
             case FUMBLE -> {
                 event.setCanceled(true);
                 FumbleCooldowns.record(attacker.getUUID(), gameTime);
-                applyFumble(attacker, rules.fumbles());
             }
             case HIT, CRIT -> {
                 if (rules.damageDice()) {
@@ -121,7 +124,19 @@ public final class DamageEventHandler {
                 }
             }
         }
+        // Runs for every outcome: fumble/crit tables fire on nat 1/nat 20, and pack-authored
+        // tables may trigger on miss margins or roll ranges.
+        OutcomeExecutor.run(
+                attacker, target, result, damageDice, rules, RollService.roller(), weaponProfile, attackerProfile);
         sendFeedback(attacker, target, result, damageDice, rules.feedback(), rules.damageDice());
+    }
+
+    private static boolean fumbleAppliesTo(Rules.AppliesTo appliesTo, boolean playerAttacker) {
+        return switch (appliesTo) {
+            case PLAYERS -> playerAttacker;
+            case MOBS -> !playerAttacker;
+            case PLAYERS_AND_MOBS -> true;
+        };
     }
 
     private static int intStat(Optional<OptionalInt> profileValue, java.util.function.IntSupplier derived) {
@@ -129,26 +144,6 @@ public final class DamageEventHandler {
                 .filter(OptionalInt::isPresent)
                 .map(OptionalInt::getAsInt)
                 .orElseGet(derived::getAsInt);
-    }
-
-    private static void applyFumble(LivingEntity attacker, Rules.Fumbles fumbles) {
-        if (!fumbles.durabilityBreak()) {
-            return;
-        }
-        ItemStack weapon = attacker.getMainHandItem();
-        if (!weapon.isDamageableItem()) {
-            return;
-        }
-        int maxDamage = weapon.getMaxDamage();
-        switch (fumbles.durabilityMode()) {
-            case SET_TO_1 -> weapon.setDamageValue(Math.max(weapon.getDamageValue(), maxDamage - 1));
-            case PERCENT_LOSS -> {
-                // Wears the weapon down but never past 1 remaining durability — fumbles should
-                // punish, not silently delete gear mid-swing.
-                int loss = Math.max(1, maxDamage * fumbles.durabilityPercent() / 100);
-                weapon.setDamageValue(Math.min(maxDamage - 1, weapon.getDamageValue() + loss));
-            }
-        }
     }
 
     private static void sendFeedback(

@@ -2,8 +2,7 @@
   "format_version": 1,
   "trigger": "nat_1",
   "effects": [
-    { "type": "critfall:damage_durability", "weight": 3 },
     { "type": "critfall:hit_nearest_ally", "weight": 1 },
-    { "type": "critfall:nothing", "weight": 1 }
+    { "type": "critfall:nothing", "weight": 3 }
   ]
 }

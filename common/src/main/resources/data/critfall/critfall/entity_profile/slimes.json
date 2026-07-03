@@ -3,5 +3,6 @@
   "matches": ["minecraft:slime", "minecraft:magma_cube"],
   "armor_class": 9,
   "attack_bonus": 3,
+  "fumble_table": "critfall:default_unarmed",
   "damage": { "melee": "1d6" }
 }

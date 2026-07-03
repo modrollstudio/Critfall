@@ -82,7 +82,7 @@ public record ItemProfile(
                 priority);
     }
 
-    private static ResourceLocation parseTableId(String text) {
+    static ResourceLocation parseTableId(String text) {
         ResourceLocation parsed = ResourceLocation.tryParse(text);
         if (parsed == null) {
             throw new IllegalArgumentException("invalid outcome table id \"" + text + "\"");

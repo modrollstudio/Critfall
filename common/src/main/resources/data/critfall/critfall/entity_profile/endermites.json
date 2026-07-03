@@ -3,5 +3,6 @@
   "matches": ["minecraft:endermite", "minecraft:silverfish"],
   "armor_class": 13,
   "attack_bonus": 2,
+  "fumble_table": "critfall:default_unarmed",
   "damage": { "melee": "1d4" }
 }

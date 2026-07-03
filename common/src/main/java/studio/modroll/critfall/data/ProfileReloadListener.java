@@ -38,9 +38,13 @@ public final class ProfileReloadListener<T> extends SimpleJsonResourceReloadList
         this.store = store;
     }
 
+    /** Register AFTER {@link #outcomeTables()} — table references are validated against the store. */
     public static ProfileReloadListener<EntityProfile> entityProfiles() {
         return new ProfileReloadListener<>(
-                "critfall/entity_profile", "entity profile", EntityProfile::parse, ProfileStore::setEntityProfiles);
+                "critfall/entity_profile",
+                "entity profile",
+                EntityProfile::parse,
+                ProfileReloadListener::storeEntityProfiles);
     }
 
     /** Register AFTER {@link #outcomeTables()} — table references are validated against the store. */
@@ -75,17 +79,26 @@ public final class ProfileReloadListener<T> extends SimpleJsonResourceReloadList
     private static void storeItemProfiles(Map<ResourceLocation, ItemProfile> profiles) {
         ProfileStore.setItemProfiles(profiles);
         for (ItemProfile profile : profiles.values()) {
-            warnMissingTable(profile, profile.fumbleTable(), "fumble_table");
-            warnMissingTable(profile, profile.critTable(), "crit_table");
+            warnMissingTable("item_profile", profile.id(), profile.fumbleTable(), "fumble_table");
+            warnMissingTable("item_profile", profile.id(), profile.critTable(), "crit_table");
+        }
+    }
+
+    private static void storeEntityProfiles(Map<ResourceLocation, EntityProfile> profiles) {
+        ProfileStore.setEntityProfiles(profiles);
+        for (EntityProfile profile : profiles.values()) {
+            warnMissingTable("entity_profile", profile.id(), profile.fumbleTable(), "fumble_table");
+            warnMissingTable("entity_profile", profile.id(), profile.critTable(), "crit_table");
         }
     }
 
     private static void warnMissingTable(
-            ItemProfile profile, java.util.Optional<ResourceLocation> table, String field) {
+            String kind, ResourceLocation profileId, java.util.Optional<ResourceLocation> table, String field) {
         if (table.isPresent() && ProfileStore.outcomeTable(table.get()).isEmpty()) {
             Critfall.LOG.warn(
-                    "item_profile {} references {} '{}' but no such outcome table is loaded",
-                    profile.id(),
+                    "{} {} references {} '{}' but no such outcome table is loaded",
+                    kind,
+                    profileId,
                     field,
                     table.get());
         }

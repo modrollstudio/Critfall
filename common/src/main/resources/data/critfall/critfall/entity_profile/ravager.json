@@ -3,5 +3,6 @@
   "matches": ["minecraft:ravager"],
   "armor_class": 15,
   "attack_bonus": 7,
+  "fumble_table": "critfall:default_unarmed",
   "damage": { "melee": "3d6+4" }
 }
