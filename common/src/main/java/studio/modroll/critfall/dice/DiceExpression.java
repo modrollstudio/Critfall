@@ -180,6 +180,14 @@ public final class DiceExpression {
         return min;
     }
 
+    /**
+     * Expected value, computed as {@code (min + max) / 2}. Exact for plain dice sums; a close
+     * approximation for keep-highest/lowest terms — good enough for damage-bonus derivation.
+     */
+    public double averageValue() {
+        return (minValue() + maxValue()) / 2.0;
+    }
+
     /** Largest total this expression can roll. */
     public int maxValue() {
         int max = 0;

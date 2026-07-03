@@ -1,0 +1,9 @@
+{
+  "format_version": 1,
+  "matches": ["#minecraft:shovels"],
+  "damage": "1d4",
+  "modifier_from": "attack_damage_attribute",
+  "crit_range": 20,
+  "fumble_table": "critfall:default_melee",
+  "crit_table": "critfall:default_crit"
+}

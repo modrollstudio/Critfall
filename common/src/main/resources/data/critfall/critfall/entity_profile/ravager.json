@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:ravager"],
+  "armor_class": 15,
+  "attack_bonus": 7,
+  "damage": { "melee": "3d6+4" }
+}

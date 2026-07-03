@@ -1,0 +1,8 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:wither_skeleton"],
+  "armor_class": 13,
+  "attack_bonus": 5,
+  "damage": { "melee": "2d4+2" },
+  "damage_modifiers": { "immune": ["#minecraft:is_fire"] }
+}

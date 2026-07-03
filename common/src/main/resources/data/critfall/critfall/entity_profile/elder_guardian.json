@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:elder_guardian"],
+  "armor_class": 16,
+  "attack_bonus": 7,
+  "damage": { "melee": "2d8+3" }
+}

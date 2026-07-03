@@ -1,0 +1,5 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:cod", "minecraft:salmon", "minecraft:tropical_fish", "minecraft:pufferfish", "minecraft:tadpole", "minecraft:squid", "minecraft:glow_squid"],
+  "armor_class": 10
+}

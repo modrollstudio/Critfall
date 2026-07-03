@@ -1,0 +1,5 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:horse", "minecraft:donkey", "minecraft:mule", "minecraft:skeleton_horse", "minecraft:zombie_horse", "minecraft:camel"],
+  "armor_class": 11
+}

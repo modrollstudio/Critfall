@@ -1,0 +1,5 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:pig", "minecraft:cow", "minecraft:mooshroom", "minecraft:sheep", "minecraft:chicken", "minecraft:rabbit"],
+  "armor_class": 10
+}

@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:dolphin"],
+  "armor_class": 12,
+  "attack_bonus": 3,
+  "damage": { "melee": "1d6" }
+}

@@ -1,0 +1,5 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:villager", "minecraft:wandering_trader"],
+  "armor_class": 9
+}

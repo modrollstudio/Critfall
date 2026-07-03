@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:piglin"],
+  "armor_class": 13,
+  "attack_bonus": 4,
+  "damage": { "melee": "1d8+1" }
+}

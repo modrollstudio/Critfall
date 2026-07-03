@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:warden"],
+  "armor_class": 18,
+  "attack_bonus": 10,
+  "damage": { "melee": "4d6+6" }
+}

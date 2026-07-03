@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:shulker"],
+  "armor_class": 16,
+  "attack_bonus": 4,
+  "damage": { "melee": "1d4" }
+}

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import studio.modroll.critfall.combat.CombatEngine.AttackInput;
 import studio.modroll.critfall.dice.DiceExpression;
 import studio.modroll.critfall.dice.DiceRoller;
 import studio.modroll.critfall.dice.RollMode;
@@ -15,7 +16,7 @@ class CombatEngineTest {
 
     private static AttackResult resolve(
             SequenceRandom rng, Rules rules, int bonus, int ac, RollMode mode, DiceExpression dice) {
-        return CombatEngine.resolveAttack(new DiceRoller(rng), rules, bonus, ac, mode, dice);
+        return CombatEngine.resolveAttack(new DiceRoller(rng), rules, new AttackInput(bonus, ac, mode, dice));
     }
 
     @Test
@@ -67,8 +68,70 @@ class CombatEngineTest {
     }
 
     @Test
+    void critRuleDoubleDiceRollsTwiceAddsModifierOnce() {
+        Rules rules = TestRules.withCrits(new Rules.Crits(true, Rules.CritRule.DOUBLE_DICE, true));
+        SequenceRandom rng = SequenceRandom.ofDieFaces(20, 3, 4, 5, 6);
+        AttackResult result = resolve(rng, rules, 0, 10, RollMode.NORMAL, DiceExpression.parse("2d6+1"));
+        assertEquals(AttackOutcome.CRIT, result.outcome());
+        assertEquals(19, result.damage(), "(3+4+1) + (5+6) — the +1 counts once");
+        assertTrue(rng.isExhausted());
+    }
+
+    @Test
+    void critRuleDoubleTotalDoublesEverything() {
+        Rules rules = TestRules.withCrits(new Rules.Crits(true, Rules.CritRule.DOUBLE_TOTAL, true));
+        SequenceRandom rng = SequenceRandom.ofDieFaces(20, 4);
+        AttackResult result = resolve(rng, rules, 0, 10, RollMode.NORMAL, DiceExpression.parse("1d6+2"));
+        assertEquals(AttackOutcome.CRIT, result.outcome());
+        assertEquals(12, result.damage(), "2 * (4+2)");
+    }
+
+    @Test
+    void raisedCritRangeCritsOnNineteenWhenItHits() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(19);
+        AttackResult result = CombatEngine.resolveAttack(
+                new DiceRoller(rng),
+                Rules.DEFAULTS,
+                new AttackInput(0, 10, RollMode.NORMAL, DiceExpression.parse("2d6+1"), 19, false));
+        assertEquals(AttackOutcome.CRIT, result.outcome());
+        assertEquals(13, result.damage());
+    }
+
+    @Test
+    void raisedCritRangeDoesNotAutoHit() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(19);
+        AttackResult result = CombatEngine.resolveAttack(
+                new DiceRoller(rng), Rules.DEFAULTS, new AttackInput(0, 25, RollMode.NORMAL, D6, 19, false));
+        assertEquals(AttackOutcome.MISS, result.outcome(), "only a natural 20 auto-hits");
+    }
+
+    @Test
+    void damageDiceDisabledDrawsNothingFromTheRng() {
+        Rules base = Rules.DEFAULTS;
+        Rules rules = new Rules(
+                base.attackRolls(),
+                false,
+                base.crits(),
+                base.fumbles(),
+                base.fallbacks(),
+                base.feedback(),
+                base.balance());
+        SequenceRandom rng = SequenceRandom.ofDieFaces(13);
+        AttackResult result = resolve(rng, rules, 1, 10, RollMode.NORMAL, D6);
+        assertEquals(AttackOutcome.HIT, result.outcome());
+        assertEquals(0, result.damage(), "the vanilla amount applies downstream, no dice are rolled");
+        assertTrue(rng.isExhausted(), "damage_dice off must not consume RNG");
+
+        SequenceRandom critRng = SequenceRandom.ofDieFaces(20);
+        AttackResult crit = resolve(critRng, rules, 1, 10, RollMode.NORMAL, D6);
+        assertEquals(AttackOutcome.CRIT, crit.outcome());
+        assertEquals(0, crit.damage());
+        assertTrue(critRng.isExhausted());
+    }
+
+    @Test
     void critsDisabledTurnsNatTwentyIntoNormalHit() {
-        Rules noCrits = new Rules(true, true, true, true, false, true, true, true, true, 1, true, true);
+        Rules noCrits = TestRules.withCrits(new Rules.Crits(false, Rules.CritRule.MAX_DICE, true));
         SequenceRandom rng = SequenceRandom.ofDieFaces(20, 3);
         AttackResult result = resolve(rng, noCrits, 0, 50, RollMode.NORMAL, D6);
         assertEquals(AttackOutcome.HIT, result.outcome(), "nat20_always_hits still applies");
@@ -76,25 +139,52 @@ class CombatEngineTest {
     }
 
     @Test
-    void naturalOneIsFumbleEvenIfTotalWouldHit() {
-        SequenceRandom rng = SequenceRandom.ofDieFaces(1);
+    void naturalOneFumblesWhenConfirmationFails() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(1, 9);
         AttackResult result = resolve(rng, Rules.DEFAULTS, 20, 5, RollMode.NORMAL, D6);
-        assertEquals(AttackOutcome.FUMBLE, result.outcome());
+        assertEquals(AttackOutcome.FUMBLE, result.outcome(), "confirmation 9 < DC 10 fails — fumble confirmed");
         assertEquals(0, result.damage());
         assertTrue(rng.isExhausted());
     }
 
     @Test
+    void naturalOneIsPlainMissWhenConfirmationSucceeds() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(1, 15);
+        AttackResult result = resolve(rng, Rules.DEFAULTS, 20, 5, RollMode.NORMAL, D6);
+        assertEquals(AttackOutcome.MISS, result.outcome(), "confirmation 15 >= DC 10 saves the fumble");
+        assertTrue(rng.isExhausted());
+    }
+
+    @Test
+    void confirmationDisabledFumblesImmediately() {
+        Rules rules = TestRules.withFumbles(TestRules.fumbles(true, true, false, 10));
+        SequenceRandom rng = SequenceRandom.ofDieFaces(1);
+        AttackResult result = resolve(rng, rules, 0, 10, RollMode.NORMAL, D6);
+        assertEquals(AttackOutcome.FUMBLE, result.outcome());
+        assertTrue(rng.isExhausted(), "no confirmation die may be drawn");
+    }
+
+    @Test
+    void fumbleOnCooldownIsPlainMissWithoutConfirmationRoll() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(1);
+        AttackResult result = CombatEngine.resolveAttack(
+                new DiceRoller(rng), Rules.DEFAULTS, new AttackInput(0, 10, RollMode.NORMAL, D6, 20, true));
+        assertEquals(AttackOutcome.MISS, result.outcome());
+        assertTrue(rng.isExhausted(), "cooldown must short-circuit before the confirmation roll");
+    }
+
+    @Test
     void fumblesDisabledTurnsNatOneIntoPlainMiss() {
-        Rules noFumbles = new Rules(true, true, true, true, true, true, false, true, true, 1, true, true);
+        Rules noFumbles = TestRules.withFumbles(TestRules.fumbles(false, true, false, 10));
         SequenceRandom rng = SequenceRandom.ofDieFaces(1);
         AttackResult result = resolve(rng, noFumbles, 20, 5, RollMode.NORMAL, D6);
         assertEquals(AttackOutcome.MISS, result.outcome());
+        assertTrue(rng.isExhausted());
     }
 
     @Test
     void nat1AlwaysMissesDisabledLetsHighBonusLand() {
-        Rules rules = new Rules(true, true, true, true, true, true, true, false, true, 1, true, true);
+        Rules rules = TestRules.withFumbles(TestRules.fumbles(true, false, true, 10));
         SequenceRandom rng = SequenceRandom.ofDieFaces(1, 4);
         AttackResult result = resolve(rng, rules, 20, 5, RollMode.NORMAL, D6);
         assertEquals(AttackOutcome.HIT, result.outcome(), "1 + 20 = 21 vs AC 5 hits when the house rule is off");
@@ -120,9 +210,9 @@ class CombatEngineTest {
 
     @Test
     void naturalOneOnAdvantageKeptDieIsFumble() {
-        SequenceRandom rng = SequenceRandom.ofDieFaces(1, 1);
+        SequenceRandom rng = SequenceRandom.ofDieFaces(1, 1, 3);
         AttackResult result = resolve(rng, Rules.DEFAULTS, 0, 5, RollMode.ADVANTAGE, D6);
-        assertEquals(AttackOutcome.FUMBLE, result.outcome(), "both dice showed 1 — kept die is a natural 1");
+        assertEquals(AttackOutcome.FUMBLE, result.outcome(), "both dice showed 1, confirmation 3 fails vs DC 10");
     }
 
     @Test

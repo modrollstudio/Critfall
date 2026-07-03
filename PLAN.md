@@ -108,7 +108,9 @@ Generic roll-outcome → effect mapping, NOT hardcoded to nat 1. A table binds a
   "fumbles": {
     "enabled": true,
     "nat1_always_misses": true,
-    "durability_break":  { "enabled": true, "set_durability_to": 1 },   // ← the "almost break weapon" toggle
+    "confirmation_roll": { "enabled": true, "dc": 10 },      // nat 1 only triggers consequences if a 2nd d20 also fails vs dc — halves real-time fumble frequency
+    "cooldown_ticks": 200,                                     // after a triggered fumble, further nat 1s are plain misses for 10s
+    "durability_break":  { "enabled": true, "mode": "set_to_1" },  // set_to_1 | percent_loss:25 — percent_loss makes repeated fumbles wear instead of trash
     "hit_nearest_ally":  { "enabled": true, "radius": 4, "can_hit_players": true, "respect_pvp_rules": true },
     "self_damage":       { "enabled": false, "dice": "1d4" },
     "drop_weapon":       { "enabled": false },
@@ -187,7 +189,7 @@ Arrow/trident/thrown handling (roll on impact, dice from bow/crossbow profile + 
 Packet + rendering + sounds + client config, plus the narrative flavor pool system with anti-spam rules (crit/fumble/kill only, per-target cooldown, priority) per section 4.5. Ship a default flavor pool for vanilla weapon categories.
 
 **M7 — API + KubeJS module (1–2 days)**
-Public events, RollService, KubeJS bindings, example scripts in `/examples`.
+Public events, RollService, KubeJS bindings, example scripts in `/examples`. The API must be sufficient for an external turn-based combat mod (see §12): (a) trigger attack/damage rolls programmatically via RollService with full context, (b) suppress the automatic real-time pipeline per-entity (an entity flag/capability meaning "an orchestrator owns this entity's combat"), (c) query effective profiles (AC, dice, bonuses) for any entity/item, (d) fire outcome tables externally. Add a GameTest that drives a complete attack purely through the API with the automatic pipeline suppressed.
 
 **M8 — Fabric port (1–2 days)**
 Wire common code to Fabric hooks; parity test checklist.
@@ -245,11 +247,12 @@ Wiki/docs site (or `docs/` with mdBook), example datapack repo, Modrinth/CurseFo
 
 ## 9. Known hard problems (decide early)
 
-1. **Attack speed vs turn-based feel:** Minecraft is real-time; spam-clicking = many rolls. Mitigate via vanilla attack cooldown scaling the attack bonus (low cooldown → disadvantage) — elegant and configurable.
-2. **Mob-on-mob combat volume:** rolling for every zombie-vs-villager hit is fine perf-wise but consider a config to restrict rolls to player-involved combat only.
-3. **Better Combat / Epic Fight:** they replace attack logic; you intercept damage, so you're mostly downstream of them — verify sweep attacks produce one roll per target.
-4. **Shields & armor double-dipping:** if AC already represents armor, vanilla armor reduction must be disabled for rolled damage (apply damage as armor-bypassing, or zero out reduction) — otherwise armor counts twice. Make this explicit in the design.
-5. **Health scaling:** d20 misses drop DPS ~40%+; packs may need mob HP tuning. Ship guidance + optional global damage multiplier.
+1. **d20 frequency in real time (confirmed in M2 playtesting):** tabletop assumes 2–3 attack rolls/minute; Minecraft is 30+/minute, so raw 5% nat-1 consequences fire every ~30s of combat and constantly with fast-attack mods. Mitigations are config, not code changes: fumble confirmation roll, fumble cooldown, percent-based durability loss instead of set-to-1. Ship conservative defaults (confirmation ON, cooldown 10s).
+2. **Attack speed vs turn-based feel:** Minecraft is real-time; spam-clicking = many rolls. Mitigate via vanilla attack cooldown scaling the attack bonus (low cooldown → disadvantage) — elegant and configurable.
+3. **Mob-on-mob combat volume:** rolling for every zombie-vs-villager hit is fine perf-wise but consider a config to restrict rolls to player-involved combat only.
+4. **Better Combat / Epic Fight:** they replace attack logic; you intercept damage, so you're mostly downstream of them — verify sweep attacks produce one roll per target.
+5. **Shields & armor double-dipping:** if AC already represents armor, vanilla armor reduction must be disabled for rolled damage (apply damage as armor-bypassing, or zero out reduction) — otherwise armor counts twice. Make this explicit in the design.
+6. **Health scaling:** d20 misses drop DPS ~40%+; packs may need mob HP tuning. Ship guidance + optional global damage multiplier.
 
 ## 10. Project ground rules
 
@@ -259,3 +262,48 @@ Wiki/docs site (or `docs/` with mdBook), example datapack repo, Modrinth/CurseFo
 - Every new mechanic: unit test or GameTest before merge
 - Public API in `studio.modroll.critfall.api` — never break without major version bump
 - Run `./gradlew check` before considering any task done
+
+## 11. Section 9 note on M2 outcomes
+
+The armor decision (rolled damage bypasses vanilla ARMOR reduction; enchantments, Resistance, and absorption still apply) was implemented in M2 — see docs/design-decisions.md in the repo.
+
+## 12. Post-1.0: "Critfall: Initiative" — turn-based combat module (separate companion mod)
+
+**Do not build during M0–M9.** This is a second project that consumes Critfall's public API (M7). Captured here so the API is designed for it and the vision isn't lost.
+
+### Concept
+BG3-style hybrid: real-time exploration; when combat triggers, participants enter a turn-based **encounter bubble** while the rest of the world runs normally. Toggleable per-server/per-world — Critfall core users who want real-time dice are unaffected (they never install this module).
+
+### Encounter bubble
+- Trigger: player attacks or is attacked (configurable) → all hostiles within radius join the encounter.
+- Initiative: d20 + bonus derived from movement speed attribute (same derivation philosophy as core). Turn-order HUD strip.
+- Participant AI frozen except on their turn; entities entering the bubble join initiative late; fleeing beyond the radius exits the encounter (configurable).
+- Everything outside the bubble is untouched — this is what keeps it server-viable.
+
+### Turn structure (per participant)
+- Movement budget shown as a particle ring on the ground (default 6 blocks ≈ 30 ft), one action, one bonus action, reactions.
+- Opportunity attacks: leaving an enemy's reach triggers a reaction attack through the normal Critfall roll pipeline.
+- Standard actions on keybinds: Attack, Dash, Disengage, Dodge, Help, Use Item.
+
+### Minecraft-native actions (the creative differentiators)
+- **Build as an action:** place blocks for instant cover (+2/+5 AC via line-of-sight checks), break line of sight, water bucket as battlefield control. Cover made of literal blocks — no VTT can match this.
+- **Shove:** contested roll knockback — push mobs off cliffs/into lava. Environmental kills are core D&D fantasy and Minecraft terrain is made of hazards.
+- **Improvised item actions:** ender pearl = misty step, splash potions = area effects, fishing rod = grapple pull, flint & steel = ignite ground.
+
+### Multiplayer
+- Side-based initiative (all players in the encounter act simultaneously within the round, BG3-multiplayer style) with optional per-round turn timer to prevent waiting simulator.
+
+### DM mode (the killer feature)
+Server op joins an encounter as director: pause, grant advantage/disadvantage, spawn reinforcements into initiative, inject narration via the M6 flavor-text system. Turns a Minecraft server into a D&D table.
+
+### API contract this imposes on core (implemented in M7)
+1. RollService can be driven fully externally (attack rolls, damage rolls, outcome tables) with results returned to the caller.
+2. Per-entity suppression flag: "orchestrator owns this entity's combat" — core's automatic damage interception stands down for flagged entities.
+3. Effective-profile queries (AC, dice, bonuses) for any entity/item.
+4. Feedback packets (rolls, flavor lines) can be emitted by API consumers, not only by the internal pipeline.
+
+### Known hard problems (for whenever this is built)
+- Freezing entity AI cleanly (navigation, goals, projectiles in flight) without breaking other mods' custom AI.
+- Turn state machine sync across clients; reconnect mid-encounter.
+- Interactions with non-participants (a creeper wanders in; another player shoots into the bubble from outside).
+- Chunk unloading / dimension change mid-encounter.

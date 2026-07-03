@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:enderman"],
+  "armor_class": 14,
+  "attack_bonus": 6,
+  "damage": { "melee": "2d6+3" }
+}

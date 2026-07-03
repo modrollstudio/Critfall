@@ -1,0 +1,8 @@
+{
+  "format_version": 1,
+  "trigger": "nat_20",
+  "effects": [
+    { "type": "critfall:apply_effect", "weight": 1, "effect": "minecraft:slowness", "ticks": 60 },
+    { "type": "critfall:nothing", "weight": 2 }
+  ]
+}

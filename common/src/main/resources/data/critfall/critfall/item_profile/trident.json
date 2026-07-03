@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:trident"],
+  "damage": "1d8",
+  "modifier_from": "attack_damage_attribute",
+  "crit_range": 20,
+  "fumble_table": "critfall:default_melee",
+  "crit_table": "critfall:default_crit",
+  "properties": ["versatile"]
+}

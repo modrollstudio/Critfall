@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:iron_golem"],
+  "armor_class": 15,
+  "attack_bonus": 8,
+  "damage": { "melee": "3d6+4" }
+}

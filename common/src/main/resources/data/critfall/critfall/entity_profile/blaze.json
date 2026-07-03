@@ -1,0 +1,8 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:blaze"],
+  "armor_class": 12,
+  "attack_bonus": 4,
+  "damage": { "melee": "1d6" },
+  "damage_modifiers": { "immune": ["#minecraft:is_fire"] }
+}

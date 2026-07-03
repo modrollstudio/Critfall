@@ -1,0 +1,6 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:snow_golem"],
+  "armor_class": 9,
+  "attack_bonus": 1
+}

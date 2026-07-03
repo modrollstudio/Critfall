@@ -1,0 +1,6 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:creeper"],
+  "armor_class": 11,
+  "attack_bonus": 2
+}

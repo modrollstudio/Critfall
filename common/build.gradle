@@ -5,6 +5,8 @@ plugins {
 // Vanilla Minecraft (Mojang mappings) without any loader — code here must stay loader-agnostic.
 neoForge {
     neoFormVersion = neoform_version
+    // Unit tests parse datapack JSON into records built on ResourceLocation & friends.
+    addModdingDependenciesTo sourceSets.test
 }
 
 processResources {

@@ -3,41 +3,93 @@ package studio.modroll.critfall.combat;
 import studio.modroll.critfall.dice.DiceExpression;
 import studio.modroll.critfall.dice.DiceRoller;
 import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.dice.RollResult;
 
 /**
  * Resolves one attack: d20 (+ bonus) vs AC, then damage dice. Pure JVM — no Minecraft classes —
- * so every path (nat 1, nat 20, exact AC…) is unit-testable with a scripted RNG.
+ * so every path (nat 1, nat 20, confirmation, cooldown, each crit rule…) is unit-testable with a
+ * scripted RNG.
  */
 public final class CombatEngine {
 
     private CombatEngine() {}
 
     /**
+     * Everything profile resolution feeds into one roll.
+     *
+     * @param critRange lowest natural roll that crits (20 = only nat 20); a raised range still
+     *     needs the attack to hit — only nat 20 auto-hits
+     * @param fumbleOnCooldown a fumble triggered within {@code fumbles.cooldown_ticks}; nat 1s
+     *     downgrade to plain misses while true
+     */
+    public record AttackInput(
+            int attackBonus,
+            int armorClass,
+            RollMode mode,
+            DiceExpression damageDice,
+            int critRange,
+            boolean fumbleOnCooldown) {
+
+        public AttackInput(int attackBonus, int armorClass, RollMode mode, DiceExpression damageDice) {
+            this(attackBonus, armorClass, mode, damageDice, 20, false);
+        }
+    }
+
+    /**
      * Rolls the attack and, when it lands, the damage.
      *
      * <p>Outcome rules (each individually toggleable via {@link Rules}): a natural 1 always misses
-     * and becomes a {@link AttackOutcome#FUMBLE} when fumbles are enabled; a natural 20 always
-     * hits and becomes a {@link AttackOutcome#CRIT} with maximized damage dice when crits are
-     * enabled; otherwise {@code natural + attackBonus >= armorClass} hits.
+     * and becomes a {@link AttackOutcome#FUMBLE} when fumbles are enabled, not on cooldown, and
+     * the confirmation roll (a second d20 vs the configured DC) fails; a natural 20 always hits;
+     * naturals at or above the crit range crit on a hit, with damage per the configured crit rule;
+     * otherwise {@code natural + attackBonus >= armorClass} hits.
      */
-    public static AttackResult resolveAttack(
-            DiceRoller roller, Rules rules, int attackBonus, int armorClass, RollMode mode, DiceExpression damageDice) {
-        int natural = roller.d20(mode).keptDice().getFirst().value();
-        int attackTotal = natural + attackBonus;
+    public static AttackResult resolveAttack(DiceRoller roller, Rules rules, AttackInput input) {
+        int natural = roller.d20(input.mode()).keptDice().getFirst().value();
+        int attackTotal = natural + input.attackBonus();
 
-        boolean forcedMiss = natural == 1 && rules.nat1AlwaysMisses();
-        boolean forcedHit = natural == 20 && rules.nat20AlwaysHits();
-        boolean misses = forcedMiss || (!forcedHit && attackTotal < armorClass);
+        boolean forcedMiss = natural == 1 && rules.fumbles().nat1AlwaysMisses();
+        boolean forcedHit = natural == 20 && rules.crits().nat20AlwaysHits();
+        boolean misses = forcedMiss || (!forcedHit && attackTotal < input.armorClass());
 
         if (misses) {
-            AttackOutcome outcome = natural == 1 && rules.fumbles() ? AttackOutcome.FUMBLE : AttackOutcome.MISS;
-            return new AttackResult(outcome, natural, attackTotal, armorClass, 0);
+            boolean fumble = natural == 1
+                    && rules.fumbles().enabled()
+                    && !input.fumbleOnCooldown()
+                    && confirmFumble(roller, rules.fumbles());
+            AttackOutcome outcome = fumble ? AttackOutcome.FUMBLE : AttackOutcome.MISS;
+            return new AttackResult(outcome, natural, attackTotal, input.armorClass(), 0);
         }
-        if (natural == 20 && rules.crits()) {
-            int damage = Math.max(0, damageDice.maxValue());
-            return new AttackResult(AttackOutcome.CRIT, natural, attackTotal, armorClass, damage);
+        // With damage dice off the vanilla amount applies downstream — draw nothing from the RNG.
+        if (natural >= input.critRange() && rules.crits().enabled()) {
+            int damage = rules.damageDice()
+                    ? Math.max(0, critDamage(roller, rules.crits().rule(), input.damageDice()))
+                    : 0;
+            return new AttackResult(AttackOutcome.CRIT, natural, attackTotal, input.armorClass(), damage);
         }
-        int damage = Math.max(0, roller.roll(damageDice).total());
-        return new AttackResult(AttackOutcome.HIT, natural, attackTotal, armorClass, damage);
+        int damage =
+                rules.damageDice() ? Math.max(0, roller.roll(input.damageDice()).total()) : 0;
+        return new AttackResult(AttackOutcome.HIT, natural, attackTotal, input.armorClass(), damage);
+    }
+
+    /** The fumble is confirmed (consequences fire) when the second d20 rolls BELOW the DC. */
+    private static boolean confirmFumble(DiceRoller roller, Rules.Fumbles fumbles) {
+        if (!fumbles.confirmationRoll()) {
+            return true;
+        }
+        int confirmation = roller.d20(RollMode.NORMAL).keptDice().getFirst().value();
+        return confirmation < fumbles.confirmationDc();
+    }
+
+    private static int critDamage(DiceRoller roller, Rules.CritRule rule, DiceExpression dice) {
+        return switch (rule) {
+            case MAX_DICE -> dice.maxValue();
+            case DOUBLE_DICE -> {
+                RollResult first = roller.roll(dice);
+                RollResult second = roller.roll(dice);
+                yield first.total() + second.total() - second.modifier();
+            }
+            case DOUBLE_TOTAL -> 2 * roller.roll(dice).total();
+        };
     }
 }

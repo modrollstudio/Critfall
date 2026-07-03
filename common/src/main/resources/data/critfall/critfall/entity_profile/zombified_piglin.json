@@ -1,0 +1,8 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:zombified_piglin"],
+  "armor_class": 11,
+  "attack_bonus": 4,
+  "damage": { "melee": "1d8+2" },
+  "damage_modifiers": { "immune": ["#minecraft:is_fire"] }
+}

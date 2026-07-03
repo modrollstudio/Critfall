@@ -32,6 +32,16 @@ public final class Derivation {
     }
 
     /**
+     * Flat bonus added to an item profile's dice when {@code modifier_from} is
+     * {@code attack_damage_attribute}: the difference between the item's real (post-modifier)
+     * attack damage and the dice average, so expected rolled damage tracks the item's vanilla
+     * power (an Apotheosis-boosted sword keeps its edge over a plain one). Clamped to [0, 12].
+     */
+    public static int itemDamageBonus(double attackDamage, double diceAverage) {
+        return Math.clamp((int) Math.round(attackDamage - diceAverage), 0, MAX_ATTACK_BONUS);
+    }
+
+    /**
      * Maps a flat vanilla damage value to the dice expression whose average is within 0.5 of it
      * (e.g. {@code 3 → 1d6}, {@code 7 → 2d6}, {@code 8 → 2d6+1}). Above the table, buckets of
      * d12s with a flat adjustment keep the same average.

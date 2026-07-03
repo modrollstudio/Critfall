@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:hoglin", "minecraft:zoglin"],
+  "armor_class": 13,
+  "attack_bonus": 5,
+  "damage": { "melee": "2d6+2" }
+}

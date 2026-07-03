@@ -1,0 +1,5 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:bat", "minecraft:parrot", "minecraft:frog", "minecraft:allay", "minecraft:sniffer", "minecraft:strider"],
+  "armor_class": 11
+}
