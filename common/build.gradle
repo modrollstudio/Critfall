@@ -1,0 +1,21 @@
+plugins {
+    id 'net.neoforged.moddev'
+}
+
+// Vanilla Minecraft (Mojang mappings) without any loader — code here must stay loader-agnostic.
+neoForge {
+    neoFormVersion = neoform_version
+}
+
+processResources {
+    def props = [
+            mod_id         : mod_id,
+            mod_name       : mod_name,
+            mod_version    : mod_version,
+            mod_description: mod_description,
+    ]
+    inputs.properties props
+    filesMatching('pack.mcmeta') {
+        expand props
+    }
+}
