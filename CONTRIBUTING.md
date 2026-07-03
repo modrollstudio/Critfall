@@ -13,6 +13,7 @@ Thanks for your interest! Critfall is MIT-licensed and contributions are welcome
 
    The first run downloads Minecraft and NeoForge artifacts — it takes a while. Subsequent runs are fast.
 3. To launch a development client: `./gradlew :neoforge:runClient`
+4. To run the in-game GameTest suite headlessly: `./gradlew :neoforge:runGameTestServer`
 
 ## Project layout
 

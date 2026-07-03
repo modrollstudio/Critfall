@@ -9,7 +9,7 @@ import java.util.random.RandomGenerator;
  * (e.g. a nat 1 or nat 20). Fails loudly if a forced face can't come from the requested die or if
  * more rolls happen than were scripted.
  */
-final class SequenceRandom implements RandomGenerator {
+public final class SequenceRandom implements RandomGenerator {
 
     private final Queue<Integer> faces = new ArrayDeque<>();
 
@@ -20,7 +20,7 @@ final class SequenceRandom implements RandomGenerator {
     }
 
     /** Each value is the die face the next roll should show (1-based). */
-    static SequenceRandom ofDieFaces(int... faces) {
+    public static SequenceRandom ofDieFaces(int... faces) {
         return new SequenceRandom(faces);
     }
 
@@ -41,7 +41,7 @@ final class SequenceRandom implements RandomGenerator {
         throw new AssertionError("dice rolling must go through nextInt(bound)");
     }
 
-    boolean isExhausted() {
+    public boolean isExhausted() {
         return faces.isEmpty();
     }
 }

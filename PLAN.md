@@ -83,12 +83,13 @@ Critical detail — **DoT and environmental damage must not roll every tick**. U
   "modifier_from": "attack_damage_attribute",   // scale dice bonus from the item's real stats
   "crit_range": 20,
   "fumble_table": "critfall:default_melee",
+  "crit_table": "critfall:default_crit",
   "properties": ["finesse"]
 }
 ```
 
-**Fumble tables** — `data/<ns>/critfall/fumble_table/*.json`
-Weighted list of effects: `damage_durability_to:1`, `hit_nearest_ally:{radius:4}`, `self_damage:"1d4"`, `drop_weapon`, `stumble:{slowness_ticks:40}`, `nothing`. Composable so pack devs make their own tables per weapon class or per boss.
+**Outcome tables** — `data/<ns>/critfall/outcome_table/*.json`
+Generic roll-outcome → effect mapping, NOT hardcoded to nat 1. A table binds a trigger (`nat_1`, `nat_20`, `miss_by_5_or_more`, roll ranges…) to a weighted list of effects: `damage_durability_to:1`, `hit_nearest_ally:{radius:4}`, `self_damage:"1d4"`, `drop_weapon`, `stumble:{slowness_ticks:40}`, `apply_effect:{effect:"minecraft:slowness", ticks:60}` (nat 20 "shot in the eye"), `bleed`, `knockback`, `nothing`. Item/entity profiles reference tables per trigger (fumble_table, crit_table). Composable so pack devs make their own per weapon class or per boss. The executor in M4 must be generic over triggers — fumbles and crit-effects are the same system.
 
 **Spell/damage-type profiles** — match on damage type IDs/tags so Iron's Spells, Ars Nouveau, etc. work generically: a fire spell from any mod matched by `#minecraft:is_fire` gets `save`-style behavior if desired (optional v2 feature: DEX save for half instead of attack roll — AoE spells feel wrong with to-hit).
 
@@ -157,7 +158,9 @@ This must be rock-solid — it's what makes the mod droppable into RAD/ATM-style
 
 - Action bar or floating text: `⚄ 17 + 4 = 21 vs AC 14 — HIT! 2d6+3 = 11`
 - Dice roll sound, crit/fumble jingles, particles.
-- Client config to reduce/disable (kitchen-sink packs hate HUD spam).
+- **Narrative flavor lines (optional sub-feature):** message pools in datapack JSON keyed by outcome + weapon category + context — e.g. miss + bow → "Your arrow whistles past its ear — it turns toward you!"; nat 20 + bow → "Right in the eye!" (paired with the crit_table effect). Random pick per pool for variety, all lines through the translation system (localizable), pack devs can add/replace pools.
+- **Anti-spam rules (required, fast-attack mods hit 5–10×/sec):** flavor lines fire ONLY on crits, fumbles, and kills — ordinary hits/misses get the compact roll display at most; per-target cooldown (default max 1 flavor line per 20 ticks); priority system so nat 20/nat 1 always display even during spam, replacing queued lower-priority lines.
+- Client config to reduce/disable each layer independently: rolls / flavor text / sounds / particles (kitchen-sink packs hate HUD spam).
 - All driven by one small S2C packet; server works fine without the client mod installed (feedback just off) — keep it working server-side-only for Fabric servers with vanilla clients if feasible.
 
 ## 5. Milestones (work order)
@@ -172,16 +175,16 @@ Standalone dice expression parser + roller with seeded-RNG unit tests. No Minecr
 NeoForge event hook, damage classification, exempt tags, hardcoded default profiles, d20 vs derived AC, hit/miss/crit(max dmg)/fumble(durability→1). Playable end-to-end in a test world.
 
 **M3 — Datapack registries (2–3 days)**
-JSON codecs for entity/item profiles + fumble tables, tag matching with priority resolution, `/reload` support, `/critfall inspect <entity>` and `/critfall check <item>` debug commands. Ship a default datapack covering all vanilla mobs + weapon classes.
+JSON codecs for entity/item profiles + outcome tables, tag matching with priority resolution, `/reload` support, `/critfall inspect <entity>` and `/critfall check <item>` debug commands. Ship a default datapack covering all vanilla mobs + weapon classes.
 
-**M4 — Fumble system + redirect-hit (1–2 days)**
-Fumble table executor incl. "hit nearest ally/player within radius" (raycast/AABB search, respects PvP rules and team checks), self-damage, drop weapon.
+**M4 — Outcome table executor (fumbles + crit effects) (2 days)**
+Generic executor: triggers (nat_1, nat_20, miss margins, roll ranges) → weighted effect lists. Fumble effects incl. "hit nearest ally/player within radius" (raycast/AABB search, respects PvP rules and team checks), self-damage, drop weapon; crit effects incl. apply status effect (slowness/bleed-style), extra knockback. One system, not two — nat 20 "shot in the eye" is just a crit_table entry.
 
 **M5 — Projectiles & spells (2 days)**
 Arrow/trident/thrown handling (roll on impact, dice from bow/crossbow profile + arrow), generic spell-damage classification via damage type tags, saving-throw option for AoE. Compat-test against Iron's Spells 'n Spellbooks and Ars Nouveau.
 
-**M6 — Client feedback module (1–2 days)**
-Packet + rendering + sounds + client config.
+**M6 — Client feedback module (2 days)**
+Packet + rendering + sounds + client config, plus the narrative flavor pool system with anti-spam rules (crit/fumble/kill only, per-target cooldown, priority) per section 4.5. Ship a default flavor pool for vanilla weapon categories.
 
 **M7 — API + KubeJS module (1–2 days)**
 Public events, RollService, KubeJS bindings, example scripts in `/examples`.
