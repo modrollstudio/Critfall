@@ -159,6 +159,7 @@ This must be rock-solid — it's what makes the mod droppable into RAD/ATM-style
 ### 4.5 Client feedback (its own module, fully optional)
 
 - Action bar or floating text: `⚄ 17 + 4 = 21 vs AC 14 — HIT! 2d6+3 = 11`
+- **Fumble/crit outcomes must be announced, never silent (playtesting: silent consequences look like bugs).** The roll display distinguishes "NAT 1 — no fumble" (confirmation roll saved you / cooldown active) from "NAT 1 — FUMBLE!", and a triggered outcome states which consequence fired — "you hit the villager!", "your weapon is nearly broken!". Same for crit effects.
 - Dice roll sound, crit/fumble jingles, particles.
 - **Narrative flavor lines (optional sub-feature):** message pools in datapack JSON keyed by outcome + weapon category + context — e.g. miss + bow → "Your arrow whistles past its ear — it turns toward you!"; nat 20 + bow → "Right in the eye!" (paired with the crit_table effect). Random pick per pool for variety, all lines through the translation system (localizable), pack devs can add/replace pools.
 - **Anti-spam rules (required, fast-attack mods hit 5–10×/sec):** flavor lines fire ONLY on crits, fumbles, and kills — ordinary hits/misses get the compact roll display at most; per-target cooldown (default max 1 flavor line per 20 ticks); priority system so nat 20/nat 1 always display even during spam, replacing queued lower-priority lines.
@@ -195,7 +196,7 @@ Public events, RollService, KubeJS bindings, example scripts in `/examples`. The
 Wire common code to Fabric hooks; parity test checklist.
 
 **M9 — Release engineering (1 day)**
-Wiki/docs site (or `docs/` with mdBook), example datapack repo, Modrinth/CurseForge pages, versioning policy, CHANGELOG, publish pipeline.
+Wiki/docs site (or `docs/` with mdBook), example datapack repo, Modrinth/CurseForge pages, versioning policy, CHANGELOG, publish pipeline. Ship two documented `rules.json` presets so pack devs pick a starting feel: **"Classic"** (confirmation roll off, fumble cooldown 0 — raw d20 feel) and **"Tempered"** (the current shipped defaults: confirmation on, 10s cooldown).
 
 ## 6. Testing strategy
 

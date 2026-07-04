@@ -3,5 +3,5 @@
   "matches": ["minecraft:ghast"],
   "armor_class": 11,
   "attack_bonus": 3,
-  "damage": { "melee": "1d6" }
+  "damage": { "melee": "1d6", "ranged": "2d6" }
 }

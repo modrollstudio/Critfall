@@ -46,7 +46,10 @@ public final class RulesLoader {
                 "stumble": { "enabled": false, "slowness_ticks": 40 },
                 "applies_to": "players_and_mobs"
               },
-              "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive" },
+              "spells": {
+                "saves": { "enabled": true, "default_dc": 13, "on_success": "half" }
+              },
+              "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
               "feedback": { "roll_visibility": "everyone" },
               "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true }
             }
@@ -127,10 +130,17 @@ public final class RulesLoader {
                         intInRange(stumble, "slowness_ticks", 40, 1, Integer.MAX_VALUE, warn)),
                 parseEnum(fumbles, "applies_to", Rules.AppliesTo.class, Rules.AppliesTo.PLAYERS_AND_MOBS, warn));
 
+        LenientJson saves = j.object("spells").object("saves");
+        Rules.Spells spellRules = new Rules.Spells(new Rules.SpellSaves(
+                saves.getBool("enabled", true),
+                intInRange(saves, "default_dc", 13, 1, 30, warn),
+                parseEnum(saves, "on_success", Rules.SaveOutcome.class, Rules.SaveOutcome.HALF, warn)));
+
         LenientJson fallbacks = j.object("fallbacks");
         Rules.Fallbacks fallbackRules = new Rules.Fallbacks(
                 parseEnum(fallbacks, "unknown_entity", Rules.FallbackMode.class, Rules.FallbackMode.DERIVE, warn),
-                parseEnum(fallbacks, "unknown_weapon", Rules.FallbackMode.class, Rules.FallbackMode.DERIVE, warn));
+                parseEnum(fallbacks, "unknown_weapon", Rules.FallbackMode.class, Rules.FallbackMode.DERIVE, warn),
+                parseEnum(fallbacks, "unknown_spell", Rules.FallbackMode.class, Rules.FallbackMode.DERIVE, warn));
 
         LenientJson feedback = j.object("feedback");
         feedback.reserved("sounds", "client feedback module lands in M6");
@@ -148,7 +158,8 @@ public final class RulesLoader {
                 new Rules.Balance(multiplier, balance.getBool("disable_vanilla_armor_reduction", true));
 
         j.finish();
-        return new Rules(attack, damageDice, critRules, fumbleRules, fallbackRules, visibility, balanceRules);
+        return new Rules(
+                attack, damageDice, critRules, fumbleRules, spellRules, fallbackRules, visibility, balanceRules);
     }
 
     /**

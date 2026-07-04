@@ -523,6 +523,7 @@ public class OutcomeGameTests {
                 base.damageDice(),
                 base.crits(),
                 fumbles,
+                base.spells(),
                 base.fallbacks(),
                 base.feedback(),
                 base.balance());

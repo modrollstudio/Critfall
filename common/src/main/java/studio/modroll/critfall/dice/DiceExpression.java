@@ -78,6 +78,26 @@ public final class DiceExpression {
             throw new DiceParseException("dice expression has more than " + MAX_TERMS + " terms");
         }
 
+        return new DiceExpression(List.copyOf(terms), buildCanonical(terms));
+    }
+
+    /**
+     * Returns a new expression whose terms are this expression's followed by {@code other}'s
+     * (e.g. {@code 1d8+2} plus {@code 1d4} is {@code 1d8+2+1d4}). Throws {@link
+     * DiceParseException} when the combined expression exceeds {@value #MAX_TERMS} terms.
+     */
+    public DiceExpression plus(DiceExpression other) {
+        List<Term> combined = new ArrayList<>(terms.size() + other.terms.size());
+        combined.addAll(terms);
+        combined.addAll(other.terms);
+        if (combined.size() > MAX_TERMS) {
+            throw new DiceParseException(
+                    "combining \"" + canonical + "\" and \"" + other.canonical + "\" exceeds " + MAX_TERMS + " terms");
+        }
+        return new DiceExpression(List.copyOf(combined), buildCanonical(combined));
+    }
+
+    private static String buildCanonical(List<Term> terms) {
         StringBuilder canonical = new StringBuilder();
         for (int i = 0; i < terms.size(); i++) {
             Term term = terms.get(i);
@@ -88,7 +108,7 @@ public final class DiceExpression {
             }
             canonical.append(term.notation());
         }
-        return new DiceExpression(List.copyOf(terms), canonical.toString());
+        return canonical.toString();
     }
 
     private static Term parseTerm(Cursor cursor, int sign) {

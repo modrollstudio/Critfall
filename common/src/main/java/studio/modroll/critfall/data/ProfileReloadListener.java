@@ -53,6 +53,11 @@ public final class ProfileReloadListener<T> extends SimpleJsonResourceReloadList
                 "critfall/item_profile", "item profile", ItemProfile::parse, ProfileReloadListener::storeItemProfiles);
     }
 
+    public static ProfileReloadListener<SpellProfile> spellProfiles() {
+        return new ProfileReloadListener<>(
+                "critfall/spell_profile", "spell profile", SpellProfile::parse, ProfileStore::setSpellProfiles);
+    }
+
     public static ProfileReloadListener<OutcomeTable> outcomeTables() {
         return new ProfileReloadListener<>(
                 "critfall/outcome_table", "outcome table", OutcomeTable::parse, ProfileStore::setOutcomeTables);

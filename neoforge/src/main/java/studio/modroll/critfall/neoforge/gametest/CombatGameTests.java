@@ -182,6 +182,7 @@ public class CombatGameTests {
                 false,
                 base.crits(),
                 base.fumbles(),
+                base.spells(),
                 base.fallbacks(),
                 base.feedback(),
                 base.balance());
@@ -366,6 +367,7 @@ public class CombatGameTests {
                 base.damageDice(),
                 base.crits(),
                 base.fumbles(),
+                base.spells(),
                 base.fallbacks(),
                 base.feedback(),
                 new Rules.Balance(1.0, false));
@@ -393,6 +395,7 @@ public class CombatGameTests {
                 base.damageDice(),
                 base.crits(),
                 base.fumbles(),
+                base.spells(),
                 base.fallbacks(),
                 base.feedback(),
                 new Rules.Balance(2.0, true));
@@ -447,6 +450,7 @@ public class CombatGameTests {
                 base.damageDice(),
                 base.crits(),
                 base.fumbles(),
+                base.spells(),
                 base.fallbacks(),
                 base.feedback(),
                 base.balance());
@@ -459,6 +463,7 @@ public class CombatGameTests {
                 base.damageDice(),
                 crits,
                 base.fumbles(),
+                base.spells(),
                 base.fallbacks(),
                 base.feedback(),
                 base.balance());
@@ -471,6 +476,7 @@ public class CombatGameTests {
                 base.damageDice(),
                 base.crits(),
                 fumbles,
+                base.spells(),
                 base.fallbacks(),
                 base.feedback(),
                 base.balance());

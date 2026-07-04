@@ -29,7 +29,8 @@ class EntityProfileTest {
                           "matches": ["minecraft:enderman"],
                           "armor_class": 14,
                           "attack_bonus": 4,
-                          "damage": { "melee": "2d6+3" },
+                          "save_bonus": 3,
+                          "damage": { "melee": "2d6+3", "ranged": "1d8" },
                           "crit_range": 19,
                           "damage_modifiers": {
                             "resist": ["#critfall:physical"],
@@ -43,7 +44,9 @@ class EntityProfileTest {
                         """), warnings::add);
         assertEquals(14, profile.armorClass().orElseThrow());
         assertEquals(4, profile.attackBonus().orElseThrow());
+        assertEquals(3, profile.saveBonus().orElseThrow());
         assertEquals("2d6+3", profile.meleeDamage().orElseThrow().toString());
+        assertEquals("1d8", profile.rangedDamage().orElseThrow().toString());
         assertEquals(19, profile.critRange().orElseThrow());
         assertEquals(10, profile.priority());
         assertEquals(1, profile.damageModifiers().resist().size());
@@ -59,7 +62,9 @@ class EntityProfileTest {
         EntityProfile profile = EntityProfile.parse(ID, json("{\"matches\": [\"minecraft:pig\"]}"), w -> {});
         assertTrue(profile.armorClass().isEmpty());
         assertTrue(profile.attackBonus().isEmpty());
+        assertTrue(profile.saveBonus().isEmpty());
         assertTrue(profile.meleeDamage().isEmpty());
+        assertTrue(profile.rangedDamage().isEmpty());
         assertTrue(profile.critRange().isEmpty());
         assertTrue(profile.damageModifiers().isEmpty());
         assertTrue(profile.fumbleTable().isEmpty());
@@ -119,10 +124,10 @@ class EntityProfileTest {
         List<String> warnings = new ArrayList<>();
         EntityProfile.parse(
                 ID,
-                json("{\"matches\": [\"minecraft:pig\"], \"damage\": {\"melee\": \"1d4\", \"ranged\": \"1d6\"}}"),
+                json("{\"matches\": [\"minecraft:pig\"], \"damage\": {\"melee\": \"1d4\", \"spell\": \"1d6\"}}"),
                 warnings::add);
         assertEquals(1, warnings.size());
-        assertTrue(warnings.getFirst().contains("ranged"), warnings.toString());
+        assertTrue(warnings.getFirst().contains("spell"), warnings.toString());
     }
 
     @Test

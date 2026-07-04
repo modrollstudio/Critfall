@@ -16,6 +16,7 @@ public record Rules(
         boolean damageDice,
         Crits crits,
         Fumbles fumbles,
+        Spells spells,
         Fallbacks fallbacks,
         FeedbackVisibility feedback,
         Balance balance) {
@@ -116,6 +117,28 @@ public record Rules(
                 AppliesTo.PLAYERS_AND_MOBS);
     }
 
+    /** What a successful saving throw leaves of the damage. */
+    public enum SaveOutcome {
+        /** Half damage (rounded down for rolled dice) — the 5e AoE default. */
+        HALF,
+        /** No damage at all. */
+        NEGATE
+    }
+
+    /**
+     * The save-based spell resolution (M5): a spell profile with {@code "resolution": "save"} has
+     * the TARGET roll d20 + save bonus vs a DC instead of the caster rolling to hit — AoE spells
+     * feel wrong with to-hit. {@code defaultDc}/{@code onSuccess} apply when the profile does not
+     * override them. With {@code enabled} off, save-profiles resolve as attack rolls instead.
+     */
+    public record SpellSaves(boolean enabled, int defaultDc, SaveOutcome onSuccess) {
+        public static final SpellSaves DEFAULTS = new SpellSaves(true, 13, SaveOutcome.HALF);
+    }
+
+    public record Spells(SpellSaves saves) {
+        public static final Spells DEFAULTS = new Spells(SpellSaves.DEFAULTS);
+    }
+
     /** What happens for entities/items no profile matches. */
     public enum FallbackMode {
         /** Derive plausible stats from vanilla attributes (PLAN.md §4.3). */
@@ -124,8 +147,10 @@ public record Rules(
         VANILLA_PASSTHROUGH
     }
 
-    public record Fallbacks(FallbackMode unknownEntity, FallbackMode unknownWeapon) {
-        public static final Fallbacks DEFAULTS = new Fallbacks(FallbackMode.DERIVE, FallbackMode.DERIVE);
+    /** {@code unknownSpell} decides spell-classified damage whose type no spell profile matches. */
+    public record Fallbacks(FallbackMode unknownEntity, FallbackMode unknownWeapon, FallbackMode unknownSpell) {
+        public static final Fallbacks DEFAULTS =
+                new Fallbacks(FallbackMode.DERIVE, FallbackMode.DERIVE, FallbackMode.DERIVE);
     }
 
     /** Who sees the roll readout (M3: action bar for the involved players; M6 widens this). */
@@ -144,6 +169,7 @@ public record Rules(
             true,
             Crits.DEFAULTS,
             Fumbles.DEFAULTS,
+            Spells.DEFAULTS,
             Fallbacks.DEFAULTS,
             FeedbackVisibility.EVERYONE,
             Balance.DEFAULTS);

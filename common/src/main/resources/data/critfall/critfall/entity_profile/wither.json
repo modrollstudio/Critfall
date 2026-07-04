@@ -3,6 +3,6 @@
   "matches": ["minecraft:wither"],
   "armor_class": 18,
   "attack_bonus": 10,
-  "damage": { "melee": "2d8+4" },
+  "damage": { "melee": "2d8+4", "ranged": "2d8" },
   "damage_modifiers": { "immune": ["#minecraft:is_fire"] }
 }

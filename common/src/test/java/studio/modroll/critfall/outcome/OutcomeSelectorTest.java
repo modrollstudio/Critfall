@@ -140,6 +140,7 @@ class OutcomeSelectorTest {
                         true,
                         new Rules.Stumble(true, 40),
                         Rules.AppliesTo.PLAYERS_AND_MOBS),
+                defaults.spells(),
                 defaults.fallbacks(),
                 defaults.feedback(),
                 defaults.balance());

@@ -12,6 +12,7 @@ final class TestRules {
                 base.damageDice(),
                 crits,
                 base.fumbles(),
+                base.spells(),
                 base.fallbacks(),
                 base.feedback(),
                 base.balance());
@@ -24,6 +25,7 @@ final class TestRules {
                 base.damageDice(),
                 base.crits(),
                 fumbles,
+                base.spells(),
                 base.fallbacks(),
                 base.feedback(),
                 base.balance());

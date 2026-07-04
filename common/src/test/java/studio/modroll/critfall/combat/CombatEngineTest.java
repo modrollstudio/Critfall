@@ -1,6 +1,7 @@
 package studio.modroll.critfall.combat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -113,6 +114,7 @@ class CombatEngineTest {
                 false,
                 base.crits(),
                 base.fumbles(),
+                base.spells(),
                 base.fallbacks(),
                 base.feedback(),
                 base.balance());
@@ -230,5 +232,34 @@ class CombatEngineTest {
         assertTrue(new AttackResult(AttackOutcome.CRIT, 20, 20, 5, 6).isHit());
         assertTrue(!new AttackResult(AttackOutcome.MISS, 2, 2, 5, 0).isHit());
         assertTrue(!new AttackResult(AttackOutcome.FUMBLE, 1, 1, 5, 0).isHit());
+    }
+
+    @Test
+    void saveMeetingTheDcSucceeds() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(11);
+        CombatEngine.SaveResult result = CombatEngine.resolveSave(new DiceRoller(rng), 2, 13);
+        assertTrue(result.saved(), "11 + 2 = 13 vs DC 13 — meets it beats it");
+        assertEquals(11, result.natural());
+        assertEquals(13, result.saveTotal());
+        assertTrue(rng.isExhausted(), "a save draws exactly one d20");
+    }
+
+    @Test
+    void saveBelowTheDcFails() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(10);
+        CombatEngine.SaveResult result = CombatEngine.resolveSave(new DiceRoller(rng), 2, 13);
+        assertFalse(result.saved(), "10 + 2 = 12 vs DC 13 fails");
+    }
+
+    @Test
+    void saveHasNoNaturalTwentyOrOneSpecialCase() {
+        assertFalse(
+                CombatEngine.resolveSave(new DiceRoller(SequenceRandom.ofDieFaces(20)), 0, 25)
+                        .saved(),
+                "a natural 20 does not beat an unreachable DC");
+        assertTrue(
+                CombatEngine.resolveSave(new DiceRoller(SequenceRandom.ofDieFaces(1)), 4, 5)
+                        .saved(),
+                "a natural 1 still saves when the total meets the DC");
     }
 }

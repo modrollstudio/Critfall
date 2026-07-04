@@ -1,0 +1,8 @@
+{
+  "format_version": 1,
+  "trigger": "nat_1",
+  "effects": [
+    { "type": "critfall:damage_durability", "weight": 3 },
+    { "type": "critfall:nothing", "weight": 2 }
+  ]
+}

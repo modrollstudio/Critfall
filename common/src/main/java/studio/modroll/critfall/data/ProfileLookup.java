@@ -33,6 +33,16 @@ public final class ProfileLookup {
         return ProfileStore.findItemProfile(id, tagId -> stack.is(TagKey.create(Registries.ITEM, tagId)));
     }
 
+    /** The spell profile matching this source's DAMAGE TYPE (by id or tag). */
+    public static Optional<SpellProfile> forSpell(DamageSource source) {
+        Optional<ResourceLocation> typeId = source.typeHolder().unwrapKey().map(ResourceKey::location);
+        if (typeId.isEmpty()) {
+            return Optional.empty();
+        }
+        return ProfileStore.findSpellProfile(
+                typeId.get(), tagId -> source.is(TagKey.create(Registries.DAMAGE_TYPE, tagId)));
+    }
+
     /** The defender's resist/immune/vulnerable multiplier for this damage source. */
     public static float damageMultiplier(EntityProfile profile, DamageSource source) {
         if (profile.damageModifiers().isEmpty()) {

@@ -15,6 +15,13 @@ public final class CritfallTags {
     /** Damage types that skip the to-hit roll but still roll damage dice. */
     public static final TagKey<DamageType> ALWAYS_HITS = create("always_hits");
 
+    /**
+     * Damage types resolved as spells (M5), even when the caster is the direct entity. Ships
+     * pre-populated with {@code #neoforge:is_magic} and the Iron's Spells / Ars Nouveau damage
+     * types as optional entries (see docs/compat.md).
+     */
+    public static final TagKey<DamageType> SPELL = create("spell");
+
     private CritfallTags() {}
 
     private static TagKey<DamageType> create(String name) {

@@ -17,6 +17,7 @@ public final class DamageClassifier {
         return classify(
                 source.is(CritfallTags.EXEMPT),
                 source.is(CritfallTags.ALWAYS_HITS),
+                source.is(CritfallTags.SPELL),
                 source.is(DamageTypeTags.IS_PROJECTILE),
                 source.getEntity() instanceof LivingEntity,
                 source.isDirect());
@@ -25,17 +26,28 @@ public final class DamageClassifier {
     /**
      * @param exempt damage type is in {@code #critfall:exempt}
      * @param alwaysHits damage type is in {@code #critfall:always_hits}
+     * @param spellTagged damage type is in {@code #critfall:spell} — explicit pack intent, so it
+     *     beats the projectile/melee heuristics below (spell mods often make the CASTER the direct
+     *     entity, which would otherwise read as melee — see docs/compat.md)
      * @param projectile damage type is in {@code #minecraft:is_projectile}
      * @param hasLivingAttacker the causing entity is a living entity
      * @param direct the causing entity is also the direct entity (no projectile/spell in between)
      */
     public static DamageCategory classify(
-            boolean exempt, boolean alwaysHits, boolean projectile, boolean hasLivingAttacker, boolean direct) {
+            boolean exempt,
+            boolean alwaysHits,
+            boolean spellTagged,
+            boolean projectile,
+            boolean hasLivingAttacker,
+            boolean direct) {
         if (exempt) {
             return DamageCategory.EXEMPT;
         }
         if (alwaysHits) {
             return DamageCategory.ALWAYS_HITS;
+        }
+        if (spellTagged) {
+            return DamageCategory.SPELL;
         }
         if (projectile) {
             return DamageCategory.PROJECTILE;
@@ -43,6 +55,6 @@ public final class DamageClassifier {
         if (!hasLivingAttacker) {
             return DamageCategory.ENVIRONMENTAL;
         }
-        return direct ? DamageCategory.MELEE : DamageCategory.OTHER;
+        return direct ? DamageCategory.MELEE : DamageCategory.SPELL;
     }
 }

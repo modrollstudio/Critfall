@@ -138,6 +138,30 @@ class RulesLoaderTest {
     }
 
     @Test
+    void spellSaveKeysParse() {
+        Rules rules = RulesLoader.parse(json("""
+                        {
+                          "spells": { "saves": { "enabled": false, "default_dc": 15, "on_success": "negate" } },
+                          "fallbacks": { "unknown_spell": "vanilla_passthrough" }
+                        }
+                        """), w -> {});
+        assertFalse(rules.spells().saves().enabled());
+        assertEquals(15, rules.spells().saves().defaultDc());
+        assertEquals(Rules.SaveOutcome.NEGATE, rules.spells().saves().onSuccess());
+        assertEquals(Rules.FallbackMode.VANILLA_PASSTHROUGH, rules.fallbacks().unknownSpell());
+        assertEquals(
+                Rules.FallbackMode.DERIVE, rules.fallbacks().unknownEntity(), "unset fallbacks keep their defaults");
+    }
+
+    @Test
+    void badSaveDcWarnsAndFallsBack() {
+        List<String> warnings = new ArrayList<>();
+        Rules rules = RulesLoader.parse(json("{\"spells\": {\"saves\": {\"default_dc\": 99}}}"), warnings::add);
+        assertEquals(13, rules.spells().saves().defaultDc());
+        assertEquals(1, warnings.size(), warnings.toString());
+    }
+
+    @Test
     void badSelfDamageDiceWarnsAndFallsBack() {
         List<String> warnings = new ArrayList<>();
         Rules rules = RulesLoader.parse(

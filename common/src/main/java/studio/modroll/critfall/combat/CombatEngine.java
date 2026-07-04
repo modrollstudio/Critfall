@@ -73,6 +73,22 @@ public final class CombatEngine {
         return new AttackResult(AttackOutcome.HIT, natural, attackTotal, input.armorClass(), damage);
     }
 
+    /**
+     * The target's saving throw against a save-based spell (M5, PLAN.md §4.2): meets-it-beats-it,
+     * no nat-1/nat-20 special cases (5e saves have none). The damage consequence ({@link
+     * Rules.SaveOutcome}) is applied by the caller.
+     */
+    public record SaveResult(int natural, int saveTotal, int dc) {
+        public boolean saved() {
+            return saveTotal >= dc;
+        }
+    }
+
+    public static SaveResult resolveSave(DiceRoller roller, int saveBonus, int dc) {
+        int natural = roller.d20(RollMode.NORMAL).keptDice().getFirst().value();
+        return new SaveResult(natural, natural + saveBonus, dc);
+    }
+
     /** The fumble is confirmed (consequences fire) when the second d20 rolls BELOW the DC. */
     private static boolean confirmFumble(DiceRoller roller, Rules.Fumbles fumbles) {
         if (!fumbles.confirmationRoll()) {

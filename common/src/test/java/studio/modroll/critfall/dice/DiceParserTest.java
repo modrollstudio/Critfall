@@ -57,6 +57,27 @@ class DiceParserTest {
     }
 
     @Test
+    void plusConcatenatesTerms() {
+        DiceExpression combined = DiceExpression.parse("1d8+2").plus(DiceExpression.parse("1d4"));
+        assertEquals("1d8+2+1d4", combined.toString());
+        assertEquals(4, combined.minValue());
+        assertEquals(14, combined.maxValue());
+    }
+
+    @Test
+    void plusKeepsNegativeLeadingTerms() {
+        DiceExpression combined = DiceExpression.parse("1d8").plus(DiceExpression.parse("-1"));
+        assertEquals("1d8-1", combined.toString());
+        assertEquals(0, combined.minValue());
+    }
+
+    @Test
+    void plusRejectsTermOverflow() {
+        DiceExpression max = DiceExpression.parse("1" + "+1".repeat(99)); // exactly MAX_TERMS terms
+        assertThrows(DiceParseException.class, () -> max.plus(DiceExpression.parse("1")));
+    }
+
+    @Test
     void parsesKeepHighest() {
         DiceExpression expr = DiceExpression.parse("2d20kh1");
         assertEquals("2d20kh1", expr.toString());

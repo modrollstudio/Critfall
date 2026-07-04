@@ -33,6 +33,14 @@
     "minecraft:bad_respawn_point",
     "minecraft:fireworks",
     "minecraft:dragon_breath",
-    "minecraft:sonic_boom"
+    "minecraft:sonic_boom",
+    { "id": "#neoforge:is_poison", "required": false },
+    { "id": "#neoforge:is_wither", "required": false },
+    { "id": "irons_spellbooks:fire_field", "required": false },
+    { "id": "irons_spellbooks:poison_cloud", "required": false },
+    { "id": "irons_spellbooks:dragon_breath_pool", "required": false },
+    { "id": "irons_spellbooks:blood_cauldron", "required": false },
+    { "id": "irons_spellbooks:heartstop", "required": false },
+    { "id": "ars_nouveau:sourceberry_bush", "required": false }
   ]
 }

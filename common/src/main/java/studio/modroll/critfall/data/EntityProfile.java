@@ -20,7 +20,9 @@ public record EntityProfile(
         List<MatchEntry> matches,
         OptionalInt armorClass,
         OptionalInt attackBonus,
+        OptionalInt saveBonus,
         Optional<DiceExpression> meleeDamage,
+        Optional<DiceExpression> rangedDamage,
         OptionalInt critRange,
         DamageModifiers damageModifiers,
         Optional<ResourceLocation> fumbleTable,
@@ -53,9 +55,14 @@ public record EntityProfile(
             throw new IllegalArgumentException("'armor_class' must be at least 1");
         }
         OptionalInt attackBonus = j.optionalInt("attack_bonus");
+        // Added vs the target's d20 saving throw against save-based spells (M5); absent = +0.
+        OptionalInt saveBonus = j.optionalInt("save_bonus");
 
         LenientJson damage = j.object("damage");
         Optional<DiceExpression> meleeDamage = damage.optionalString("melee").map(DiceExpression::parse);
+        // Item-less ranged attacks (ghast fireball, shulker bullet); a held launcher's item
+        // profile takes precedence, same as melee.
+        Optional<DiceExpression> rangedDamage = damage.optionalString("ranged").map(DiceExpression::parse);
 
         OptionalInt critRange = j.optionalInt("crit_range");
         validateCritRange(critRange);
@@ -72,7 +79,9 @@ public record EntityProfile(
                 List.copyOf(matches),
                 armorClass,
                 attackBonus,
+                saveBonus,
                 meleeDamage,
+                rangedDamage,
                 critRange,
                 modifiers,
                 fumbleTable,

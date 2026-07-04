@@ -149,6 +149,11 @@ public final class CritfallCommands {
             send(source, "  Crit range: " + AttackDice.entityCritRange(profile));
         }
 
+        profile.flatMap(EntityProfile::rangedDamage)
+                .ifPresent(dice -> send(source, "  Ranged damage: " + dice + " (entity profile)"));
+        profile.map(EntityProfile::saveBonus)
+                .orElse(OptionalInt.empty())
+                .ifPresent(bonus -> send(source, "  Save bonus: " + (bonus >= 0 ? "+" : "") + bonus + " (profile)"));
         profile.filter(p -> !p.damageModifiers().isEmpty()).ifPresent(p -> {
             send(
                     source,

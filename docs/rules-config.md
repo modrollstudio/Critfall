@@ -32,7 +32,10 @@ Default file:
     "stumble": { "enabled": false, "slowness_ticks": 40 },
     "applies_to": "players_and_mobs"
   },
-  "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive" },
+  "spells": {
+    "saves": { "enabled": true, "default_dc": 13, "on_success": "half" }
+  },
+  "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
   "feedback": { "roll_visibility": "everyone" },
   "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true }
 }
@@ -41,8 +44,10 @@ Default file:
 ## attack_rolls
 
 Master switch plus per-source switches. `enabled: false` disables the whole mod's interception.
-`players` / `mobs` gate whose attacks roll. `projectiles` / `spells` are parsed now and take
-effect in M5 (M3 rolls direct melee only).
+`players` / `mobs` gate whose attacks roll (by attacker, for every category). `projectiles`
+gates rolls on projectile impact (arrows, tridents, thrown items, fireballs); `spells` gates
+spell-classified damage (see docs/compat.md). Either set to `false` restores vanilla behavior
+for that category only.
 
 ## damage_dice
 
@@ -92,11 +97,27 @@ untouched:
 - `applies_to` — `players`, `mobs`, or `players_and_mobs`: whose nat 1s can become fumbles at
   all. Outside the set, a nat 1 is a plain miss (no confirmation roll, no consequences).
 
+## spells
+
+- `saves.enabled` — the saving-throw resolution (M5): a spell profile with
+  `"resolution": "save"` has the TARGET roll d20 + `save_bonus` vs a DC instead of the caster
+  rolling to hit — the right feel for AoE. With saves disabled, save-profiles resolve as attack
+  rolls instead (attack rolls being the spell default, this is the closest still-rolled behavior;
+  set `attack_rolls.spells: false` to make spells fully vanilla).
+- `saves.default_dc` (1–30) — used when the profile names no `save.dc`.
+- `saves.on_success` — `half` (rounded down) or `negate`; profile `save.on_success` overrides.
+
+A successful save's remaining damage (and a failed save's full damage, when the profile has
+dice) bypasses vanilla armor reduction under the same `disable_vanilla_armor_reduction` flag as
+attack rolls — the defense already happened, it was the save.
+
 ## fallbacks
 
 What happens when no datapack profile matches: `derive` (default) computes plausible stats from
 vanilla attributes (PLAN.md §4.3); `vanilla_passthrough` leaves the damage event untouched —
-`unknown_entity` checks the defender, `unknown_weapon` checks the attacker's dice sources.
+`unknown_entity` checks the defender, `unknown_weapon` checks the attacker's dice sources
+(melee and projectile), `unknown_spell` checks spell-classified damage whose type no spell
+profile matches (`derive` rolls an attack with dice derived from the vanilla amount).
 
 ## feedback
 

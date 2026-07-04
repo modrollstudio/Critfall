@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ItemProfile;
+import studio.modroll.critfall.dice.DiceExpression;
 
 class AttackDiceTest {
 
@@ -86,6 +87,56 @@ class AttackDiceTest {
         assertTrue(
                 AttackDice.resolve(Optional.empty(), Optional.of(acOnly), 3.0).isEmpty());
         assertTrue(AttackDice.resolve(Optional.empty(), Optional.empty(), 3.0).isEmpty());
+    }
+
+    private static final EntityProfile GHAST =
+            entity("{\"matches\": [\"minecraft:ghast\"], \"damage\": {\"ranged\": \"2d6\"}, \"crit_range\": 19}");
+
+    @Test
+    void launcherDiceGainBonusFromVanillaProjectileDamage() {
+        ItemProfile bow = item("{\"matches\": [\"minecraft:bow\"], \"damage\": \"1d8\"}");
+        // full-draw arrow: vanilla ~6, dice average 4.5 -> bonus round(1.5) = 2
+        AttackDice.Resolved resolved = AttackDice.resolveRanged(
+                        Optional.of(bow), Optional.empty(), Optional.empty(), 6.0)
+                .orElseThrow();
+        assertEquals("1d8+2", resolved.dice().toString());
+        assertEquals(20, resolved.critRange());
+    }
+
+    @Test
+    void ammoProfileDiceAreAddedOnTop() {
+        ItemProfile bow = item("{\"matches\": [\"minecraft:bow\"], \"damage\": \"1d8\", \"modifier_from\": \"none\"}");
+        AttackDice.Resolved resolved = AttackDice.resolveRanged(
+                        Optional.of(bow), Optional.of(DiceExpression.parse("1d4")), Optional.empty(), 6.0)
+                .orElseThrow();
+        assertEquals("1d8+1d4", resolved.dice().toString());
+    }
+
+    @Test
+    void entityRangedDiceUsedWhenNoLauncherProfile() {
+        AttackDice.Resolved resolved = AttackDice.resolveRanged(
+                        Optional.empty(), Optional.empty(), Optional.of(GHAST), 6.0)
+                .orElseThrow();
+        assertEquals("2d6", resolved.dice().toString());
+        assertEquals(19, resolved.critRange());
+    }
+
+    @Test
+    void launcherCritRangeBeatsEntityCritRange() {
+        ItemProfile sniper = item("{\"matches\": [\"minecraft:bow\"], \"damage\": \"1d8\", \"crit_range\": 18}");
+        AttackDice.Resolved resolved = AttackDice.resolveRanged(
+                        Optional.of(sniper), Optional.empty(), Optional.of(GHAST), 6.0)
+                .orElseThrow();
+        assertEquals(18, resolved.critRange());
+    }
+
+    @Test
+    void emptyWhenNeitherLauncherNorEntityProvidesRangedDice() {
+        EntityProfile meleeOnly = entity("{\"matches\": [\"minecraft:zombie\"], \"damage\": {\"melee\": \"1d6\"}}");
+        assertTrue(AttackDice.resolveRanged(Optional.empty(), Optional.empty(), Optional.of(meleeOnly), 6.0)
+                .isEmpty());
+        assertTrue(AttackDice.resolveRanged(Optional.empty(), Optional.empty(), Optional.empty(), 6.0)
+                .isEmpty());
     }
 
     @Test

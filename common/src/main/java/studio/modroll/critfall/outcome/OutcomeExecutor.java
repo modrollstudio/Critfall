@@ -51,9 +51,14 @@ public final class OutcomeExecutor {
 
     /**
      * Runs every referenced table whose trigger matches {@code result}. Table references come from
-     * the held weapon's item profile first, then the attacker's entity profile — same precedence
+     * the attack's weapon item profile first, then the attacker's entity profile — same precedence
      * as damage dice; both slots (fumble and crit) are always consulted because a slot may hold a
      * table with any trigger (e.g. a {@code miss_by_at_least} table in the fumble slot).
+     *
+     * @param weapon the HELD stack that weapon effects (durability, drop) act on — the main hand
+     *     for melee, whichever hand still holds the launcher for projectiles, or {@link
+     *     ItemStack#EMPTY} when nothing applicable is held (a thrown trident); weapon effects
+     *     then no-op
      */
     public static void run(
             LivingEntity attacker,
@@ -62,6 +67,7 @@ public final class OutcomeExecutor {
             DiceExpression damageDice,
             Rules rules,
             DiceRoller roller,
+            ItemStack weapon,
             Optional<ItemProfile> weaponProfile,
             Optional<EntityProfile> attackerProfile) {
         List<OutcomeTable> tables = new ArrayList<>(2);
@@ -93,7 +99,7 @@ public final class OutcomeExecutor {
                             table.trigger(),
                             attacker.getName().getString(),
                             effect);
-                    apply(effect, attacker, target, damageDice, rules, roller);
+                    apply(effect, attacker, target, weapon, damageDice, rules, roller);
                 } else {
                     Critfall.LOG.debug(
                             "Outcome table {} fired ({}) for {}: picked {} but it is disabled in rules.json",
@@ -120,15 +126,16 @@ public final class OutcomeExecutor {
             OutcomeEffect effect,
             LivingEntity attacker,
             LivingEntity target,
+            ItemStack weapon,
             DiceExpression damageDice,
             Rules rules,
             DiceRoller roller) {
         switch (effect) {
             case OutcomeEffect.Nothing ignored -> {}
-            case OutcomeEffect.DamageDurability ignored -> damageDurability(attacker, rules.fumbles());
+            case OutcomeEffect.DamageDurability ignored -> damageDurability(weapon, rules.fumbles());
             case OutcomeEffect.HitNearestAlly ally -> hitNearestAlly(attacker, target, ally, damageDice, rules, roller);
             case OutcomeEffect.SelfDamage self -> selfDamage(attacker, self, rules, roller);
-            case OutcomeEffect.DropWeapon ignored -> dropWeapon(attacker);
+            case OutcomeEffect.DropWeapon ignored -> dropWeapon(attacker, weapon);
             case OutcomeEffect.Stumble stumble ->
                 attacker.addEffect(new MobEffectInstance(
                         MobEffects.MOVEMENT_SLOWDOWN,
@@ -141,8 +148,7 @@ public final class OutcomeExecutor {
         }
     }
 
-    private static void damageDurability(LivingEntity attacker, Rules.Fumbles fumbles) {
-        ItemStack weapon = attacker.getMainHandItem();
+    private static void damageDurability(ItemStack weapon, Rules.Fumbles fumbles) {
         if (!weapon.isDamageableItem()) {
             return;
         }
@@ -237,16 +243,23 @@ public final class OutcomeExecutor {
         }
     }
 
-    private static void dropWeapon(LivingEntity attacker) {
-        ItemStack held = attacker.getMainHandItem();
-        if (held.isEmpty()) {
+    private static void dropWeapon(LivingEntity attacker, ItemStack weapon) {
+        if (weapon.isEmpty()) {
             return;
         }
-        attacker.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
+        // Identity, not equality: the effect drops the exact stack the attack used, from
+        // whichever hand still holds it.
+        InteractionHand hand = attacker.getItemInHand(InteractionHand.MAIN_HAND) == weapon
+                ? InteractionHand.MAIN_HAND
+                : InteractionHand.OFF_HAND;
+        if (attacker.getItemInHand(hand) != weapon) {
+            return;
+        }
+        attacker.setItemInHand(hand, ItemStack.EMPTY);
         if (attacker instanceof Player player) {
-            player.drop(held, false, true);
+            player.drop(weapon, false, true);
         } else {
-            attacker.spawnAtLocation(held);
+            attacker.spawnAtLocation(weapon);
         }
     }
 

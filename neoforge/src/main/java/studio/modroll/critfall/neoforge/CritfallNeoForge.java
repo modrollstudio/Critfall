@@ -32,6 +32,7 @@ public final class CritfallNeoForge {
         event.addListener(ProfileReloadListener.outcomeTables());
         event.addListener(ProfileReloadListener.entityProfiles());
         event.addListener(ProfileReloadListener.itemProfiles());
+        event.addListener(ProfileReloadListener.spellProfiles());
         event.addListener(new RulesReloadListener(rulesFile));
     }
 
