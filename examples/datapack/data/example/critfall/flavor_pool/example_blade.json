@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:netherite_sword"],
+  "priority": 10,
+  "lines": {
+    "crit": ["example.flavor.blade.crit.0", "example.flavor.blade.crit.1"],
+    "fumble": ["example.flavor.blade.fumble.0"],
+    "kill": ["example.flavor.blade.kill.0"]
+  }
+}

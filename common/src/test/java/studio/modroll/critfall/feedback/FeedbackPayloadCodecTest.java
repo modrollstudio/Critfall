@@ -1,6 +1,7 @@
 package studio.modroll.critfall.feedback;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.Unpooled;
 import java.util.List;
@@ -38,6 +39,24 @@ class FeedbackPayloadCodecTest {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         RollFeedbackPayload.STREAM_CODEC.encode(buf, payload);
         assertEquals(payload, RollFeedbackPayload.STREAM_CODEC.decode(buf));
+    }
+
+    @Test
+    void rollPayloadRoundTripsDryRunFlag() {
+        RollFeedbackPayload payload = new RollFeedbackPayload(
+                AttackOutcome.MISS, 1, 5, 14, 0, "2d6", false, Optional.empty(), List.of(), true);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        RollFeedbackPayload.STREAM_CODEC.encode(buf, payload);
+        assertTrue(RollFeedbackPayload.STREAM_CODEC.decode(buf).dryRun());
+    }
+
+    @Test
+    void savePayloadRoundTripsDryRunFlag() {
+        SaveFeedbackPayload payload = new SaveFeedbackPayload(
+                12, 15, 13, true, Rules.SaveOutcome.HALF, "2d6", 3, true, Optional.empty(), true);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        SaveFeedbackPayload.STREAM_CODEC.encode(buf, payload);
+        assertTrue(SaveFeedbackPayload.STREAM_CODEC.decode(buf).dryRun());
     }
 
     @Test

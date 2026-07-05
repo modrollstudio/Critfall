@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-05
+
 ### Added
+
+- Pack-dev tooling (M9): `/critfall generate [missing] [confirm]` scans every living entity type and weapon-like item and writes a complete, editable datapack of derived profiles to `<world>/datapacks/critfall_generated/` (run `/reload` to load). Overwriting an existing generated pack requires `confirm`; only the profile folders it owns are rewritten, and a `README.txt` + `pack.mcmeta` note that the files are regenerated. `missing` emits only ids no loaded profile matches. See `docs/commands.md`. (M9)
+- Coverage report (M9): `/critfall report` exports `entities-<timestamp>.csv/.json` and `items-<timestamp>.csv/.json` to `critfall-reports/`, listing every entity/item, whether an explicit profile or a fallback drives it, and the effective values — reviewable in a spreadsheet. (M9)
+- Dry-run mode (M9): `rules.json` `dry_run.enabled` computes and displays every roll while vanilla damage still applies and no outcome effect fires, so pack devs calibrate during normal play without breaking a pack. The readout is prefixed `dry-run · `. Consequences are suppressed entirely (effect and readout); it is for calibrating hit/damage math, not previewing which fumble effect would fire. (M9)
+- Three shipped `rules.json` presets in `examples/presets/` — **Tempered** (defaults), **Classic** (confirmation off, cooldown 0), **Lite** (crits/fumbles off) — with a parse-clean test. See `docs/presets.md`. (M9)
+- Documentation site content in `docs/` (index, quickstart, FAQ, presets, commands), an example datapack in `examples/datapack/` (tuned boss + custom blade + fumble table + flavor pool), and a `Publish` GitHub Actions workflow (`mc-publish`) that ships the NeoForge and Fabric jars to Modrinth, CurseForge, and the GitHub release on tag. A versioning policy is documented in `CONTRIBUTING.md`. (M9)
+
+### Added (pre-0.1.0 development)
 
 - Multiloader project scaffold: `common` + `neoforge` modules targeting NeoForge 1.21.1 (Java 21, ModDevGradle), Spotless formatting, GitHub Actions CI. (M0)
 - Dice engine (`studio.modroll.critfall.dice`): expression parser and roller supporting `NdM+K`, keep-highest/lowest (`kh`/`kl`), advantage/disadvantage, multi-term expressions, min/max bounds, per-die roll breakdown, and fully injectable RNG. No Minecraft dependencies. See `docs/dice-expressions.md`. (M1)

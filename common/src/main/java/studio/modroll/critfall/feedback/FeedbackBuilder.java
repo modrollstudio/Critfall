@@ -42,7 +42,8 @@ public final class FeedbackBuilder {
                 diceNotation,
                 showDamage,
                 flavor,
-                List.copyOf(consequences));
+                List.copyOf(consequences),
+                rules.dryRun().enabled());
     }
 
     public static SaveFeedbackPayload buildSave(
@@ -77,7 +78,8 @@ public final class FeedbackBuilder {
                 diceNotation,
                 damage,
                 showDamage,
-                flavor);
+                flavor,
+                rules.dryRun().enabled());
     }
 
     private static Optional<String> pickFlavor(

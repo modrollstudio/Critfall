@@ -1,0 +1,16 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:warden"],
+  "armor_class": 18,
+  "attack_bonus": 9,
+  "damage": { "melee": "3d8+4", "ranged": "2d10" },
+  "crit_range": 19,
+  "crit_table": "critfall:default_crit",
+  "save_bonus": 6,
+  "damage_modifiers": {
+    "resist": ["#minecraft:is_projectile"],
+    "immune": [],
+    "vulnerable": ["#minecraft:is_fire"]
+  },
+  "priority": 100
+}

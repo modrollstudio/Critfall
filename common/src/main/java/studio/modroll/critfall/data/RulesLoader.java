@@ -51,7 +51,8 @@ public final class RulesLoader {
               },
               "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
               "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20 } },
-              "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true }
+              "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true },
+              "dry_run": { "enabled": false }
             }
             """;
 
@@ -161,9 +162,19 @@ public final class RulesLoader {
         Rules.Balance balanceRules =
                 new Rules.Balance(multiplier, balance.getBool("disable_vanilla_armor_reduction", true));
 
+        Rules.DryRun dryRun = new Rules.DryRun(j.object("dry_run").getBool("enabled", false));
+
         j.finish();
         return new Rules(
-                attack, damageDice, critRules, fumbleRules, spellRules, fallbackRules, feedbackRules, balanceRules);
+                attack,
+                damageDice,
+                critRules,
+                fumbleRules,
+                spellRules,
+                fallbackRules,
+                feedbackRules,
+                balanceRules,
+                dryRun);
     }
 
     /**

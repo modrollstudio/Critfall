@@ -62,11 +62,11 @@ public final class CommandScenarios {
         return pig;
     }
 
-    private static CommandSourceStack serverSource(GameTestHelper helper) {
+    static CommandSourceStack serverSource(GameTestHelper helper) {
         return helper.getLevel().getServer().createCommandSourceStack().withSuppressedOutput();
     }
 
-    private static int execute(GameTestHelper helper, CommandSourceStack source, String command) {
+    static int execute(GameTestHelper helper, CommandSourceStack source, String command) {
         MinecraftServer server = helper.getLevel().getServer();
         try {
             return server.getCommands().getDispatcher().execute(command, source);

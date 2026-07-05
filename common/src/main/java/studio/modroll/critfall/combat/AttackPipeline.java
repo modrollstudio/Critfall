@@ -81,8 +81,18 @@ public final class AttackPipeline {
             CritfallEvents.fireFumble(attacker, target, ctx, result);
         }
 
-        List<ConsequenceLine> consequences = OutcomeExecutor.run(
-                attacker, target, result, params.damageDice(), rules, roller, weapon, weaponProfile, attackerProfile);
+        List<ConsequenceLine> consequences = rules.dryRun().enabled()
+                ? List.of()
+                : OutcomeExecutor.run(
+                        attacker,
+                        target,
+                        result,
+                        params.damageDice(),
+                        rules,
+                        roller,
+                        weapon,
+                        weaponProfile,
+                        attackerProfile);
         return new Bundle(result, consequences, true);
     }
 }

@@ -1,0 +1,31 @@
+{
+  "format_version": 1,
+  "attack_rolls": { "enabled": true, "players": true, "mobs": true, "projectiles": true, "spells": true },
+  "damage_dice": { "enabled": true },
+  "crits": {
+    "enabled": false,
+    "rule": "max_dice",
+    "nat20_always_hits": true,
+    "apply_effect": { "enabled": true },
+    "knockback": { "enabled": true }
+  },
+  "fumbles": {
+    "enabled": false,
+    "nat1_always_misses": true,
+    "confirmation_roll": { "enabled": true, "dc": 10 },
+    "cooldown_ticks": 200,
+    "durability_break": { "enabled": true, "mode": "set_to_1", "percent": 25 },
+    "hit_nearest_ally": { "enabled": true, "radius": 4, "can_hit_players": true, "respect_pvp_rules": true },
+    "self_damage": { "enabled": false, "dice": "1d4" },
+    "drop_weapon": { "enabled": false },
+    "stumble": { "enabled": false, "slowness_ticks": 40 },
+    "applies_to": "players_and_mobs"
+  },
+  "spells": {
+    "saves": { "enabled": true, "default_dc": 13, "on_success": "half" }
+  },
+  "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
+  "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20 } },
+  "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true },
+  "dry_run": { "enabled": false }
+}

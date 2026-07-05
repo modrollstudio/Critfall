@@ -25,8 +25,33 @@ public record RollFeedbackPayload(
         String diceNotation,
         boolean showDamage,
         Optional<String> flavorKey,
-        List<ConsequenceLine> consequences)
+        List<ConsequenceLine> consequences,
+        boolean dryRun)
         implements CustomPacketPayload {
+
+    /** Convenience for the common non-dry-run case (and the M6 tests that predate the flag). */
+    public RollFeedbackPayload(
+            AttackOutcome outcome,
+            int natural,
+            int attackTotal,
+            int armorClass,
+            int damage,
+            String diceNotation,
+            boolean showDamage,
+            Optional<String> flavorKey,
+            List<ConsequenceLine> consequences) {
+        this(
+                outcome,
+                natural,
+                attackTotal,
+                armorClass,
+                damage,
+                diceNotation,
+                showDamage,
+                flavorKey,
+                consequences,
+                false);
+    }
 
     public static final Type<RollFeedbackPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "roll_feedback"));
@@ -49,6 +74,7 @@ public record RollFeedbackPayload(
         buf.writeBoolean(p.showDamage);
         buf.writeOptional(p.flavorKey, FriendlyByteBuf::writeUtf);
         buf.writeCollection(p.consequences, RollFeedbackPayload::writeLine);
+        buf.writeBoolean(p.dryRun);
     }
 
     private static RollFeedbackPayload decode(FriendlyByteBuf buf) {
@@ -61,8 +87,18 @@ public record RollFeedbackPayload(
         boolean showDamage = buf.readBoolean();
         Optional<String> flavor = buf.readOptional(FriendlyByteBuf::readUtf);
         List<ConsequenceLine> lines = buf.readList(RollFeedbackPayload::readLine);
+        boolean dryRun = buf.readBoolean();
         return new RollFeedbackPayload(
-                outcome, natural, attackTotal, armorClass, damage, dice, showDamage, flavor, List.copyOf(lines));
+                outcome,
+                natural,
+                attackTotal,
+                armorClass,
+                damage,
+                dice,
+                showDamage,
+                flavor,
+                List.copyOf(lines),
+                dryRun);
     }
 
     static void writeLine(FriendlyByteBuf buf, ConsequenceLine line) {

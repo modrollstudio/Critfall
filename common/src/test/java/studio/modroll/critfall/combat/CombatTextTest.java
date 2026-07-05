@@ -30,6 +30,13 @@ class CombatTextTest {
     }
 
     @Test
+    void dryRunActionBarIsPrefixed() {
+        RollFeedbackPayload payload = new RollFeedbackPayload(
+                AttackOutcome.MISS, 1, 5, 14, 0, "2d6", false, Optional.empty(), List.of(), true);
+        assertTrue(CombatText.actionBar(payload).getString().startsWith("dry-run · "), "expected dry-run prefix");
+    }
+
+    @Test
     void savedNatOneReadsAsNoFumble() {
         RollFeedbackPayload payload =
                 new RollFeedbackPayload(AttackOutcome.MISS, 1, 4, 14, 0, "1d8", true, Optional.empty(), List.of());

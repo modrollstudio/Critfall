@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:netherite_sword"],
+  "damage": "1d10",
+  "modifier_from": "attack_damage_attribute",
+  "crit_range": 19,
+  "fumble_table": "example:example_fumble",
+  "crit_table": "critfall:default_crit",
+  "properties": ["finesse"]
+}

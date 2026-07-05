@@ -54,6 +54,10 @@ public final class DamageInterception {
         if (!rules.attackRolls().enabled()) {
             return;
         }
+        if (rules.dryRun().enabled()) {
+            // Compute and report the roll, but no mutator lands — the vanilla damage stands.
+            dmg = new DryRunDamage(dmg);
+        }
         switch (DamageClassifier.classify(source)) {
             case MELEE -> rollMelee(dmg, rules, source, target);
             case PROJECTILE -> rollProjectile(dmg, rules, source, target);

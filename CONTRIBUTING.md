@@ -21,7 +21,10 @@ Thanks for your interest! Critfall is MIT-licensed and contributions are welcome
 | ----------- | --------------------------------------------------------------------------- |
 | `common/`   | Loader-agnostic code (game logic, dice engine, data formats). No loader APIs. |
 | `neoforge/` | NeoForge entrypoint, event hooks, loader-specific wiring.                    |
-| `fabric/`   | Planned (milestone M8). Keep `common/` loader-agnostic so it stays cheap.    |
+| `fabric/`   | Fabric entrypoint and hooks. Keep `common/` loader-agnostic so it stays cheap. |
+
+The GameTest suite lives once in `common/src/gametest` and runs on both loaders:
+`./gradlew :neoforge:runGameTestServer` and `./gradlew :fabric:runGametest`.
 
 ## Ground rules
 
@@ -33,6 +36,17 @@ These are enforced in review (see `PLAN.md` for the full spec):
 - **API stability.** Public API lives in `studio.modroll.critfall.api`. Never break it without a major version bump.
 - **Feature flags.** Every mechanic must be individually toggleable via `rules.json`; turning a flag off must cleanly restore vanilla behavior for that mechanic only.
 - **Server-authoritative.** All rolls happen server-side; the client module is feedback-only and optional.
+
+## Versioning
+
+- The mod follows [Semantic Versioning](https://semver.org/). Breaking changes to the public API
+  (`studio.modroll.critfall.api`) require a **major** version bump — never break it in a minor or patch.
+- Every config and datapack JSON carries a `format_version`. When a format changes incompatibly,
+  bump its `format_version` and add a migration so old files keep loading; unknown keys always warn
+  rather than crash, so additive changes are safe.
+- Releases are cut by tagging `vX.Y.Z` (matching `mod_version` in `gradle.properties`) and publishing
+  a GitHub release — the `Publish` workflow then uploads to Modrinth and CurseForge. Move the
+  `CHANGELOG.md` `[Unreleased]` section under the new version with the release date.
 
 ## Code style
 

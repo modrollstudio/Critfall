@@ -41,7 +41,7 @@ public final class CombatText {
         for (ConsequenceLine consequence : p.consequences()) {
             line.append(" — ").append(translate(consequence));
         }
-        return line;
+        return withDryRun(p.dryRun(), line);
     }
 
     /** Renders a resolved saving throw's feedback payload into a single action-bar {@link Component}. */
@@ -65,7 +65,12 @@ public final class CombatText {
                 line.append(Component.literal(" " + p.damage()));
             }
         }
-        return line;
+        return withDryRun(p.dryRun(), line);
+    }
+
+    /** Prepends the dry-run marker so a calibrating dev never mistakes a shown roll for a real hit. */
+    private static Component withDryRun(boolean dryRun, MutableComponent line) {
+        return dryRun ? Component.literal("dry-run · ").append(line) : line;
     }
 
     private static void appendDamage(MutableComponent line, RollFeedbackPayload p) {

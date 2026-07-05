@@ -19,9 +19,26 @@ public record Rules(
         Spells spells,
         Fallbacks fallbacks,
         Feedback feedback,
-        Balance balance) {
+        Balance balance,
+        DryRun dryRun) {
 
     public static final int FORMAT_VERSION = 1;
+
+    /**
+     * Convenience constructor for call sites that predate dry-run (all tests/GameTests build
+     * combat rules without it) — dry-run defaults off, so behaviour is unchanged.
+     */
+    public Rules(
+            AttackRolls attackRolls,
+            boolean damageDice,
+            Crits crits,
+            Fumbles fumbles,
+            Spells spells,
+            Fallbacks fallbacks,
+            Feedback feedback,
+            Balance balance) {
+        this(attackRolls, damageDice, crits, fumbles, spells, fallbacks, feedback, balance, DryRun.DEFAULTS);
+    }
 
     public record AttackRolls(boolean enabled, boolean players, boolean mobs, boolean projectiles, boolean spells) {
         public static final AttackRolls DEFAULTS = new AttackRolls(true, true, true, true, true);
@@ -180,6 +197,11 @@ public record Rules(
 
     public record Balance(double globalDamageMultiplier, boolean disableVanillaArmorReduction) {
         public static final Balance DEFAULTS = new Balance(1.0, true);
+    }
+
+    /** PLAN §8.2.3 dry-run: rolls are computed and shown but vanilla damage still applies. */
+    public record DryRun(boolean enabled) {
+        public static final DryRun DEFAULTS = new DryRun(false);
     }
 
     public static final Rules DEFAULTS = new Rules(

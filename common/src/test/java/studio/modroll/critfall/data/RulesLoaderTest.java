@@ -34,6 +34,17 @@ class RulesLoaderTest {
     }
 
     @Test
+    void parsesDryRunEnabled() {
+        Rules rules = RulesLoader.parse(json("{\"dry_run\":{\"enabled\":true}}"), w -> {});
+        assertTrue(rules.dryRun().enabled());
+    }
+
+    @Test
+    void dryRunDefaultsOff() {
+        assertFalse(RulesLoader.parse(json("{}"), w -> {}).dryRun().enabled());
+    }
+
+    @Test
     void flagsTurnOff() {
         Rules rules = RulesLoader.parse(json("""
                         {

@@ -2,7 +2,7 @@
 
 Tabletop-style d20 combat for Minecraft. Every hit rolls to attack against the target's Armor Class; damage comes from dice, nat 20s crit, nat 1s fumble — and every value and mechanic is data-driven so modpack developers can tune it for any mob, boss, weapon, or spell from any mod.
 
-> ⚠️ Early development. Not yet released.
+> **0.1.0** — first release, for NeoForge and Fabric on Minecraft 1.21.1. See the [changelog](CHANGELOG.md).
 
 ## For players
 - Attacks roll `d20 + bonus` vs the target's AC. Miss = no damage.
@@ -13,8 +13,9 @@ Tabletop-style d20 combat for Minecraft. Every hit rolls to attack against the t
 ## For modpack developers
 - Works out of the box in any pack: unknown mobs/weapons get derived stats from their attributes.
 - `/critfall generate` dumps a complete editable datapack for every mob and weapon in your pack.
-- Dry-run mode, live tuning commands, coverage reports, JSON schemas.
-- See `docs/` (coming with M3) and PLAN.md for the full design.
+- `/critfall report` exports a CSV/JSON coverage sheet; `/critfall inspect` and `check` show which profile won.
+- Dry-run mode calibrates rolls while vanilla damage still applies. Three presets: Tempered, Classic, Lite.
+- Start with the [quickstart](docs/quickstart.md); full docs in [docs/](docs/README.md).
 
 ## For mod developers
 - Java API in `studio.modroll.critfall.api`: pre/post roll events, `RollService`, dice expression parser.
