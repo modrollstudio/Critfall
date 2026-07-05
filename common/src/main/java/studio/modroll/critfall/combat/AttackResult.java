@@ -14,4 +14,9 @@ public record AttackResult(AttackOutcome outcome, int natural, int attackTotal, 
     public boolean isHit() {
         return outcome == AttackOutcome.HIT || outcome == AttackOutcome.CRIT;
     }
+
+    /** A copy with the damage replaced — used to apply {@code PostAttackRollEvent} adjustments. */
+    public AttackResult withDamage(int newDamage) {
+        return new AttackResult(outcome, natural, attackTotal, armorClass, newDamage);
+    }
 }

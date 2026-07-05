@@ -1,0 +1,186 @@
+package studio.modroll.critfall.api;
+
+import java.util.List;
+import java.util.Optional;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemStack;
+import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.combat.AttackDice;
+import studio.modroll.critfall.combat.AttackPipeline;
+import studio.modroll.critfall.combat.AttackResult;
+import studio.modroll.critfall.combat.CombatEngine;
+import studio.modroll.critfall.combat.Derivation;
+import studio.modroll.critfall.combat.Rules;
+import studio.modroll.critfall.data.EntityProfile;
+import studio.modroll.critfall.data.ItemProfile;
+import studio.modroll.critfall.data.ProfileLookup;
+import studio.modroll.critfall.dice.DiceExpression;
+import studio.modroll.critfall.dice.DiceRoller;
+import studio.modroll.critfall.dice.RollResult;
+import studio.modroll.critfall.feedback.ConsequenceLine;
+import studio.modroll.critfall.feedback.FeedbackBuilder;
+import studio.modroll.critfall.feedback.FeedbackSink;
+import studio.modroll.critfall.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.outcome.OutcomeExecutor;
+
+/**
+ * The public entry point for driving and observing Critfall combat (PLAN §4.4/§12). Other mods and
+ * KubeJS scripts use this: roll dice, run a full attack, query effective profiles, suppress the
+ * automatic pipeline for entities an orchestrator owns, and emit feedback. All rolls go through the
+ * injectable combat roller — this class adds no randomness of its own.
+ */
+public final class RollService {
+
+    private RollService() {}
+
+    public static RollResult roll(String expression) {
+        return RollRuntime.roller().roll(expression);
+    }
+
+    public static RollResult roll(DiceExpression expression) {
+        return RollRuntime.roller().roll(expression);
+    }
+
+    public static DiceRoller roller() {
+        return RollRuntime.roller();
+    }
+
+    public static DiceRoller feedbackRoller() {
+        return RollRuntime.feedbackRoller();
+    }
+
+    public static void suppress(Entity entity) {
+        CombatSuppression.suppress(entity.getUUID());
+    }
+
+    public static void release(Entity entity) {
+        CombatSuppression.release(entity.getUUID());
+    }
+
+    public static boolean isSuppressed(Entity entity) {
+        return CombatSuppression.isSuppressed(entity.getUUID());
+    }
+
+    public static EffectiveEntityProfile effectiveEntity(LivingEntity entity) {
+        return EffectiveEntityProfile.of(
+                ProfileLookup.forEntity(entity),
+                entity.getAttributeValue(Attributes.ARMOR),
+                entity.getAttributeValue(Attributes.ARMOR_TOUGHNESS),
+                entity.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE)
+                        ? entity.getAttributeValue(Attributes.ATTACK_DAMAGE)
+                        : 0.0);
+    }
+
+    public static EffectiveItemProfile effectiveItem(ItemStack stack) {
+        return EffectiveItemProfile.of(ProfileLookup.forItem(stack), 0.0);
+    }
+
+    public static CombatEngine.SaveResult savingThrow(LivingEntity target, int saveBonus, int dc) {
+        return CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc);
+    }
+
+    public static List<ConsequenceLine> fireOutcomes(
+            LivingEntity attacker,
+            LivingEntity target,
+            AttackResult result,
+            DiceExpression damageDice,
+            ItemStack weapon) {
+        return OutcomeExecutor.run(
+                attacker,
+                target,
+                result,
+                damageDice,
+                RollRuntime.rules(),
+                RollRuntime.roller(),
+                weapon,
+                ProfileLookup.forItem(weapon),
+                ProfileLookup.forEntity(attacker));
+    }
+
+    public static void sendRollFeedback(LivingEntity attacker, LivingEntity target, RollFeedbackPayload payload) {
+        FeedbackSink.get()
+                .roll(attacker, target, payload, RollRuntime.rules().feedback().visibility());
+    }
+
+    /** Resolves an attack (fires the pre/post/crit/fumble events) WITHOUT applying damage or feedback. */
+    public static AttackResult attackRoll(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
+        return resolve(attacker, target, ctx).result();
+    }
+
+    /**
+     * Drives a full attack: rolls, applies damage, runs outcome tables, and emits feedback. The
+     * caller should {@link #suppress} the participants first so the automatic pipeline does not also
+     * roll on the resulting {@code hurt}. Returns the resolved {@link AttackResult}.
+     */
+    public static AttackResult performAttack(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
+        AttackPipeline.Bundle bundle = resolve(attacker, target, ctx);
+        AttackResult result = bundle.result();
+        if (!bundle.apply()) {
+            return result; // canceled/vetoed by a listener
+        }
+        Rules rules = RollRuntime.rules();
+        if (result.isHit() && result.damage() > 0) {
+            target.hurt(ctx.source(), result.damage());
+        }
+        boolean isKill = result.isHit() && !target.isAlive();
+        RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
+                result,
+                isKill,
+                damageDice(attacker, ctx).toString(),
+                rules.damageDice(),
+                bundle.consequences(),
+                ProfileLookup.forFlavor(ctx.weapon()),
+                rules,
+                RollRuntime.feedbackRoller(),
+                target.getUUID(),
+                target.level().getGameTime());
+        FeedbackSink.get().roll(attacker, target, payload, rules.feedback().visibility());
+        return result;
+    }
+
+    private static AttackPipeline.Bundle resolve(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
+        EffectiveEntityProfile targetEff = effectiveEntity(target);
+        EffectiveEntityProfile attackerEff = effectiveEntity(attacker);
+        int attackBonus = ctx.attackBonusOverride().orElse(attackerEff.attackBonus());
+        DiceExpression dice = damageDice(attacker, ctx);
+        int critRange = critRange(attacker, ctx);
+        return AttackPipeline.resolve(
+                attacker,
+                target,
+                ctx,
+                new AttackPipeline.Params(attackBonus, targetEff.armorClass(), dice, critRange, ctx.mode(), false),
+                RollRuntime.rules(),
+                RollRuntime.roller(),
+                ctx.weapon(),
+                ProfileLookup.forItem(ctx.weapon()),
+                ProfileLookup.forEntity(attacker));
+    }
+
+    /** The damage dice: explicit override, else item profile, else entity profile (by delivery), else derived. */
+    private static DiceExpression damageDice(LivingEntity attacker, AttackContext ctx) {
+        if (ctx.damageDiceOverride().isPresent()) {
+            return ctx.damageDiceOverride().get();
+        }
+        Optional<ItemProfile> item = ProfileLookup.forItem(ctx.weapon());
+        double attackDamage = attacker.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE)
+                ? attacker.getAttributeValue(Attributes.ATTACK_DAMAGE)
+                : 0.0;
+        // Empty entity so the resolver yields the ITEM dice only — we then apply the correct entity
+        // dice by delivery (melee vs. ranged), which AttackDice.resolve does not distinguish.
+        Optional<DiceExpression> itemDice = AttackDice.resolve(item, Optional.<EntityProfile>empty(), attackDamage)
+                .map(AttackDice.Resolved::dice);
+        EffectiveEntityProfile eff = effectiveEntity(attacker);
+        Optional<DiceExpression> entityDice = ctx.isRanged() ? eff.rangedDamage() : eff.meleeDamage();
+        return itemDice.or(() -> entityDice).orElseGet(() -> Derivation.damageDice(Math.max(1.0, attackDamage)));
+    }
+
+    private static int critRange(LivingEntity attacker, AttackContext ctx) {
+        Optional<ItemProfile> item = ProfileLookup.forItem(ctx.weapon());
+        if (item.isPresent() && item.get().critRange().isPresent()) {
+            return item.get().critRange().getAsInt();
+        }
+        return effectiveEntity(attacker).critRange();
+    }
+}

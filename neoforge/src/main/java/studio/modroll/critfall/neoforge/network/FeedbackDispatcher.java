@@ -92,4 +92,27 @@ public final class FeedbackDispatcher {
         lastRollPayload = null;
         actionBarSink = (player, text) -> player.displayClientMessage(text, true);
     }
+
+    /** Adapts the dispatcher to the common {@link studio.modroll.critfall.feedback.FeedbackSink} seam. */
+    public static studio.modroll.critfall.feedback.FeedbackSink asSink() {
+        return new studio.modroll.critfall.feedback.FeedbackSink() {
+            @Override
+            public void roll(
+                    LivingEntity attacker,
+                    LivingEntity target,
+                    RollFeedbackPayload payload,
+                    Rules.FeedbackVisibility visibility) {
+                dispatchRoll(attacker, target, payload, visibility);
+            }
+
+            @Override
+            public void save(
+                    LivingEntity attacker,
+                    LivingEntity target,
+                    SaveFeedbackPayload payload,
+                    Rules.FeedbackVisibility visibility) {
+                dispatchSave(attacker, target, payload, visibility);
+            }
+        };
+    }
 }

@@ -10,7 +10,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import studio.modroll.critfall.Critfall;
-import studio.modroll.critfall.RollService;
+import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.command.CritfallCommands;
 import studio.modroll.critfall.data.ProfileReloadListener;
 import studio.modroll.critfall.data.RulesLoader;
@@ -26,7 +26,11 @@ public final class CritfallNeoForge {
 
     public CritfallNeoForge(IEventBus modBus) {
         Critfall.init();
-        RollService.setRules(RulesLoader.load(rulesFile));
+        RollRuntime.setRules(RulesLoader.load(rulesFile));
+        studio.modroll.critfall.feedback.FeedbackSink.set(
+                studio.modroll.critfall.neoforge.network.FeedbackDispatcher.asSink());
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppingEvent e) ->
+                studio.modroll.critfall.api.CombatSuppression.clear());
         NeoForge.EVENT_BUS.addListener(DamageEventHandler::onIncomingDamage);
         NeoForge.EVENT_BUS.addListener(this::onAddReloadListeners);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);

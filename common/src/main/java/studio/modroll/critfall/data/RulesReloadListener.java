@@ -3,7 +3,7 @@ package studio.modroll.critfall.data;
 import java.nio.file.Path;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import studio.modroll.critfall.RollService;
+import studio.modroll.critfall.RollRuntime;
 
 /**
  * Re-reads {@code config/critfall/rules.json} whenever datapacks reload, making the rules config
@@ -13,6 +13,6 @@ public record RulesReloadListener(Path rulesFile) implements ResourceManagerRelo
 
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
-        RollService.setRules(RulesLoader.load(rulesFile));
+        RollRuntime.setRules(RulesLoader.load(rulesFile));
     }
 }

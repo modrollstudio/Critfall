@@ -12,8 +12,12 @@ import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.damagesource.DamageContainer;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import studio.modroll.critfall.RollService;
+import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.AttackContext;
+import studio.modroll.critfall.api.AttackDelivery;
+import studio.modroll.critfall.api.CombatSuppression;
 import studio.modroll.critfall.combat.AttackDice;
+import studio.modroll.critfall.combat.AttackPipeline;
 import studio.modroll.critfall.combat.AttackResult;
 import studio.modroll.critfall.combat.CombatEngine;
 import studio.modroll.critfall.combat.DamageClassifier;
@@ -28,9 +32,9 @@ import studio.modroll.critfall.dice.DiceExpression;
 import studio.modroll.critfall.dice.RollMode;
 import studio.modroll.critfall.feedback.ConsequenceLine;
 import studio.modroll.critfall.feedback.FeedbackBuilder;
+import studio.modroll.critfall.feedback.FeedbackSink;
 import studio.modroll.critfall.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
-import studio.modroll.critfall.neoforge.network.FeedbackDispatcher;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
@@ -53,17 +57,29 @@ public final class DamageEventHandler {
         if (OutcomeExecutor.isApplyingEffects()) {
             return; // damage dealt BY an outcome effect (redirected swing, self damage) never re-rolls
         }
-        Rules rules = RollService.rules();
+        DamageSource source = event.getSource();
+        if (isSuppressed(source, target)) {
+            return; // an orchestrator (§12) owns this entity's combat — auto pipeline stands down
+        }
+        Rules rules = RollRuntime.rules();
         if (!rules.attackRolls().enabled()) {
             return;
         }
-        DamageSource source = event.getSource();
         switch (DamageClassifier.classify(source)) {
             case MELEE -> rollMelee(event, rules, source, target);
             case PROJECTILE -> rollProjectile(event, rules, source, target);
             case SPELL -> rollSpell(event, rules, source, target);
             case EXEMPT, ALWAYS_HITS, ENVIRONMENTAL -> {} // vanilla passthrough
         }
+    }
+
+    /** True when the target or the (living) attacker is externally suppressed (PLAN §12). */
+    private static boolean isSuppressed(DamageSource source, LivingEntity target) {
+        if (CombatSuppression.isSuppressed(target.getUUID())) {
+            return true;
+        }
+        return source.getEntity() != null
+                && CombatSuppression.isSuppressed(source.getEntity().getUUID());
     }
 
     private static void rollMelee(
@@ -292,13 +308,13 @@ public final class DamageEventHandler {
         int dc = profile.saveDc().orElse(saves.defaultDc());
         Rules.SaveOutcome onSuccess = profile.onSuccess().orElse(saves.onSuccess());
         int saveBonus = intStat(targetProfile.map(EntityProfile::saveBonus), () -> 0);
-        CombatEngine.SaveResult save = CombatEngine.resolveSave(RollService.roller(), saveBonus, dc);
+        CombatEngine.SaveResult save = CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc);
 
         boolean useDice = rules.damageDice() && profile.damage().isPresent();
         float damage;
         if (useDice) {
             damage = Math.max(
-                    0, RollService.roller().roll(profile.damage().get()).total());
+                    0, RollRuntime.roller().roll(profile.damage().get()).total());
             damage *= targetProfile
                     .map(p -> ProfileLookup.damageMultiplier(p, source))
                     .orElse(1.0f);
@@ -332,11 +348,10 @@ public final class DamageEventHandler {
                 useDice || save.saved(),
                 ProfileLookup.forFlavor(attacker.getMainHandItem()),
                 rules,
-                RollService.feedbackRoller(),
+                RollRuntime.feedbackRoller(),
                 target.getUUID(),
                 target.level().getGameTime());
-        FeedbackDispatcher.dispatchSave(
-                attacker, target, payload, rules.feedback().visibility());
+        FeedbackSink.get().save(attacker, target, payload, rules.feedback().visibility());
     }
 
     private static void rollAndApply(
@@ -364,11 +379,29 @@ public final class DamageEventHandler {
                 || FumbleCooldowns.isOnCooldown(
                         attacker.getUUID(), gameTime, rules.fumbles().cooldownTicks());
 
-        AttackResult result = CombatEngine.resolveAttack(
-                RollService.roller(),
+        AttackContext ctx = new AttackContext(
+                deliveryOf(source),
+                source,
+                weaponStack,
+                RollMode.NORMAL,
+                java.util.OptionalInt.empty(),
+                Optional.empty());
+        AttackPipeline.Bundle bundle = AttackPipeline.resolve(
+                attacker,
+                target,
+                ctx,
+                new AttackPipeline.Params(
+                        attackBonus, armorClass, damageDice, critRange, RollMode.NORMAL, fumbleSuppressed),
                 rules,
-                new CombatEngine.AttackInput(
-                        attackBonus, armorClass, RollMode.NORMAL, damageDice, critRange, fumbleSuppressed));
+                RollRuntime.roller(),
+                weaponStack,
+                weaponProfile,
+                attackerProfile);
+        AttackResult result = bundle.result();
+        if (!bundle.apply()) {
+            event.setCanceled(true); // a listener canceled/vetoed: no damage, no feedback
+            return;
+        }
 
         switch (result.outcome()) {
             case MISS -> event.setCanceled(true);
@@ -391,19 +424,8 @@ public final class DamageEventHandler {
                 }
             }
         }
-        // Runs for every outcome: fumble/crit tables fire on nat 1/nat 20, and pack-authored
-        // tables may trigger on miss margins or roll ranges.
-        List<ConsequenceLine> consequences = OutcomeExecutor.run(
-                attacker,
-                target,
-                result,
-                damageDice,
-                rules,
-                RollService.roller(),
-                weaponStack,
-                weaponProfile,
-                attackerProfile);
 
+        List<ConsequenceLine> consequences = bundle.consequences();
         // Approximation, documented: predicts the kill from the damage THIS hit will apply, before
         // any later mitigators (other mods' post-hoc reductions). Good enough for flavor gating.
         boolean isKill =
@@ -416,11 +438,19 @@ public final class DamageEventHandler {
                 consequences,
                 ProfileLookup.forFlavor(weaponStack),
                 rules,
-                RollService.feedbackRoller(),
+                RollRuntime.feedbackRoller(),
                 target.getUUID(),
                 target.level().getGameTime());
-        FeedbackDispatcher.dispatchRoll(
-                attacker, target, payload, rules.feedback().visibility());
+        FeedbackSink.get().roll(attacker, target, payload, rules.feedback().visibility());
+    }
+
+    /** Maps the classified category onto the public delivery enum for event context (issue #9). */
+    private static AttackDelivery deliveryOf(DamageSource source) {
+        return switch (DamageClassifier.classify(source)) {
+            case PROJECTILE -> AttackDelivery.PROJECTILE;
+            case SPELL -> AttackDelivery.SPELL;
+            default -> AttackDelivery.MELEE;
+        };
     }
 
     /**

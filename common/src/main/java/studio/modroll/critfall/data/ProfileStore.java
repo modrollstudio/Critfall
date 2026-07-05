@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 /**
  * The loaded datapack state, swapped atomically on every (re)load. Reads happen on the server
  * thread mid-combat; loads happen from {@code /reload} — hence immutable snapshots behind
- * volatile fields, same pattern as {@link studio.modroll.critfall.RollService}.
+ * volatile fields, same pattern as {@link studio.modroll.critfall.RollRuntime}.
  */
 public final class ProfileStore {
 

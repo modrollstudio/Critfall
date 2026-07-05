@@ -24,7 +24,7 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import studio.modroll.critfall.RollService;
+import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.combat.AttackDice;
 import studio.modroll.critfall.combat.Derivation;
 import studio.modroll.critfall.combat.Rules;
@@ -106,7 +106,7 @@ public final class CritfallCommands {
                     "  Profile: " + profile.get().id() + " (priority "
                             + profile.get().priority() + ")");
         } else {
-            Rules.FallbackMode mode = RollService.rules().fallbacks().unknownEntity();
+            Rules.FallbackMode mode = RollRuntime.rules().fallbacks().unknownEntity();
             send(
                     source,
                     "  Profile: none matched — "
@@ -186,7 +186,7 @@ public final class CritfallCommands {
             send(
                     source,
                     "  Profile: none matched — "
-                            + (RollService.rules().fallbacks().unknownWeapon() == Rules.FallbackMode.DERIVE
+                            + (RollRuntime.rules().fallbacks().unknownWeapon() == Rules.FallbackMode.DERIVE
                                     ? "damage dice derived per-hit (or the attacker's entity profile applies)"
                                     : "unknown_weapon=vanilla_passthrough, attacks with it stay vanilla"));
             return 1;

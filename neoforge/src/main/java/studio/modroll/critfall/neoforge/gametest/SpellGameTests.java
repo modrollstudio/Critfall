@@ -19,7 +19,7 @@ import net.minecraft.world.entity.monster.Husk;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import studio.modroll.critfall.Critfall;
-import studio.modroll.critfall.RollService;
+import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.EntityProfile;
@@ -272,9 +272,9 @@ public class SpellGameTests {
 
     private static void withRolls(GameTestHelper helper, Rules rules, Runnable action, int... faces) {
         ScriptedRandom scripted = ScriptedRandom.ofDieFaces(faces);
-        Rules before = RollService.rules();
-        RollService.setRoller(new DiceRoller(scripted));
-        RollService.setRules(rules);
+        Rules before = RollRuntime.rules();
+        RollRuntime.setRoller(new DiceRoller(scripted));
+        RollRuntime.setRules(rules);
         FumbleCooldowns.clear();
         try {
             action.run();
@@ -282,8 +282,8 @@ public class SpellGameTests {
                 helper.fail("fewer dice were rolled than scripted");
             }
         } finally {
-            RollService.setRoller(new DiceRoller(new Random()));
-            RollService.setRules(before);
+            RollRuntime.setRoller(new DiceRoller(new Random()));
+            RollRuntime.setRules(before);
             FumbleCooldowns.clear();
         }
     }

@@ -10,7 +10,7 @@ import studio.modroll.critfall.dice.DiceRoller;
  * asks this service for its roller, and tests/GameTests swap in a scripted one to force exact
  * rolls.
  */
-public final class RollService {
+public final class RollRuntime {
 
     private static volatile DiceRoller roller = new DiceRoller(new Random());
 
@@ -23,7 +23,7 @@ public final class RollService {
 
     private static volatile Rules rules = Rules.DEFAULTS;
 
-    private RollService() {}
+    private RollRuntime() {}
 
     public static DiceRoller roller() {
         return roller;
