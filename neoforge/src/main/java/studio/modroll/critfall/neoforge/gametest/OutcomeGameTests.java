@@ -32,14 +32,20 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.RollService;
+import studio.modroll.critfall.combat.AttackOutcome;
+import studio.modroll.critfall.combat.AttackResult;
 import studio.modroll.critfall.combat.Derivation;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.OutcomeEffect;
 import studio.modroll.critfall.data.OutcomeTable;
+import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.data.ProfileStore;
 import studio.modroll.critfall.data.Trigger;
+import studio.modroll.critfall.dice.DiceExpression;
 import studio.modroll.critfall.dice.DiceRoller;
+import studio.modroll.critfall.feedback.ConsequenceLine;
+import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
  * End-to-end tests of the M4 outcome-table executor with forced nat 1 / nat 20 rolls. Custom
@@ -369,6 +375,35 @@ public class OutcomeGameTests {
                             }
                         },
                         1));
+        helper.succeed();
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void fumbleReturnsDurabilityConsequence(GameTestHelper helper) {
+        Husk husk = spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = spawnCalm(helper, EntityType.PIG, 3, 3);
+        husk.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+        withRolls(
+                helper,
+                Rules.DEFAULTS,
+                () -> {
+                    // nat 1 (miss) then confirmation d20 = 2 (< DC 10) -> confirmed fumble
+                    AttackResult result = new AttackResult(AttackOutcome.FUMBLE, 1, 4, 10, 0);
+                    List<ConsequenceLine> lines = OutcomeExecutor.run(
+                            husk,
+                            pig,
+                            result,
+                            DiceExpression.parse("1d8"),
+                            Rules.DEFAULTS,
+                            RollService.roller(),
+                            husk.getMainHandItem(),
+                            ProfileLookup.forItem(husk.getMainHandItem()),
+                            ProfileLookup.forEntity(husk));
+                    if (lines.stream().noneMatch(l -> l.key().equals(ConsequenceLine.DURABILITY_BROKEN))) {
+                        helper.fail("fumble should report the durability_broken consequence, got " + lines);
+                    }
+                },
+                1);
         helper.succeed();
     }
 

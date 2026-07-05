@@ -17,6 +17,7 @@ public final class ProfileStore {
     private static volatile Map<ResourceLocation, ItemProfile> itemProfiles = Map.of();
     private static volatile Map<ResourceLocation, SpellProfile> spellProfiles = Map.of();
     private static volatile Map<ResourceLocation, OutcomeTable> outcomeTables = Map.of();
+    private static volatile Map<ResourceLocation, FlavorPool> flavorPools = Map.of();
 
     private ProfileStore() {}
 
@@ -36,6 +37,10 @@ public final class ProfileStore {
         outcomeTables = Map.copyOf(tables);
     }
 
+    public static void setFlavorPools(Map<ResourceLocation, FlavorPool> pools) {
+        flavorPools = Map.copyOf(pools);
+    }
+
     public static Map<ResourceLocation, EntityProfile> entityProfiles() {
         return entityProfiles;
     }
@@ -50,6 +55,10 @@ public final class ProfileStore {
 
     public static Map<ResourceLocation, OutcomeTable> outcomeTables() {
         return outcomeTables;
+    }
+
+    public static Map<ResourceLocation, FlavorPool> flavorPools() {
+        return flavorPools;
     }
 
     public static Optional<OutcomeTable> outcomeTable(ResourceLocation id) {
@@ -68,6 +77,10 @@ public final class ProfileStore {
     public static Optional<SpellProfile> findSpellProfile(
             ResourceLocation damageTypeId, Predicate<ResourceLocation> tagTest) {
         return resolve(spellProfiles.values(), damageTypeId, tagTest);
+    }
+
+    public static Optional<FlavorPool> findFlavorPool(ResourceLocation itemId, Predicate<ResourceLocation> tagTest) {
+        return resolve(flavorPools.values(), itemId, tagTest);
     }
 
     /**

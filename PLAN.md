@@ -129,7 +129,8 @@ Generic roll-outcome → effect mapping, NOT hardcoded to nat 1. A table binds a
   },
   "feedback": {
     "roll_visibility": "everyone",          // everyone | attacker_only | off
-    "sounds": true, "particles": true
+    "flavor": { "enabled": true, "cooldown_ticks": 20 }  // server anti-spam gate for flavor lines
+    // sounds/particles/flavor-display are CLIENT settings — see config/critfall/client.json (§4.5)
   },
   "balance": {
     "global_damage_multiplier": 1.0,
@@ -164,7 +165,8 @@ This must be rock-solid — it's what makes the mod droppable into RAD/ATM-style
 - **Narrative flavor lines (optional sub-feature):** message pools in datapack JSON keyed by outcome + weapon category + context — e.g. miss + bow → "Your arrow whistles past its ear — it turns toward you!"; nat 20 + bow → "Right in the eye!" (paired with the crit_table effect). Random pick per pool for variety, all lines through the translation system (localizable), pack devs can add/replace pools.
 - **Anti-spam rules (required, fast-attack mods hit 5–10×/sec):** flavor lines fire ONLY on crits, fumbles, and kills — ordinary hits/misses get the compact roll display at most; per-target cooldown (default max 1 flavor line per 20 ticks); priority system so nat 20/nat 1 always display even during spam, replacing queued lower-priority lines.
 - Client config to reduce/disable each layer independently: rolls / flavor text / sounds / particles (kitchen-sink packs hate HUD spam).
-- All driven by one small S2C packet; server works fine without the client mod installed (feedback just off) — keep it working server-side-only for Fabric servers with vanilla clients if feasible.
+- **Config split (M6, implemented):** sounds, particles, and flavor-display are **client-side** settings in `config/critfall/client.json` (rendering is client-side, so the client owns whether each layer draws). Only `roll_visibility` and the flavor **anti-spam gate** (`feedback.flavor` = `enabled` + `cooldown_ticks`) live server-side in `rules.json`. The server decides *what/whether* to send; the client decides *how/whether* to render. (Earlier drafts sketched `sounds`/`particles` under the server `feedback` block — those moved to the client config.)
+- All driven by one small S2C packet; server works fine without the client mod installed. Modless / vanilla clients still get a plain action-bar readout **including the consequence announcements** (the payload is rendered server-side via the same formatter, using translation *fallback* text so a client with no Critfall lang stays legible) — the packet is registered `optional()` so those clients are never disconnected. Cosmetic flavor selection draws from a **separate feedback RNG** (`RollService.feedbackRoller()`), not the combat roller, so it never perturbs server-authoritative combat rolls.
 
 ## 5. Milestones (work order)
 

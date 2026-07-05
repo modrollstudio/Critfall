@@ -412,14 +412,14 @@ public class CombatGameTests {
         helper.succeed();
     }
 
-    private static <T extends Mob> T spawnCalm(GameTestHelper helper, EntityType<T> type, int x, int z) {
+    static <T extends Mob> T spawnCalm(GameTestHelper helper, EntityType<T> type, int x, int z) {
         T mob = helper.spawn(type, new BlockPos(x, 1, z));
         mob.setNoAi(true);
         return mob;
     }
 
     /** Runs {@code action} under the given rules and scripted roller, then restores everything. */
-    private static void withRolls(GameTestHelper helper, Rules rules, Runnable action, int... faces) {
+    static void withRolls(GameTestHelper helper, Rules rules, Runnable action, int... faces) {
         ScriptedRandom scripted = ScriptedRandom.ofDieFaces(faces);
         Rules before = RollService.rules();
         RollService.setRoller(new DiceRoller(scripted));

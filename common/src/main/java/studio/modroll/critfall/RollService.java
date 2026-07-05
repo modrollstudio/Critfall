@@ -13,12 +13,24 @@ import studio.modroll.critfall.dice.DiceRoller;
 public final class RollService {
 
     private static volatile DiceRoller roller = new DiceRoller(new Random());
+
+    /**
+     * Drives cosmetic feedback selection (flavor line picks) ONLY. Deliberately SEPARATE from the
+     * combat {@link #roller()} so a multi-line flavor pool's extra {@code die(N)} draw never
+     * perturbs the server-authoritative combat RNG that GameTests script.
+     */
+    private static volatile DiceRoller feedbackRoller = new DiceRoller(new Random());
+
     private static volatile Rules rules = Rules.DEFAULTS;
 
     private RollService() {}
 
     public static DiceRoller roller() {
         return roller;
+    }
+
+    public static DiceRoller feedbackRoller() {
+        return feedbackRoller;
     }
 
     public static Rules rules() {
@@ -28,6 +40,11 @@ public final class RollService {
     /** Injection point for tests and (from M3) the dry-run/config commands. */
     public static void setRoller(DiceRoller newRoller) {
         roller = newRoller;
+    }
+
+    /** Injection point for tests, same as {@link #setRoller}, but for the cosmetic flavor roller. */
+    public static void setFeedbackRoller(DiceRoller newRoller) {
+        feedbackRoller = newRoller;
     }
 
     public static void setRules(Rules newRules) {

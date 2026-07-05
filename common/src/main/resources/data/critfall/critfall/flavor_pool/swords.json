@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["#minecraft:swords"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.sword.crit.0", "critfall.flavor.sword.crit.1"],
+    "fumble": ["critfall.flavor.sword.fumble.0", "critfall.flavor.sword.fumble.1"],
+    "kill": ["critfall.flavor.sword.kill.0", "critfall.flavor.sword.kill.1"]
+  }
+}

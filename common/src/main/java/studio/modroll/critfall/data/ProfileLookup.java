@@ -33,6 +33,12 @@ public final class ProfileLookup {
         return ProfileStore.findItemProfile(id, tagId -> stack.is(TagKey.create(Registries.ITEM, tagId)));
     }
 
+    /** The flavor pool matching this weapon item; an empty stack is item minecraft:air (matches default). */
+    public static Optional<FlavorPool> forFlavor(ItemStack stack) {
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return ProfileStore.findFlavorPool(id, tagId -> stack.is(TagKey.create(Registries.ITEM, tagId)));
+    }
+
     /** The spell profile matching this source's DAMAGE TYPE (by id or tag). */
     public static Optional<SpellProfile> forSpell(DamageSource source) {
         Optional<ResourceLocation> typeId = source.typeHolder().unwrapKey().map(ResourceKey::location);

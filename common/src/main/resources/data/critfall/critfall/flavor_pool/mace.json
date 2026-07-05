@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:mace"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.mace.crit.0", "critfall.flavor.mace.crit.1"],
+    "fumble": ["critfall.flavor.mace.fumble.0", "critfall.flavor.mace.fumble.1"],
+    "kill": ["critfall.flavor.mace.kill.0", "critfall.flavor.mace.kill.1"]
+  }
+}

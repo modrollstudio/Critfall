@@ -36,7 +36,7 @@ Default file:
     "saves": { "enabled": true, "default_dc": 13, "on_success": "half" }
   },
   "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
-  "feedback": { "roll_visibility": "everyone" },
+  "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20 } },
   "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true }
 }
 ```
@@ -121,8 +121,19 @@ profile matches (`derive` rolls an attack with dice derived from the vanilla amo
 
 ## feedback
 
-`roll_visibility`: `everyone` (attacker and target players, M3 scope — M6 widens this),
-`attacker_only`, or `off`. `sounds` / `particles` are reserved for the M6 client module.
+Server-side feedback policy. Rendering itself (roll readout, flavor lines, sounds, particles) is
+client-side and toggled per-client in `config/critfall/client.json` — see
+[client-feedback.md](client-feedback.md).
+
+- `roll_visibility`: `everyone` (attacker and target players), `attacker_only`, or `off` — who the
+  server sends roll feedback to at all.
+- `flavor`: the server-authoritative anti-spam gate for narrative flavor lines.
+  - `enabled` — master switch for sending flavor lines (a client can still hide them locally).
+  - `cooldown_ticks` (default `20`) — per-target minimum ticks between non-priority flavor lines. A
+    nat-20 crit or nat-1 fumble always sends (priority) and resets this; a plain kill is gated by it.
+
+`sounds` / `particles` are **no longer server settings** — they moved to the client config (rendering
+is client-side). If present in an old `rules.json` they are ignored with a one-line warning.
 
 ## balance
 

@@ -18,7 +18,7 @@ public record Rules(
         Fumbles fumbles,
         Spells spells,
         Fallbacks fallbacks,
-        FeedbackVisibility feedback,
+        Feedback feedback,
         Balance balance) {
 
     public static final int FORMAT_VERSION = 1;
@@ -153,11 +153,29 @@ public record Rules(
                 new Fallbacks(FallbackMode.DERIVE, FallbackMode.DERIVE, FallbackMode.DERIVE);
     }
 
-    /** Who sees the roll readout (M3: action bar for the involved players; M6 widens this). */
+    /** Who sees the roll readout. */
     public enum FeedbackVisibility {
         EVERYONE,
         ATTACKER_ONLY,
         OFF
+    }
+
+    /**
+     * Server-side feedback policy. {@code visibility} gates who receives roll feedback at all;
+     * {@code flavor} is the server-authoritative anti-spam gate for narrative flavor lines (M6).
+     * Sounds/particles/flavor-display toggles live in the CLIENT config, not here — rendering is
+     * client-side.
+     */
+    public record Feedback(FeedbackVisibility visibility, Flavor flavor) {
+        /**
+         * @param enabled server master switch for sending flavor lines
+         * @param cooldownTicks per-target minimum ticks between non-priority flavor lines
+         */
+        public record Flavor(boolean enabled, int cooldownTicks) {
+            public static final Flavor DEFAULTS = new Flavor(true, 20);
+        }
+
+        public static final Feedback DEFAULTS = new Feedback(FeedbackVisibility.EVERYONE, Flavor.DEFAULTS);
     }
 
     public record Balance(double globalDamageMultiplier, boolean disableVanillaArmorReduction) {
@@ -171,6 +189,6 @@ public record Rules(
             Fumbles.DEFAULTS,
             Spells.DEFAULTS,
             Fallbacks.DEFAULTS,
-            FeedbackVisibility.EVERYONE,
+            Feedback.DEFAULTS,
             Balance.DEFAULTS);
 }

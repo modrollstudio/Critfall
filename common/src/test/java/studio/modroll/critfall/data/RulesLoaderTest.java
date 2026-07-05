@@ -57,7 +57,26 @@ class RulesLoaderTest {
         assertEquals(0, rules.fumbles().cooldownTicks());
         assertEquals(0.5, rules.balance().globalDamageMultiplier());
         assertFalse(rules.balance().disableVanillaArmorReduction());
-        assertEquals(Rules.FeedbackVisibility.OFF, rules.feedback());
+        assertEquals(Rules.FeedbackVisibility.OFF, rules.feedback().visibility());
+    }
+
+    @Test
+    void parsesFeedbackFlavorBlock() {
+        Rules rules = RulesLoader.parse(JsonParser.parseString("""
+                                { "feedback": { "roll_visibility": "attacker_only",
+                                  "flavor": { "enabled": false, "cooldown_ticks": 40 } } }
+                                """).getAsJsonObject(), w -> {});
+        assertEquals(Rules.FeedbackVisibility.ATTACKER_ONLY, rules.feedback().visibility());
+        assertFalse(rules.feedback().flavor().enabled());
+        assertEquals(40, rules.feedback().flavor().cooldownTicks());
+    }
+
+    @Test
+    void feedbackFlavorDefaultsWhenAbsent() {
+        Rules rules = RulesLoader.parse(JsonParser.parseString("{}").getAsJsonObject(), w -> {});
+        assertEquals(Rules.FeedbackVisibility.EVERYONE, rules.feedback().visibility());
+        assertTrue(rules.feedback().flavor().enabled());
+        assertEquals(20, rules.feedback().flavor().cooldownTicks());
     }
 
     @Test

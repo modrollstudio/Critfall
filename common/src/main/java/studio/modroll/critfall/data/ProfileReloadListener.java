@@ -63,6 +63,11 @@ public final class ProfileReloadListener<T> extends SimpleJsonResourceReloadList
                 "critfall/outcome_table", "outcome table", OutcomeTable::parse, ProfileStore::setOutcomeTables);
     }
 
+    public static ProfileReloadListener<FlavorPool> flavorPools() {
+        return new ProfileReloadListener<>(
+                "critfall/flavor_pool", "flavor pool", FlavorPool::parse, ProfileStore::setFlavorPools);
+    }
+
     @Override
     protected void apply(
             Map<ResourceLocation, JsonElement> files, ResourceManager resourceManager, ProfilerFiller profiler) {

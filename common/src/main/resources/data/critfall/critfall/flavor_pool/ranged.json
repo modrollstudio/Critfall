@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:bow", "minecraft:crossbow"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.ranged.crit.0", "critfall.flavor.ranged.crit.1"],
+    "fumble": ["critfall.flavor.ranged.fumble.0", "critfall.flavor.ranged.fumble.1"],
+    "kill": ["critfall.flavor.ranged.kill.0", "critfall.flavor.ranged.kill.1"]
+  }
+}

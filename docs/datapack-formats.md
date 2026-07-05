@@ -1,6 +1,6 @@
 # Datapack formats
 
-Critfall loads four kinds of JSON from datapacks, reloadable with `/reload`:
+Critfall loads five kinds of JSON from datapacks, reloadable with `/reload`:
 
 | Kind | Directory | Purpose |
 |---|---|---|
@@ -8,6 +8,7 @@ Critfall loads four kinds of JSON from datapacks, reloadable with `/reload`:
 | Item profiles | `data/<ns>/critfall/item_profile/*.json` | Damage dice, crit range, outcome tables per weapon/item |
 | Spell profiles | `data/<ns>/critfall/spell_profile/*.json` | Attack-roll vs saving-throw resolution per DAMAGE TYPE (spells) |
 | Outcome tables | `data/<ns>/critfall/outcome_table/*.json` | Trigger → weighted effect lists (fumbles AND crit effects) |
+| Flavor pools | `data/<ns>/critfall/flavor_pool/*.json` | Narrative flavor-line message pools per weapon category (M6 client feedback) |
 
 Every file carries `"format_version": 1`. Unknown keys log a warning and are ignored (forward
 compatibility); a file that fails structural validation (missing `matches`, bad dice, bad ids) is
@@ -214,3 +215,35 @@ attacker — excluding the attacker and the original target — takes a fresh ro
 damage dice. Player bystanders are policy-gated by rules.json (`can_hit_players`, and
 `respect_pvp_rules` honors the server PvP setting and team friendly-fire rules); redirected damage
 never triggers another attack roll.
+
+## Flavor pool
+
+Narrative flavor lines shown by the M6 client feedback module, keyed by **weapon category** and
+**outcome**. Matched against the attack's weapon item with the same `matches` / `priority` resolution
+as the other profiles (see *Matching & priority*); an empty-handed / mob attack carries item
+`minecraft:air`, so a low-priority pool matching `minecraft:air` acts as the catch-all.
+
+```json
+{
+  "format_version": 1,
+  "matches": ["#minecraft:swords"],
+  "priority": 1,
+  "lines": {
+    "crit":   ["critfall.flavor.sword.crit.0", "critfall.flavor.sword.crit.1"],
+    "fumble": ["critfall.flavor.sword.fumble.0", "critfall.flavor.sword.fumble.1"],
+    "kill":   ["critfall.flavor.sword.kill.0"]
+  }
+}
+```
+
+- `lines` recognizes only `crit`, `fumble`, and `kill` — the only outcomes that ever produce a flavor
+  line (ordinary hits/misses get the compact roll readout at most). Unknown outcome keys warn and are
+  ignored.
+- Values are **translation keys**, not literal text. The mod ships English in
+  `assets/critfall/lang/en_us.json`; add your own via a resource pack (the client resolves them, so
+  they localize). One key is picked at random per pool per outcome.
+- The mod ships default pools for swords, axes, ranged (bow/crossbow), trident, mace, and a
+  `minecraft:air` catch-all, each with a couple of lines per outcome.
+
+Server-side anti-spam (crit/fumble/kill only, per-target cooldown, nat-20/nat-1 priority) and the
+per-client display/sound/particle toggles are documented in [client-feedback.md](client-feedback.md).

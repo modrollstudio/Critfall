@@ -50,7 +50,7 @@ public final class RulesLoader {
                 "saves": { "enabled": true, "default_dc": 13, "on_success": "half" }
               },
               "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
-              "feedback": { "roll_visibility": "everyone" },
+              "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20 } },
               "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true }
             }
             """;
@@ -143,10 +143,14 @@ public final class RulesLoader {
                 parseEnum(fallbacks, "unknown_spell", Rules.FallbackMode.class, Rules.FallbackMode.DERIVE, warn));
 
         LenientJson feedback = j.object("feedback");
-        feedback.reserved("sounds", "client feedback module lands in M6");
-        feedback.reserved("particles", "client feedback module lands in M6");
+        feedback.reserved("sounds", "now a client-side setting in config/critfall/client.json");
+        feedback.reserved("particles", "now a client-side setting in config/critfall/client.json");
         Rules.FeedbackVisibility visibility = parseEnum(
                 feedback, "roll_visibility", Rules.FeedbackVisibility.class, Rules.FeedbackVisibility.EVERYONE, warn);
+        LenientJson flavor = feedback.object("flavor");
+        Rules.Feedback.Flavor flavorRules = new Rules.Feedback.Flavor(
+                flavor.getBool("enabled", true), intInRange(flavor, "cooldown_ticks", 20, 0, Integer.MAX_VALUE, warn));
+        Rules.Feedback feedbackRules = new Rules.Feedback(visibility, flavorRules);
 
         LenientJson balance = j.object("balance");
         double multiplier = balance.getDouble("global_damage_multiplier", 1.0);
@@ -159,7 +163,7 @@ public final class RulesLoader {
 
         j.finish();
         return new Rules(
-                attack, damageDice, critRules, fumbleRules, spellRules, fallbackRules, visibility, balanceRules);
+                attack, damageDice, critRules, fumbleRules, spellRules, fallbackRules, feedbackRules, balanceRules);
     }
 
     /**

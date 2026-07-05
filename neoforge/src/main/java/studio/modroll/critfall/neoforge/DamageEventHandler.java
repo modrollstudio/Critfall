@@ -1,8 +1,8 @@
 package studio.modroll.critfall.neoforge;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -16,7 +16,6 @@ import studio.modroll.critfall.RollService;
 import studio.modroll.critfall.combat.AttackDice;
 import studio.modroll.critfall.combat.AttackResult;
 import studio.modroll.critfall.combat.CombatEngine;
-import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.combat.DamageClassifier;
 import studio.modroll.critfall.combat.Derivation;
 import studio.modroll.critfall.combat.FumbleCooldowns;
@@ -27,6 +26,11 @@ import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.data.SpellProfile;
 import studio.modroll.critfall.dice.DiceExpression;
 import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.feedback.ConsequenceLine;
+import studio.modroll.critfall.feedback.FeedbackBuilder;
+import studio.modroll.critfall.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.feedback.SaveFeedbackPayload;
+import studio.modroll.critfall.neoforge.network.FeedbackDispatcher;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
@@ -317,12 +321,22 @@ public final class DamageEventHandler {
             }
         }
 
+        boolean isKill = damage > 0 && target.getHealth() <= damage;
         String notation = useDice ? profile.damage().get().toString() : "vanilla";
-        send(
-                CombatText.describeSave(save, onSuccess, notation, (int) damage, useDice || save.saved()),
-                attacker,
-                target,
-                rules.feedback());
+        SaveFeedbackPayload payload = FeedbackBuilder.buildSave(
+                save,
+                isKill,
+                onSuccess,
+                notation,
+                (int) damage,
+                useDice || save.saved(),
+                ProfileLookup.forFlavor(attacker.getMainHandItem()),
+                rules,
+                RollService.feedbackRoller(),
+                target.getUUID(),
+                target.level().getGameTime());
+        FeedbackDispatcher.dispatchSave(
+                attacker, target, payload, rules.feedback().visibility());
     }
 
     private static void rollAndApply(
@@ -379,7 +393,7 @@ public final class DamageEventHandler {
         }
         // Runs for every outcome: fumble/crit tables fire on nat 1/nat 20, and pack-authored
         // tables may trigger on miss margins or roll ranges.
-        OutcomeExecutor.run(
+        List<ConsequenceLine> consequences = OutcomeExecutor.run(
                 attacker,
                 target,
                 result,
@@ -389,11 +403,37 @@ public final class DamageEventHandler {
                 weaponStack,
                 weaponProfile,
                 attackerProfile);
-        send(
-                CombatText.describe(result, damageDice.toString(), rules.damageDice()),
-                attacker,
-                target,
-                rules.feedback());
+
+        // Approximation, documented: predicts the kill from the damage THIS hit will apply, before
+        // any later mitigators (other mods' post-hoc reductions). Good enough for flavor gating.
+        boolean isKill =
+                result.isHit() && target.getHealth() <= result.damage() * killScale(rules, targetProfile, source);
+        RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
+                result,
+                isKill,
+                damageDice.toString(),
+                rules.damageDice(),
+                consequences,
+                ProfileLookup.forFlavor(weaponStack),
+                rules,
+                RollService.feedbackRoller(),
+                target.getUUID(),
+                target.level().getGameTime());
+        FeedbackDispatcher.dispatchRoll(
+                attacker, target, payload, rules.feedback().visibility());
+    }
+
+    /**
+     * The damage multiplier applied to {@code result.damage()} in the switch above (global × the
+     * target profile's resist/immune/vulnerable for this source) — kept in sync so the kill
+     * prediction matches the damage this hit will actually apply.
+     */
+    private static float killScale(Rules rules, Optional<EntityProfile> targetProfile, DamageSource source) {
+        float multiplier = (float) rules.balance().globalDamageMultiplier();
+        return multiplier
+                * targetProfile
+                        .map(p -> ProfileLookup.damageMultiplier(p, source))
+                        .orElse(1.0f);
     }
 
     /** The {@code attack_rolls.players}/{@code attack_rolls.mobs} gate, by attacker kind. */
@@ -416,18 +456,5 @@ public final class DamageEventHandler {
                 .filter(OptionalInt::isPresent)
                 .map(OptionalInt::getAsInt)
                 .orElseGet(derived::getAsInt);
-    }
-
-    private static void send(
-            String text, LivingEntity attacker, LivingEntity target, Rules.FeedbackVisibility visibility) {
-        if (visibility == Rules.FeedbackVisibility.OFF) {
-            return;
-        }
-        if (attacker instanceof Player player) {
-            player.displayClientMessage(Component.literal(text), true);
-        }
-        if (visibility == Rules.FeedbackVisibility.EVERYONE && target instanceof Player player) {
-            player.displayClientMessage(Component.literal(text), true);
-        }
     }
 }

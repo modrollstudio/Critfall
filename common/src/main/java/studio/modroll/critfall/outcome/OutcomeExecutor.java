@@ -25,6 +25,7 @@ import studio.modroll.critfall.data.OutcomeTable;
 import studio.modroll.critfall.data.ProfileStore;
 import studio.modroll.critfall.dice.DiceExpression;
 import studio.modroll.critfall.dice.DiceRoller;
+import studio.modroll.critfall.feedback.ConsequenceLine;
 
 /**
  * Applies outcome tables (PLAN.md §4.2/M4) after an attack roll resolved: gathers the tables the
@@ -60,7 +61,7 @@ public final class OutcomeExecutor {
      *     ItemStack#EMPTY} when nothing applicable is held (a thrown trident); weapon effects
      *     then no-op
      */
-    public static void run(
+    public static List<ConsequenceLine> run(
             LivingEntity attacker,
             LivingEntity target,
             AttackResult result,
@@ -82,8 +83,9 @@ public final class OutcomeExecutor {
                         .flatMap(ItemProfile::critTable)
                         .or(() -> attackerProfile.flatMap(EntityProfile::critTable)));
         if (tables.isEmpty()) {
-            return;
+            return List.of();
         }
+        List<ConsequenceLine> fired = new ArrayList<>();
         applyingEffects = true;
         try {
             for (OutcomeTable table : tables) {
@@ -99,7 +101,8 @@ public final class OutcomeExecutor {
                             table.trigger(),
                             attacker.getName().getString(),
                             effect);
-                    apply(effect, attacker, target, weapon, damageDice, rules, roller);
+                    apply(effect, attacker, target, weapon, damageDice, rules, roller)
+                            .ifPresent(fired::add);
                 } else {
                     Critfall.LOG.debug(
                             "Outcome table {} fired ({}) for {}: picked {} but it is disabled in rules.json",
@@ -112,6 +115,7 @@ public final class OutcomeExecutor {
         } finally {
             applyingEffects = false;
         }
+        return fired;
     }
 
     private static void addTable(List<OutcomeTable> tables, Optional<ResourceLocation> reference) {
@@ -122,7 +126,7 @@ public final class OutcomeExecutor {
                 .ifPresent(tables::add);
     }
 
-    private static void apply(
+    private static Optional<ConsequenceLine> apply(
             OutcomeEffect effect,
             LivingEntity attacker,
             LivingEntity target,
@@ -130,27 +134,42 @@ public final class OutcomeExecutor {
             DiceExpression damageDice,
             Rules rules,
             DiceRoller roller) {
-        switch (effect) {
-            case OutcomeEffect.Nothing ignored -> {}
-            case OutcomeEffect.DamageDurability ignored -> damageDurability(weapon, rules.fumbles());
+        return switch (effect) {
+            case OutcomeEffect.Nothing ignored -> Optional.empty();
+            case OutcomeEffect.DamageDurability ignored -> {
+                boolean damaged = damageDurability(weapon, rules.fumbles());
+                yield damaged
+                        ? Optional.of(ConsequenceLine.durability(rules.fumbles().durabilityMode()))
+                        : Optional.empty();
+            }
             case OutcomeEffect.HitNearestAlly ally -> hitNearestAlly(attacker, target, ally, damageDice, rules, roller);
-            case OutcomeEffect.SelfDamage self -> selfDamage(attacker, self, rules, roller);
-            case OutcomeEffect.DropWeapon ignored -> dropWeapon(attacker, weapon);
-            case OutcomeEffect.Stumble stumble ->
+            case OutcomeEffect.SelfDamage self -> {
+                selfDamage(attacker, self, rules, roller);
+                yield Optional.of(ConsequenceLine.of(ConsequenceLine.SELF_DAMAGE));
+            }
+            case OutcomeEffect.DropWeapon ignored -> {
+                dropWeapon(attacker, weapon);
+                yield Optional.of(ConsequenceLine.of(ConsequenceLine.DROP_WEAPON));
+            }
+            case OutcomeEffect.Stumble stumble -> {
                 attacker.addEffect(new MobEffectInstance(
                         MobEffects.MOVEMENT_SLOWDOWN,
                         stumble.slownessTicks().orElse(rules.fumbles().stumble().slownessTicks()),
                         0));
+                yield Optional.of(ConsequenceLine.of(ConsequenceLine.STUMBLE));
+            }
             case OutcomeEffect.ApplyEffect statusEffect -> applyEffect(target, statusEffect);
-            case OutcomeEffect.Knockback knockback ->
+            case OutcomeEffect.Knockback knockback -> {
                 target.knockback(
                         0.4 * knockback.strength(), attacker.getX() - target.getX(), attacker.getZ() - target.getZ());
-        }
+                yield Optional.of(ConsequenceLine.of(ConsequenceLine.KNOCKBACK));
+            }
+        };
     }
 
-    private static void damageDurability(ItemStack weapon, Rules.Fumbles fumbles) {
+    private static boolean damageDurability(ItemStack weapon, Rules.Fumbles fumbles) {
         if (!weapon.isDamageableItem()) {
-            return;
+            return false;
         }
         int maxDamage = weapon.getMaxDamage();
         switch (fumbles.durabilityMode()) {
@@ -162,9 +181,10 @@ public final class OutcomeExecutor {
                 weapon.setDamageValue(Math.min(maxDamage - 1, weapon.getDamageValue() + loss));
             }
         }
+        return true;
     }
 
-    private static void hitNearestAlly(
+    private static Optional<ConsequenceLine> hitNearestAlly(
             LivingEntity attacker,
             LivingEntity target,
             OutcomeEffect.HitNearestAlly effect,
@@ -193,7 +213,7 @@ public final class OutcomeExecutor {
                     "hit_nearest_ally: no eligible bystander within {} blocks of {}",
                     radius,
                     attacker.getName().getString());
-            return;
+            return Optional.empty();
         }
         int damage = Math.max(0, roller.roll(damageDice).total());
         Critfall.LOG.debug(
@@ -205,6 +225,8 @@ public final class OutcomeExecutor {
         if (damage > 0) {
             nearest.hurt(meleeSource(attacker), damage);
         }
+        return Optional.of(
+                ConsequenceLine.of(ConsequenceLine.HIT_ALLY, nearest.getName().getString()));
     }
 
     /**
@@ -263,13 +285,16 @@ public final class OutcomeExecutor {
         }
     }
 
-    private static void applyEffect(LivingEntity target, OutcomeEffect.ApplyEffect effect) {
+    private static Optional<ConsequenceLine> applyEffect(LivingEntity target, OutcomeEffect.ApplyEffect effect) {
         Optional<Holder.Reference<MobEffect>> holder = BuiltInRegistries.MOB_EFFECT.getHolder(effect.effect());
         if (holder.isEmpty()) {
             Critfall.LOG.warn("apply_effect references unknown status effect '{}' — skipped", effect.effect());
-            return;
+            return Optional.empty();
         }
         target.addEffect(new MobEffectInstance(holder.get(), effect.ticks(), effect.amplifier()));
+        return Optional.of(ConsequenceLine.of(
+                ConsequenceLine.APPLY_EFFECT,
+                holder.get().value().getDisplayName().getString()));
     }
 
     private static DamageSource meleeSource(LivingEntity attacker) {

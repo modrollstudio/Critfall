@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["#minecraft:axes"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.axe.crit.0", "critfall.flavor.axe.crit.1"],
+    "fumble": ["critfall.flavor.axe.fumble.0", "critfall.flavor.axe.fumble.1"],
+    "kill": ["critfall.flavor.axe.kill.0", "critfall.flavor.axe.kill.1"]
+  }
+}
