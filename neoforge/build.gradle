@@ -22,12 +22,16 @@ neoForge {
         "${mod_id}" {
             sourceSet sourceSets.main
             sourceSet project(':common').sourceSets.main
+            // Shared GameTest bodies — loaded on the gameTestServer run, not shipped in the jar.
+            sourceSet project(':common').sourceSets.gametest
         }
     }
 }
 
 dependencies {
     compileOnly project(':common')
+    // The gametest delegators compile against the shared *Scenarios classes.
+    compileOnly project(':common').sourceSets.gametest.output
 }
 
 // Bundle the common classes and resources into the NeoForge jar.

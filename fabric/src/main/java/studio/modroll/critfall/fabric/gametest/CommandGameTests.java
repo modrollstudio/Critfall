@@ -1,30 +1,24 @@
-package studio.modroll.critfall.neoforge.gametest;
+package studio.modroll.critfall.fabric.gametest;
 
+import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
-import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.gametest.CommandScenarios;
 
-/** NeoForge registration shim: delegates to the shared {@link CommandScenarios} bodies (M8). */
-@GameTestHolder(Critfall.MOD_ID)
-@PrefixGameTestTemplate(false)
-public class CommandGameTests {
+/** Fabric registration shim: delegates to the shared {@link CommandScenarios} bodies (M8). */
+public class CommandGameTests implements FabricGameTest {
 
-    private static final String TEMPLATE = "empty";
-
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void inspectWithSelectorExecutesThroughTheDispatcher(GameTestHelper helper) {
         CommandScenarios.inspectWithSelectorExecutesThroughTheDispatcher(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void inspectWithoutArgumentRaycastsTheCrosshairEntity(GameTestHelper helper) {
         CommandScenarios.inspectWithoutArgumentRaycastsTheCrosshairEntity(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void checkWithItemArgumentExecutesThroughTheDispatcher(GameTestHelper helper) {
         CommandScenarios.checkWithItemArgumentExecutesThroughTheDispatcher(helper);
     }

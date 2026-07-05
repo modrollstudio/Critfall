@@ -5,6 +5,10 @@ pluginManagement {
             name = 'NeoForged'
             url = 'https://maven.neoforged.net/releases'
         }
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
     }
 }
 
@@ -17,4 +21,4 @@ rootProject.name = 'critfall'
 
 include 'common'
 include 'neoforge'
-// 'fabric' is wired in M8 — keep common code loader-agnostic from day one.
+include 'fabric'

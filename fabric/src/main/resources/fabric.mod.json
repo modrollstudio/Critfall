@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "license": "${mod_license}",
+  "authors": ["Modroll Studio"],
+  "contributors": ["NightsHigh"],
+  "contact": {
+    "homepage": "https://modroll.studio",
+    "sources": "https://github.com/NightsHigh/Critfall",
+    "issues": "https://github.com/NightsHigh/Critfall/issues"
+  },
+  "environment": "*",
+  "entrypoints": {
+    "main": ["studio.modroll.critfall.fabric.CritfallFabric"],
+    "client": ["studio.modroll.critfall.fabric.client.CritfallFabricClient"],
+    "fabric-gametest": [
+      "studio.modroll.critfall.fabric.gametest.ApiGameTests",
+      "studio.modroll.critfall.fabric.gametest.CombatGameTests",
+      "studio.modroll.critfall.fabric.gametest.CommandGameTests",
+      "studio.modroll.critfall.fabric.gametest.FeedbackGameTests",
+      "studio.modroll.critfall.fabric.gametest.OutcomeGameTests",
+      "studio.modroll.critfall.fabric.gametest.ProjectileGameTests",
+      "studio.modroll.critfall.fabric.gametest.SpellGameTests"
+    ]
+  },
+  "mixins": ["critfall.mixins.json"],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": ">=${minecraft_version} <1.22",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

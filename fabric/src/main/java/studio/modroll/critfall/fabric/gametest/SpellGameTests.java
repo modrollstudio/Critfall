@@ -1,55 +1,49 @@
-package studio.modroll.critfall.neoforge.gametest;
+package studio.modroll.critfall.fabric.gametest;
 
+import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
-import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.gametest.SpellScenarios;
 
-/** NeoForge registration shim: delegates to the shared {@link SpellScenarios} bodies (M8). */
-@GameTestHolder(Critfall.MOD_ID)
-@PrefixGameTestTemplate(false)
-public class SpellGameTests {
+/** Fabric registration shim: delegates to the shared {@link SpellScenarios} bodies (M8). */
+public class SpellGameTests implements FabricGameTest {
 
-    private static final String TEMPLATE = "empty";
-
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void indirectDamageRollsAsSpellWithDerivedDice(GameTestHelper helper) {
         SpellScenarios.indirectDamageRollsAsSpellWithDerivedDice(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void spellRollsDisabledRestoresVanilla(GameTestHelper helper) {
         SpellScenarios.spellRollsDisabledRestoresVanilla(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void unknownSpellPassthroughLeavesVanilla(GameTestHelper helper) {
         SpellScenarios.unknownSpellPassthroughLeavesVanilla(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void successfulSaveHalvesTheDamage(GameTestHelper helper) {
         SpellScenarios.successfulSaveHalvesTheDamage(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void failedSaveTakesFullProfileDice(GameTestHelper helper) {
         SpellScenarios.failedSaveTakesFullProfileDice(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void negateOutcomeCancelsAllDamageOnSave(GameTestHelper helper) {
         SpellScenarios.negateOutcomeCancelsAllDamageOnSave(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void targetProfileSaveBonusCounts(GameTestHelper helper) {
         SpellScenarios.targetProfileSaveBonusCounts(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void savesDisabledFallBackToAttackRoll(GameTestHelper helper) {
         SpellScenarios.savesDisabledFallBackToAttackRoll(helper);
     }

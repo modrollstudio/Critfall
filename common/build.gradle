@@ -2,11 +2,23 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
+// The shared GameTest bodies (run on both loaders) live in their own source set so they ship in
+// neither the production common classes nor the unit-test set. Each loader module bundles this
+// output and registers the tests through its own shim.
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
 // Vanilla Minecraft (Mojang mappings) without any loader — code here must stay loader-agnostic.
 neoForge {
     neoFormVersion = neoform_version
-    // Unit tests parse datapack JSON into records built on ResourceLocation & friends.
+    // Unit tests parse datapack JSON into records built on ResourceLocation & friends; the shared
+    // GameTest bodies use the Minecraft GameTest framework + entities.
     addModdingDependenciesTo sourceSets.test
+    addModdingDependenciesTo sourceSets.gametest
 }
 
 processResources {

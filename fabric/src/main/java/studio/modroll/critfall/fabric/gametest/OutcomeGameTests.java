@@ -1,85 +1,79 @@
-package studio.modroll.critfall.neoforge.gametest;
+package studio.modroll.critfall.fabric.gametest;
 
+import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
-import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.gametest.OutcomeScenarios;
 
-/** NeoForge registration shim: delegates to the shared {@link OutcomeScenarios} bodies (M8). */
-@GameTestHolder(Critfall.MOD_ID)
-@PrefixGameTestTemplate(false)
-public class OutcomeGameTests {
+/** Fabric registration shim: delegates to the shared {@link OutcomeScenarios} bodies (M8). */
+public class OutcomeGameTests implements FabricGameTest {
 
-    private static final String TEMPLATE = "empty";
-
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void natTwentyAppliesStatusEffectFromDefaultTable(GameTestHelper helper) {
         OutcomeScenarios.natTwentyAppliesStatusEffectFromDefaultTable(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void natTwentyKnockbackShovesTheTarget(GameTestHelper helper) {
         OutcomeScenarios.natTwentyKnockbackShovesTheTarget(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void fumbleHitsNearestAllyWithTheAttacksDice(GameTestHelper helper) {
         OutcomeScenarios.fumbleHitsNearestAllyWithTheAttacksDice(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void barehandedMobFumbleCanHitItsPackmate(GameTestHelper helper) {
         OutcomeScenarios.barehandedMobFumbleCanHitItsPackmate(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void hitNearestAllyIgnoresPlayersWhenPolicyForbidsIt(GameTestHelper helper) {
         OutcomeScenarios.hitNearestAllyIgnoresPlayersWhenPolicyForbidsIt(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void hitNearestAllyRespectsTheServerPvpRule(GameTestHelper helper) {
         OutcomeScenarios.hitNearestAllyRespectsTheServerPvpRule(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void hitNearestAllyRespectsTeamFriendlyFire(GameTestHelper helper) {
         OutcomeScenarios.hitNearestAllyRespectsTeamFriendlyFire(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void fumbleSelfDamageRollsTheConfiguredDice(GameTestHelper helper) {
         OutcomeScenarios.fumbleSelfDamageRollsTheConfiguredDice(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void fumbleDropsTheWeapon(GameTestHelper helper) {
         OutcomeScenarios.fumbleDropsTheWeapon(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void fumbleStumbleSlowsTheAttacker(GameTestHelper helper) {
         OutcomeScenarios.fumbleStumbleSlowsTheAttacker(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void fumbleReturnsDurabilityConsequence(GameTestHelper helper) {
         OutcomeScenarios.fumbleReturnsDurabilityConsequence(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void disabledConsequenceIsANoOpEvenWhenPicked(GameTestHelper helper) {
         OutcomeScenarios.disabledConsequenceIsANoOpEvenWhenPicked(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void appliesToMobsOnlySuppressesPlayerFumbles(GameTestHelper helper) {
         OutcomeScenarios.appliesToMobsOnlySuppressesPlayerFumbles(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void missMarginTableFiresOnABigMiss(GameTestHelper helper) {
         OutcomeScenarios.missMarginTableFiresOnABigMiss(helper);
     }

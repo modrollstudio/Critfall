@@ -1,35 +1,29 @@
-package studio.modroll.critfall.neoforge.gametest;
+package studio.modroll.critfall.fabric.gametest;
 
+import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
-import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.gametest.ApiScenarios;
 
-/** NeoForge registration shim: delegates to the shared {@link ApiScenarios} bodies (M8). */
-@GameTestHolder(Critfall.MOD_ID)
-@PrefixGameTestTemplate(false)
-public class ApiGameTests {
+/** Fabric registration shim: delegates to the shared {@link ApiScenarios} bodies (M8). */
+public class ApiGameTests implements FabricGameTest {
 
-    private static final String TEMPLATE = "empty";
-
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void drivenHitAppliesRolledDamageOnce(GameTestHelper helper) {
         ApiScenarios.drivenHitAppliesRolledDamageOnce(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void drivenMissAppliesNoDamage(GameTestHelper helper) {
         ApiScenarios.drivenMissAppliesNoDamage(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void suppressedTargetIgnoredByAutoPipeline(GameTestHelper helper) {
         ApiScenarios.suppressedTargetIgnoredByAutoPipeline(helper);
     }
 
-    @GameTest(template = TEMPLATE)
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void postAttackListenerCanZeroOutDamage(GameTestHelper helper) {
         ApiScenarios.postAttackListenerCanZeroOutDamage(helper);
     }

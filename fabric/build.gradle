@@ -1,0 +1,66 @@
+plugins {
+    id 'fabric-loom' version "${fabric_loom_version}"
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+
+    // Common is compiled against the same Mojang mappings. Use implementation (not compileOnly) so
+    // common's classes/resources are on the dev-run runtime classpath; the production jar bundles
+    // and remaps them via the jar/processResources wiring below. Plain implementation (not
+    // modImplementation) keeps Loom from trying to remap common — dev runs want its named classes.
+    implementation project(':common')
+
+    // Shared GameTest bodies: on the compile + dev-run classpath (so the fabric-gametest entrypoint
+    // delegators resolve them), but not bundled into the production jar — the same way NeoForge only
+    // loads them on its gameTestServer run.
+    implementation project(':common').sourceSets.gametest.output
+}
+
+loom {
+    runs {
+        server {
+            server()
+            ideConfigGenerated = true
+        }
+        client {
+            client()
+        }
+        gametest {
+            server()
+            name = 'Game Test'
+            property 'fabric-api.gametest'
+            property 'fabric-api.gametest.report-file', "${project.buildDir}/junit.xml"
+            ideConfigGenerated = true
+        }
+    }
+}
+
+// Bundle common's compiled classes so remapJar remaps them into the Fabric jar. Common's
+// resources come through processResources below (bundling output too would duplicate them).
+jar {
+    from project(':common').sourceSets.main.output.classesDirs
+}
+
+processResources {
+    from project(':common').sourceSets.main.resources
+
+    def props = [
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_version            : mod_version,
+            mod_description        : mod_description,
+            mod_license            : mod_license,
+            mod_issue_tracker      : mod_issue_tracker,
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            fabric_loader_version  : fabric_loader_version,
+    ]
+    inputs.properties props
+    filesMatching(['fabric.mod.json', 'pack.mcmeta']) {
+        expand props
+    }
+}

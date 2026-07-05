@@ -1,4 +1,4 @@
-package studio.modroll.critfall.neoforge.gametest;
+package studio.modroll.critfall.gametest;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
