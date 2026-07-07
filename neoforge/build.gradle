@@ -34,9 +34,11 @@ dependencies {
     compileOnly project(':common').sourceSets.gametest.output
 }
 
-// Bundle the common classes and resources into the NeoForge jar.
+// Bundle common's compiled classes into the NeoForge jar. Common's resources come through
+// processResources below (with property expansion) — bundling output too would duplicate them,
+// and would ship common's RAW pack.mcmeta over the expanded one. Mirrors the Fabric jar wiring.
 jar {
-    from project(':common').sourceSets.main.output
+    from project(':common').sourceSets.main.output.classesDirs
 }
 
 processResources {

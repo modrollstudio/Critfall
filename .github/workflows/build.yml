@@ -26,8 +26,13 @@ jobs:
         with:
           validate-wrappers: true
 
-      - name: Build and check (unit tests + spotless)
+      - name: Check (unit tests + spotless)
         run: ./gradlew check --stacktrace
+
+      # Assemble the loader jars so a jar-packaging break (e.g. a duplicate resource entry) fails CI
+      # instead of surfacing only at release time. `check` alone never runs the jar tasks.
+      - name: Assemble loader jars
+        run: ./gradlew assemble --stacktrace
 
       - name: Upload test reports
         if: failure()
@@ -35,3 +40,12 @@ jobs:
         with:
           name: test-reports
           path: '**/build/reports/tests/'
+
+      - name: Upload loader jars
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: critfall-jars
+          path: |
+            neoforge/build/libs/*.jar
+            fabric/build/libs/*.jar
