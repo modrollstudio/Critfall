@@ -3,9 +3,12 @@ package studio.modroll.critfall.gametest;
 import java.util.Random;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.RollService;
@@ -112,6 +115,86 @@ public final class ApiScenarios {
         } finally {
             CritfallEvents.clearListeners();
             cleanup(husk, pig);
+        }
+        helper.succeed();
+    }
+
+    public static void drivenAttackMatchesAutoPipelineOnArmoredTarget(GameTestHelper helper) {
+        Husk attacker = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Husk autoTarget = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 3, 3);
+        Husk apiTarget = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 3, 1);
+        autoTarget.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+        apiTarget.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+        float autoBefore = autoTarget.getHealth();
+        float apiBefore = apiTarget.getHealth();
+        withRolls(
+                helper,
+                () -> {
+                    // Automatic pipeline: nat 20 -> crit for exactly 7 (1d6+1 maxed), armor bypassed.
+                    autoTarget.hurt(helper.getLevel().damageSources().mobAttack(attacker), VANILLA_HIT);
+                },
+                20);
+        RollService.suppress(attacker);
+        RollService.suppress(apiTarget);
+        withRolls(
+                helper,
+                () -> {
+                    // API path, same nat 20: the hurt must not double-dip vanilla armor on top of AC.
+                    AttackContext ctx = AttackContext.melee(
+                            helper.getLevel().damageSources().mobAttack(attacker), attacker.getMainHandItem());
+                    AttackResult result = RollService.performAttack(attacker, apiTarget, ctx);
+                    if (result.outcome() != AttackOutcome.CRIT) {
+                        helper.fail("expected CRIT, got " + result.outcome());
+                    }
+                },
+                20);
+        float autoLost = autoBefore - autoTarget.getHealth();
+        float apiLost = apiBefore - apiTarget.getHealth();
+        if (Math.abs(autoLost - apiLost) > 0.001F) {
+            helper.fail("API attack lost " + apiLost + " but automatic attack lost " + autoLost
+                    + " — armor double-dip on the API path");
+        }
+        if (Math.abs(apiLost - 7.0F) > 0.001F) {
+            helper.fail("armored target must take the full rolled 7, but lost " + apiLost);
+        }
+        cleanup(attacker, apiTarget);
+        helper.succeed();
+    }
+
+    public static void drivenAttackKeepsArmorReductionWhenBypassFlagOff(GameTestHelper helper) {
+        Husk attacker = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Husk armored = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 3, 3);
+        armored.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+        float before = armored.getHealth();
+        Rules base = Rules.DEFAULTS;
+        Rules rules = new Rules(
+                base.attackRolls(),
+                base.damageDice(),
+                base.crits(),
+                base.fumbles(),
+                base.spells(),
+                base.fallbacks(),
+                base.feedback(),
+                new Rules.Balance(1.0, false));
+        RollService.suppress(attacker);
+        RollService.suppress(armored);
+        try {
+            CombatScenarios.withRolls(
+                    helper,
+                    rules,
+                    () -> {
+                        AttackContext ctx = AttackContext.melee(
+                                helper.getLevel().damageSources().mobAttack(attacker), attacker.getMainHandItem());
+                        RollService.performAttack(attacker, armored, ctx);
+                        float lost = before - armored.getHealth();
+                        if (lost <= 0.0F || lost >= 7.0F) {
+                            helper.fail("with the bypass flag off, vanilla armor must reduce the 7-damage crit, but "
+                                    + lost + " was lost");
+                        }
+                    },
+                    20);
+        } finally {
+            cleanup(attacker, armored);
         }
         helper.succeed();
     }

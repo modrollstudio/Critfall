@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- API-driven attacks (`RollService.performAttack`) no longer double-dip armor: the damage they apply now bypasses vanilla armor reduction exactly like the automatic pipeline (AC already stood in for armor), governed by the same `balance.disable_vanilla_armor_reduction` flag. The `hurt` inside `performAttack` also never re-rolls through the automatic interception, even when the participants were not suppressed. GameTests prove API and automatic attacks deal identical final damage to an armored target on both loaders.
+
 ## [0.1.0] - 2026-07-05
 
 ### Added

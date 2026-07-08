@@ -11,6 +11,7 @@ import studio.modroll.critfall.combat.AttackDice;
 import studio.modroll.critfall.combat.AttackPipeline;
 import studio.modroll.critfall.combat.AttackResult;
 import studio.modroll.critfall.combat.CombatEngine;
+import studio.modroll.critfall.combat.DamageInterception;
 import studio.modroll.critfall.combat.Derivation;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.EntityProfile;
@@ -110,9 +111,12 @@ public final class RollService {
     }
 
     /**
-     * Drives a full attack: rolls, applies damage, runs outcome tables, and emits feedback. The
-     * caller should {@link #suppress} the participants first so the automatic pipeline does not also
-     * roll on the resulting {@code hurt}. Returns the resolved {@link AttackResult}.
+     * Drives a full attack: rolls, applies damage, runs outcome tables, and emits feedback. Damage
+     * is applied the same way as the automatic pipeline: the attack roll's AC already stood in for
+     * armor, so vanilla armor reduction is bypassed (under {@code balance.
+     * disable_vanilla_armor_reduction}) and the {@code hurt} never re-rolls. Callers orchestrating
+     * an entity's combat should still {@link #suppress} the participants so OTHER real-time damage
+     * stands down. Returns the resolved {@link AttackResult}.
      */
     public static AttackResult performAttack(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
         AttackPipeline.Bundle bundle = resolve(attacker, target, ctx);
@@ -122,7 +126,7 @@ public final class RollService {
         }
         Rules rules = RollRuntime.rules();
         if (result.isHit() && result.damage() > 0) {
-            target.hurt(ctx.source(), result.damage());
+            DamageInterception.applyRolledDamage(target, ctx.source(), result.damage());
         }
         boolean isKill = result.isHit() && !target.isAlive();
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(

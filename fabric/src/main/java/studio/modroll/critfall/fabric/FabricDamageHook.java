@@ -26,7 +26,9 @@ public final class FabricDamageHook {
         if (decision.cancelled) {
             return false;
         }
-        if (decision.amountSet) {
+        // bypassArmor without amountSet happens on API-driven damage (the amount was already
+        // rolled); storing the unchanged amount makes the mixin's substitution a no-op.
+        if (decision.amountSet || decision.bypassArmor) {
             state.critfall$store(decision.amount, decision.bypassArmor);
         }
         return true;

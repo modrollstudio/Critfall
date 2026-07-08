@@ -27,4 +27,14 @@ public class ApiGameTests implements FabricGameTest {
     public void postAttackListenerCanZeroOutDamage(GameTestHelper helper) {
         ApiScenarios.postAttackListenerCanZeroOutDamage(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void drivenAttackMatchesAutoPipelineOnArmoredTarget(GameTestHelper helper) {
+        ApiScenarios.drivenAttackMatchesAutoPipelineOnArmoredTarget(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void drivenAttackKeepsArmorReductionWhenBypassFlagOff(GameTestHelper helper) {
+        ApiScenarios.drivenAttackKeepsArmorReductionWhenBypassFlagOff(helper);
+    }
 }

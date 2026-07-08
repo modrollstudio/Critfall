@@ -40,8 +40,42 @@ public final class DamageInterception {
 
     private DamageInterception() {}
 
+    /** The target of an in-flight {@link #applyRolledDamage} hurt on this thread, else null. */
+    private static final ThreadLocal<LivingEntity> ROLLED_APPLY = new ThreadLocal<>();
+
+    /**
+     * Applies damage an API-driven attack already resolved (PLAN §12): the {@code hurt} passes
+     * through this interception without re-rolling, and — under the same
+     * {@code balance.disable_vanilla_armor_reduction} flag as the automatic path — with vanilla
+     * armor reduction bypassed, because the attack roll's AC already stood in for armor. Only the
+     * hurt on {@code target} is scoped; recoil damage it triggers (thorns) is intercepted normally.
+     *
+     * @return what {@code LivingEntity.hurt} returned
+     */
+    public static boolean applyRolledDamage(LivingEntity target, DamageSource source, float amount) {
+        LivingEntity previous = ROLLED_APPLY.get();
+        ROLLED_APPLY.set(target);
+        try {
+            return target.hurt(source, amount);
+        } finally {
+            if (previous == null) {
+                ROLLED_APPLY.remove();
+            } else {
+                ROLLED_APPLY.set(previous);
+            }
+        }
+    }
+
     public static void handle(IncomingDamage dmg, LivingEntity target, DamageSource source) {
         if (target.level().isClientSide()) {
+            return;
+        }
+        if (ROLLED_APPLY.get() == target) {
+            // Damage applied by RollService.performAttack: already rolled, AC stood in for armor —
+            // bypass vanilla reduction (same §9 decision as the automatic path) and never re-roll.
+            if (RollRuntime.rules().balance().disableVanillaArmorReduction()) {
+                dmg.bypassArmor();
+            }
             return;
         }
         if (OutcomeExecutor.isApplyingEffects()) {

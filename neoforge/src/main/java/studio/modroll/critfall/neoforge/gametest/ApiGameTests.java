@@ -33,4 +33,14 @@ public class ApiGameTests {
     public void postAttackListenerCanZeroOutDamage(GameTestHelper helper) {
         ApiScenarios.postAttackListenerCanZeroOutDamage(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void drivenAttackMatchesAutoPipelineOnArmoredTarget(GameTestHelper helper) {
+        ApiScenarios.drivenAttackMatchesAutoPipelineOnArmoredTarget(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void drivenAttackKeepsArmorReductionWhenBypassFlagOff(GameTestHelper helper) {
+        ApiScenarios.drivenAttackKeepsArmorReductionWhenBypassFlagOff(helper);
+    }
 }

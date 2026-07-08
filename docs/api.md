@@ -54,14 +54,15 @@ AttackResult applied = RollService.performAttack(attacker, target, ctx);
 `AttackResult` exposes `outcome()` (`MISS`/`FUMBLE`/`HIT`/`CRIT`), `natural()`, `attackTotal()`,
 `armorClass()`, `damage()`, and `isHit()`.
 
-> **Armor note.** `performAttack` applies damage with `LivingEntity.hurt(ctx.source(), damage)`.
-> Unlike the automatic pipeline — which zeroes vanilla armor reduction through the NeoForge damage
-> event — the API path leaves vanilla armor reduction in place unless `ctx.source()` is itself
-> armor-bypassing. An orchestrator that wants AC to be the only defense should supply an
-> armor-bypassing damage source.
+> **Armor note.** `performAttack` applies damage exactly like the automatic pipeline: the attack
+> roll's AC already stood in for armor, so vanilla armor reduction is bypassed on the resulting
+> `hurt` (governed by the same `balance.disable_vanilla_armor_reduction` flag — turn it off and
+> both paths armor-reduce again). No armor-bypassing damage source is needed; API-driven and
+> automatic attacks deal identical final damage to an armored target.
 
-> **Suppress first.** Call `RollService.suppress(...)` on the participants before `performAttack`,
-> or the automatic damage interception may *also* roll when `performAttack` calls `hurt`.
+> **Suppression.** The `hurt` inside `performAttack` never re-rolls through the automatic
+> interception, suppressed or not. Still call `RollService.suppress(...)` when an orchestrator
+> owns an entity's combat, so *other* real-time damage involving it stands down too.
 
 Fine-grained helpers are also available: `savingThrow(target, saveBonus, dc)`,
 `fireOutcomes(attacker, target, result, damageDice, weapon)`, and
