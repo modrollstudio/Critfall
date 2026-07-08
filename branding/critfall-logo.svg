@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Critfall logo: a falling d20 with a glowing 20 face and impact spark">
+  <defs>
+    <!-- hot "critical" accent: orange highlight to crimson -->
+    <linearGradient id="crit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF8A3C"/>
+      <stop offset="1" stop-color="#C21E3C"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF8A3C"/>
+      <stop offset="1" stop-color="#E0452F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- impact spark under the die (falling / crit cue) -->
+  <g fill="url(#spark)">
+    <polygon points="146,441 222,429 226,443 152,455"/>
+    <polygon points="366,441 290,429 286,443 360,455"/>
+    <polygon points="256,436 268,452 256,468 244,452"/>
+  </g>
+
+  <!-- d20: icosahedron seen vertex-up from above; light from upper left -->
+  <g stroke="#141A28" stroke-width="5" stroke-linejoin="round">
+    <!-- middle-band facets -->
+    <polygon points="107.1,157.5 164,305.9 107.1,322.5" fill="#333D52"/>
+    <polygon points="164,305.9 256,414.2 107.1,322.5" fill="#2A3346"/>
+    <polygon points="164,305.9 348,305.9 256,414.2" fill="#3A455C"/>
+    <polygon points="348,305.9 404.9,322.5 256,414.2" fill="#222939"/>
+    <polygon points="348,305.9 404.9,157.5 404.9,322.5" fill="#1C2230"/>
+    <!-- top pentagon cap: the 20 face, hot accent -->
+    <polygon points="256,65.8 404.9,157.5 348,305.9 164,305.9 107.1,157.5" fill="url(#crit)"/>
+  </g>
+
+  <!-- "20" numerals, hand-drawn paths (no font dependency) -->
+  <g fill="#141A28" transform="translate(166.7,148) scale(1.9)">
+    <!-- 2: blocky geometric numeral, 44 x 60 -->
+    <path d="M0 0 H44 V36 H14 V46 H44 V60 H0 V24 H30 V14 H0 Z"/>
+    <!-- 0: elliptical ring, 40 x 60 -->
+    <path fill-rule="evenodd" d="M54 30 a20 30 0 1 0 40 0 a20 30 0 1 0 -40 0 Z M65 30 a9 18 0 1 1 18 0 a9 18 0 1 1 -18 0 Z"/>
+  </g>
+</svg>

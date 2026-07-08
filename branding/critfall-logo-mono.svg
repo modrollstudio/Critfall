@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Critfall logo, monochrome d20 mark">
+  <defs>
+    <!-- facet edges and numerals are knocked out to transparency via mask -->
+    <mask id="cut">
+      <polygon points="256,81.8 404.9,173.5 404.9,338.5 256,430.2 107.1,338.5 107.1,173.5" fill="#fff"/>
+      <g stroke="#000" stroke-width="14" stroke-linejoin="round" fill="none">
+        <!-- top pentagon (20 face) -->
+        <polygon points="256,81.8 404.9,173.5 348,321.9 164,321.9 107.1,173.5"/>
+        <!-- middle-band facet edges -->
+        <path d="M164 321.9 L256 430.2 M348 321.9 L256 430.2 M164 321.9 L107.1 338.5 M348 321.9 L404.9 338.5"/>
+      </g>
+      <g fill="#000" transform="translate(166.7,164) scale(1.9)">
+        <path d="M0 0 H44 V36 H14 V46 H44 V60 H0 V24 H30 V14 H0 Z"/>
+        <path fill-rule="evenodd" d="M54 30 a20 30 0 1 0 40 0 a20 30 0 1 0 -40 0 Z M65 30 a9 18 0 1 1 18 0 a9 18 0 1 1 -18 0 Z"/>
+      </g>
+    </mask>
+  </defs>
+  <!-- single-color mark; recolor by changing this fill -->
+  <rect width="512" height="512" fill="#1D2433" mask="url(#cut)"/>
+</svg>
