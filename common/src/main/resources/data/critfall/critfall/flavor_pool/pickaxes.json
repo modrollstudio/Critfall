@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["#minecraft:pickaxes"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.pickaxe.crit.0", "critfall.flavor.pickaxe.crit.1"],
+    "fumble": ["critfall.flavor.pickaxe.fumble.0", "critfall.flavor.pickaxe.fumble.1"],
+    "kill": ["critfall.flavor.pickaxe.kill.0", "critfall.flavor.pickaxe.kill.1"]
+  }
+}

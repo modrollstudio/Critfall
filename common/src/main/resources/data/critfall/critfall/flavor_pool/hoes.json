@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["#minecraft:hoes"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.hoe.crit.0", "critfall.flavor.hoe.crit.1"],
+    "fumble": ["critfall.flavor.hoe.fumble.0", "critfall.flavor.hoe.fumble.1"],
+    "kill": ["critfall.flavor.hoe.kill.0", "critfall.flavor.hoe.kill.1"]
+  }
+}

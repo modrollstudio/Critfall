@@ -22,7 +22,7 @@
   "critfall.flavor.sword.fumble.0": "Your blade skitters off harmlessly.",
   "critfall.flavor.sword.fumble.1": "The swing goes wide and wild.",
   "critfall.flavor.sword.kill.0": "A clean, killing stroke.",
-  "critfall.flavor.sword.kill.1": "Run through.",
+  "critfall.flavor.sword.kill.1": "Opened from guard to spine.",
 
   "critfall.flavor.axe.crit.0": "The axe cleaves through!",
   "critfall.flavor.axe.crit.1": "A brutal, splitting blow!",
@@ -59,10 +59,45 @@
   "critfall.flavor.mace.kill.0": "Crushed in a single blow.",
   "critfall.flavor.mace.kill.1": "Flattened.",
 
-  "critfall.flavor.default.crit.0": "A devastating strike!",
-  "critfall.flavor.default.crit.1": "A telling blow!",
-  "critfall.flavor.default.fumble.0": "The attack goes clumsily awry.",
-  "critfall.flavor.default.fumble.1": "A fumbling, wasted effort.",
-  "critfall.flavor.default.kill.0": "Struck down.",
-  "critfall.flavor.default.kill.1": "Laid low."
+  "critfall.flavor.default.crit.0": "A bare-knuckle blow lands square!",
+  "critfall.flavor.default.crit.1": "Knuckles crack home!",
+  "critfall.flavor.default.fumble.0": "The swing overreaches, fist meeting only air.",
+  "critfall.flavor.default.fumble.1": "A clumsy haymaker goes nowhere.",
+  "critfall.flavor.default.kill.0": "Beaten down, bare-handed.",
+  "critfall.flavor.default.kill.1": "Finished with one final, bare-fisted blow.",
+
+  "critfall.flavor.pickaxe.crit.0": "The spike punches clean through!",
+  "critfall.flavor.pickaxe.crit.1": "A miner's precise strike finds the gap!",
+  "critfall.flavor.pickaxe.fumble.0": "The pick's weight wrenches the swing wide.",
+  "critfall.flavor.pickaxe.fumble.1": "The point skips off and buries itself in the dirt.",
+  "critfall.flavor.pickaxe.kill.0": "Pierced clean through.",
+  "critfall.flavor.pickaxe.kill.1": "Struck down with a single miner's blow.",
+
+  "critfall.flavor.shovel.crit.0": "The flat of the blade cracks home!",
+  "critfall.flavor.shovel.crit.1": "A jarring, bone-deep strike!",
+  "critfall.flavor.shovel.fumble.0": "The shovel twists in your grip, missing wide.",
+  "critfall.flavor.shovel.fumble.1": "The blade thuds uselessly into the ground.",
+  "critfall.flavor.shovel.kill.0": "Beaten down with a gravedigger's swing.",
+  "critfall.flavor.shovel.kill.1": "Flattened by the shovel's edge.",
+
+  "critfall.flavor.hoe.crit.0": "The blade catches it at just the right angle!",
+  "critfall.flavor.hoe.crit.1": "A quick, cutting strike!",
+  "critfall.flavor.hoe.fumble.0": "The thin blade glances off without purchase.",
+  "critfall.flavor.hoe.fumble.1": "The swing overreaches and misses clean.",
+  "critfall.flavor.hoe.kill.0": "Cut down, farmer's tool still red.",
+  "critfall.flavor.hoe.kill.1": "Felled by an unlikely blade.",
+
+  "critfall.flavor.shears.crit.0": "The twin blades snap shut on the mark!",
+  "critfall.flavor.shears.crit.1": "A vicious, snipping strike!",
+  "critfall.flavor.shears.fumble.0": "The blades clack shut on empty air.",
+  "critfall.flavor.shears.fumble.1": "The shears tangle, throwing the strike wide.",
+  "critfall.flavor.shears.kill.0": "Snipped down without ceremony.",
+  "critfall.flavor.shears.kill.1": "An undignified end, shears and all.",
+
+  "critfall.flavor.fishing_rod.crit.0": "The hook catches and rips deep!",
+  "critfall.flavor.fishing_rod.crit.1": "A vicious yank finds its mark!",
+  "critfall.flavor.fishing_rod.fumble.0": "The line snaps taut on nothing.",
+  "critfall.flavor.fishing_rod.fumble.1": "The lure snags and the cast goes wide.",
+  "critfall.flavor.fishing_rod.kill.0": "Reeled in and finished.",
+  "critfall.flavor.fishing_rod.kill.1": "Hooked, then dropped for good."
 }

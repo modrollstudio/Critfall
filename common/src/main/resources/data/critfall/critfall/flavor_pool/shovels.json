@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["#minecraft:shovels"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.shovel.crit.0", "critfall.flavor.shovel.crit.1"],
+    "fumble": ["critfall.flavor.shovel.fumble.0", "critfall.flavor.shovel.fumble.1"],
+    "kill": ["critfall.flavor.shovel.kill.0", "critfall.flavor.shovel.kill.1"]
+  }
+}

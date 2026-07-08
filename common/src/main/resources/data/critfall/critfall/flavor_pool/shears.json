@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:shears"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.shears.crit.0", "critfall.flavor.shears.crit.1"],
+    "fumble": ["critfall.flavor.shears.fumble.0", "critfall.flavor.shears.fumble.1"],
+    "kill": ["critfall.flavor.shears.kill.0", "critfall.flavor.shears.kill.1"]
+  }
+}

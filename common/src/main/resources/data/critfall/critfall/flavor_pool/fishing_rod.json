@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:fishing_rod"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.fishing_rod.crit.0", "critfall.flavor.fishing_rod.crit.1"],
+    "fumble": ["critfall.flavor.fishing_rod.fumble.0", "critfall.flavor.fishing_rod.fumble.1"],
+    "kill": ["critfall.flavor.fishing_rod.kill.0", "critfall.flavor.fishing_rod.kill.1"]
+  }
+}

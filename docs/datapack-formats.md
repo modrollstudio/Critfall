@@ -257,8 +257,9 @@ use it so a stab and a throw read differently.
   `assets/critfall/lang/en_us.json`; add your own via a resource pack (the client resolves them, so
   they localize). One key is picked at random per pool per outcome.
 - The mod ships default pools for swords, axes, ranged (bow/crossbow), trident (split into
-  `trident_melee` and `trident_thrown` by `delivery`), mace, and a `minecraft:air` catch-all, each
-  with a couple of lines per outcome.
+  `trident_melee` and `trident_thrown` by `delivery`), mace, pickaxes, shovels, hoes, shears,
+  fishing rods, and a `minecraft:air` catch-all for unarmed strikes, each with a couple of lines
+  per outcome.
 
 Server-side anti-spam (crit/fumble/kill only, per-target cooldown, nat-20/nat-1 priority) and the
 per-client display/sound/particle toggles are documented in [client-feedback.md](client-feedback.md).
