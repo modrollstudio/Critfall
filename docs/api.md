@@ -75,8 +75,12 @@ optional overrides. Factories: `AttackContext.melee/projectile/thrown/spell(sour
 Wither methods return a copy: `withMode(RollMode)`, `withAttackBonus(int)`, `withDamageDice(...)`.
 
 `AttackDelivery` is `MELEE | PROJECTILE | THROWN | SPELL`. It disambiguates hybrid items (issue #9):
-a `THROWN` trident resolves against ranged dice and the ranged flavor pool, a `MELEE` trident stab
-against melee. `isRanged()` is true for `PROJECTILE`/`THROWN`.
+the delivery is threaded through item-profile and flavor-pool resolution, so a profile/pool with a
+`"delivery"` restriction (see docs/datapack-formats.md) only matches attacks delivered that way — a
+`THROWN` trident picks the thrown dice and flavor lines, a `MELEE` stab the melee ones. It also
+selects the entity profile's ranged vs melee dice: `isRanged()` is true for `PROJECTILE`/`THROWN`.
+The automatic pipeline classifies a projectile that is its own launcher (tridents, snowball-likes,
+modded throwing weapons that record themselves as the firing weapon) as `THROWN`.
 
 ## Suppression (`CombatSuppression`)
 

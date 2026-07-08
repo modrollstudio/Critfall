@@ -15,7 +15,7 @@ import studio.modroll.critfall.dice.SequenceRandom;
 class FlavorSelectorTest {
 
     private static FlavorPool pool(Map<String, List<String>> lines) {
-        return new FlavorPool(ResourceLocation.parse("test:p"), List.of(), lines, 0);
+        return new FlavorPool(ResourceLocation.parse("test:p"), List.of(), java.util.Set.of(), lines, 0);
     }
 
     @Test

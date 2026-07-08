@@ -1,0 +1,11 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:trident"],
+  "delivery": ["thrown"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.trident_thrown.crit.0", "critfall.flavor.trident_thrown.crit.1"],
+    "fumble": ["critfall.flavor.trident_thrown.fumble.0", "critfall.flavor.trident_thrown.fumble.1"],
+    "kill": ["critfall.flavor.trident_thrown.kill.0", "critfall.flavor.trident_thrown.kill.1"]
+  }
+}

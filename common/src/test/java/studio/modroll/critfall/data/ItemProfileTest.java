@@ -69,6 +69,30 @@ class ItemProfileTest {
     }
 
     @Test
+    void parsesDeliveryList() {
+        ItemProfile profile = ItemProfile.parse(
+                ID,
+                json("{\"matches\": [\"minecraft:trident\"], \"delivery\": [\"melee\"], \"damage\": \"1d6\"}"),
+                w -> {});
+        assertEquals(java.util.Set.of(studio.modroll.critfall.api.AttackDelivery.MELEE), profile.deliveries());
+    }
+
+    @Test
+    void absentDeliveryMatchesAllDeliveries() {
+        ItemProfile profile =
+                ItemProfile.parse(ID, json("{\"matches\": [\"minecraft:stick\"], \"damage\": \"1d4\"}"), w -> {});
+        assertTrue(profile.deliveries().isEmpty());
+    }
+
+    @Test
+    void badDeliveryValueRejectsFile() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> ItemProfile.parse(
+                        ID, json("{\"matches\": [\"minecraft:trident\"], \"delivery\": [\"lobbed\"]}"), w -> {}));
+    }
+
+    @Test
     void missingMatchesRejectsFile() {
         assertThrows(IllegalArgumentException.class, () -> ItemProfile.parse(ID, json("{}"), w -> {}));
     }

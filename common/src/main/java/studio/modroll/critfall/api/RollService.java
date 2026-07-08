@@ -135,7 +135,7 @@ public final class RollService {
                 damageDice(attacker, ctx).toString(),
                 rules.damageDice(),
                 bundle.consequences(),
-                ProfileLookup.forFlavor(ctx.weapon()),
+                ProfileLookup.forFlavor(ctx.weapon(), ctx.delivery()),
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
@@ -158,7 +158,7 @@ public final class RollService {
                 RollRuntime.rules(),
                 RollRuntime.roller(),
                 ctx.weapon(),
-                ProfileLookup.forItem(ctx.weapon()),
+                ProfileLookup.forItem(ctx.weapon(), ctx.delivery()),
                 ProfileLookup.forEntity(attacker));
     }
 
@@ -167,7 +167,7 @@ public final class RollService {
         if (ctx.damageDiceOverride().isPresent()) {
             return ctx.damageDiceOverride().get();
         }
-        Optional<ItemProfile> item = ProfileLookup.forItem(ctx.weapon());
+        Optional<ItemProfile> item = ProfileLookup.forItem(ctx.weapon(), ctx.delivery());
         double attackDamage = attacker.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE)
                 ? attacker.getAttributeValue(Attributes.ATTACK_DAMAGE)
                 : 0.0;
@@ -181,7 +181,7 @@ public final class RollService {
     }
 
     private static int critRange(LivingEntity attacker, AttackContext ctx) {
-        Optional<ItemProfile> item = ProfileLookup.forItem(ctx.weapon());
+        Optional<ItemProfile> item = ProfileLookup.forItem(ctx.weapon(), ctx.delivery());
         if (item.isPresent() && item.get().critRange().isPresent()) {
             return item.get().critRange().getAsInt();
         }

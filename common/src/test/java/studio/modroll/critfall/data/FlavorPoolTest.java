@@ -41,6 +41,43 @@ class FlavorPoolTest {
     }
 
     @Test
+    void parsesDeliveryList() {
+        List<String> warnings = new ArrayList<>();
+        FlavorPool pool = FlavorPool.parse(ID, json("""
+                {
+                  "format_version": 1,
+                  "matches": ["minecraft:trident"],
+                  "delivery": ["thrown", "projectile"],
+                  "lines": {"crit": ["a.b.crit.0"]}
+                }
+                """), warnings::add);
+        assertEquals(
+                java.util.Set.of(
+                        studio.modroll.critfall.api.AttackDelivery.THROWN,
+                        studio.modroll.critfall.api.AttackDelivery.PROJECTILE),
+                pool.deliveries());
+        assertTrue(warnings.isEmpty(), warnings.toString());
+    }
+
+    @Test
+    void absentDeliveryMatchesAllDeliveries() {
+        FlavorPool pool = FlavorPool.parse(
+                ID, json("{\"matches\": [\"minecraft:trident\"], \"lines\": {\"crit\": [\"x\"]}}"), w -> {});
+        assertTrue(pool.deliveries().isEmpty());
+    }
+
+    @Test
+    void rejectsUnknownDeliveryValue() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> FlavorPool.parse(
+                        ID,
+                        json("{\"matches\": [\"minecraft:trident\"], \"delivery\": [\"yeeted\"],"
+                                + " \"lines\": {\"crit\": [\"x\"]}}"),
+                        w -> {}));
+    }
+
+    @Test
     void rejectsEmptyMatches() {
         assertThrows(
                 IllegalArgumentException.class,

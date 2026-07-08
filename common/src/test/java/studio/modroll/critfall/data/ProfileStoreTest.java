@@ -28,7 +28,7 @@ class ProfileStoreTest {
     }
 
     private static Optional<EntityProfile> resolve(EntityProfile... profiles) {
-        return ProfileStore.resolve(List.of(profiles), ZOMBIE, ZOMBIE_TAGS::contains);
+        return ProfileStore.resolve(List.of(profiles), ZOMBIE, ZOMBIE_TAGS::contains, null);
     }
 
     @Test
@@ -69,6 +69,74 @@ class ProfileStoreTest {
     void noMatchReturnsEmpty() {
         EntityProfile pigs = profile("pack:pigs", 0, "minecraft:pig");
         assertTrue(resolve(pigs).isEmpty());
+    }
+
+    private static final ResourceLocation TRIDENT = ResourceLocation.parse("minecraft:trident");
+
+    private static ItemProfile itemProfile(String id, String deliveryJson) {
+        return ItemProfile.parse(
+                ResourceLocation.parse(id),
+                JsonParser.parseString("{\"matches\": [\"minecraft:trident\"]" + deliveryJson + "}")
+                        .getAsJsonObject(),
+                w -> {});
+    }
+
+    @Test
+    void deliveryConstrainedProfileOnlyMatchesItsDeliveries() {
+        ItemProfile thrownOnly = itemProfile("pack:thrown_only", ", \"delivery\": [\"thrown\"]");
+        assertEquals(
+                "pack:thrown_only",
+                ProfileStore.resolve(
+                                List.of(thrownOnly),
+                                TRIDENT,
+                                t -> false,
+                                studio.modroll.critfall.api.AttackDelivery.THROWN)
+                        .orElseThrow()
+                        .id()
+                        .toString());
+        assertTrue(ProfileStore.resolve(
+                        List.of(thrownOnly), TRIDENT, t -> false, studio.modroll.critfall.api.AttackDelivery.MELEE)
+                .isEmpty());
+    }
+
+    @Test
+    void deliveryConstrainedBeatsUnconstrainedOnFullTie() {
+        // Same priority, same exact-id specificity: the delivery-specific profile is the more
+        // specific declaration and must win regardless of file-id ordering.
+        ItemProfile generic = itemProfile("apack:trident", "");
+        ItemProfile thrownOnly = itemProfile("zpack:trident_thrown", ", \"delivery\": [\"thrown\"]");
+        assertEquals(
+                "zpack:trident_thrown",
+                ProfileStore.resolve(
+                                List.of(generic, thrownOnly),
+                                TRIDENT,
+                                t -> false,
+                                studio.modroll.critfall.api.AttackDelivery.THROWN)
+                        .orElseThrow()
+                        .id()
+                        .toString());
+        assertEquals(
+                "apack:trident",
+                ProfileStore.resolve(
+                                List.of(generic, thrownOnly),
+                                TRIDENT,
+                                t -> false,
+                                studio.modroll.critfall.api.AttackDelivery.MELEE)
+                        .orElseThrow()
+                        .id()
+                        .toString());
+    }
+
+    @Test
+    void nullDeliveryIgnoresDeliveryConstraints() {
+        // No-context lookups (commands) see every profile, constrained or not.
+        ItemProfile thrownOnly = itemProfile("pack:thrown_only", ", \"delivery\": [\"thrown\"]");
+        assertEquals(
+                "pack:thrown_only",
+                ProfileStore.resolve(List.of(thrownOnly), TRIDENT, t -> false, null)
+                        .orElseThrow()
+                        .id()
+                        .toString());
     }
 
     @Test

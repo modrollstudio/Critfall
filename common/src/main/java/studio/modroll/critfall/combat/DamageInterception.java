@@ -119,7 +119,7 @@ public final class DamageInterception {
             return;
         }
         Optional<EntityProfile> attackerProfile = ProfileLookup.forEntity(attacker);
-        Optional<ItemProfile> weaponProfile = ProfileLookup.forItem(attacker.getMainHandItem());
+        Optional<ItemProfile> weaponProfile = ProfileLookup.forItem(attacker.getMainHandItem(), AttackDelivery.MELEE);
 
         double attackAttribute = attacker.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE)
                 ? attacker.getAttributeValue(Attributes.ATTACK_DAMAGE)
@@ -150,6 +150,8 @@ public final class DamageInterception {
                 attackerProfile,
                 weaponProfile,
                 attacker.getMainHandItem(),
+                attacker.getMainHandItem(),
+                AttackDelivery.MELEE,
                 attackBonus,
                 damageDice,
                 critRange);
@@ -174,14 +176,15 @@ public final class DamageInterception {
         }
         Optional<EntityProfile> attackerProfile = ProfileLookup.forEntity(attacker);
         ItemStack launcher = launcherStack(source);
-        Optional<ItemProfile> weaponProfile = ProfileLookup.forItem(launcher);
+        AttackDelivery delivery = projectileDelivery(source, launcher);
+        Optional<ItemProfile> weaponProfile = ProfileLookup.forItem(launcher, delivery);
         int attackBonus =
                 intStat(attackerProfile.map(EntityProfile::attackBonus), () -> Derivation.attackBonus(dmg.amount()));
 
         DiceExpression damageDice;
         int critRange;
-        Optional<AttackDice.Resolved> resolved =
-                AttackDice.resolveRanged(weaponProfile, ammoDice(source, launcher), attackerProfile, dmg.amount());
+        Optional<AttackDice.Resolved> resolved = AttackDice.resolveRanged(
+                weaponProfile, ammoDice(source, launcher, delivery), attackerProfile, dmg.amount());
         if (resolved.isPresent()) {
             damageDice = resolved.get().dice();
             critRange = resolved.get().critRange();
@@ -201,10 +204,30 @@ public final class DamageInterception {
                 targetProfile,
                 attackerProfile,
                 weaponProfile,
+                launcher,
                 heldLauncher(attacker, launcher),
+                delivery,
                 attackBonus,
                 damageDice,
                 critRange);
+    }
+
+    /**
+     * THROWN when the projectile IS its own launcher — the weapon recorded on it is the item that
+     * flew (a trident or any modded throwing weapon following the same pattern), or a
+     * snowball-style throwable. Everything else (arrow from a bow, item-less projectiles) is
+     * PROJECTILE.
+     */
+    private static AttackDelivery projectileDelivery(DamageSource source, ItemStack launcher) {
+        if (source.getDirectEntity() instanceof ThrowableItemProjectile) {
+            return AttackDelivery.THROWN;
+        }
+        if (source.getDirectEntity() instanceof AbstractArrow arrow
+                && !launcher.isEmpty()
+                && arrow.getPickupItemStackOrigin().is(launcher.getItem())) {
+            return AttackDelivery.THROWN;
+        }
+        return AttackDelivery.PROJECTILE;
     }
 
     /**
@@ -221,7 +244,7 @@ public final class DamageInterception {
     }
 
     /** Extra dice an arrow with its own item profile adds on top of the launcher's dice. */
-    private static Optional<DiceExpression> ammoDice(DamageSource source, ItemStack launcher) {
+    private static Optional<DiceExpression> ammoDice(DamageSource source, ItemStack launcher, AttackDelivery delivery) {
         if (!(source.getDirectEntity() instanceof AbstractArrow arrow)) {
             return Optional.empty();
         }
@@ -229,7 +252,7 @@ public final class DamageInterception {
         if (ammo == launcher) {
             return Optional.empty(); // a thrown trident is its own launcher, not ammunition
         }
-        return ProfileLookup.forItem(ammo).flatMap(ItemProfile::damage);
+        return ProfileLookup.forItem(ammo, delivery).flatMap(ItemProfile::damage);
     }
 
     /**
@@ -306,8 +329,10 @@ public final class DamageInterception {
                 target,
                 targetProfile,
                 attackerProfile,
-                ProfileLookup.forItem(held),
+                ProfileLookup.forItem(held, AttackDelivery.SPELL),
                 held,
+                held,
+                AttackDelivery.SPELL,
                 attackBonus,
                 damageDice,
                 critRange);
@@ -369,7 +394,7 @@ public final class DamageInterception {
                 notation,
                 (int) damage,
                 useDice || save.saved(),
-                ProfileLookup.forFlavor(attacker.getMainHandItem()),
+                ProfileLookup.forFlavor(attacker.getMainHandItem(), AttackDelivery.SPELL),
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
@@ -377,6 +402,11 @@ public final class DamageInterception {
         FeedbackSink.get().save(attacker, target, payload, rules.feedback().visibility());
     }
 
+    /**
+     * @param weaponStack the item that made the attack (a thrown trident even when it left the
+     *     hand) — drives event context and flavor matching
+     * @param heldStack the stack fumble weapon-effects act on (empty when the weapon is gone)
+     */
     private static void rollAndApply(
             IncomingDamage dmg,
             Rules rules,
@@ -387,6 +417,8 @@ public final class DamageInterception {
             Optional<EntityProfile> attackerProfile,
             Optional<ItemProfile> weaponProfile,
             ItemStack weaponStack,
+            ItemStack heldStack,
+            AttackDelivery delivery,
             int attackBonus,
             DiceExpression damageDice,
             int critRange) {
@@ -403,12 +435,7 @@ public final class DamageInterception {
                         attacker.getUUID(), gameTime, rules.fumbles().cooldownTicks());
 
         AttackContext ctx = new AttackContext(
-                deliveryOf(source),
-                source,
-                weaponStack,
-                RollMode.NORMAL,
-                java.util.OptionalInt.empty(),
-                Optional.empty());
+                delivery, source, weaponStack, RollMode.NORMAL, java.util.OptionalInt.empty(), Optional.empty());
         AttackPipeline.Bundle bundle = AttackPipeline.resolve(
                 attacker,
                 target,
@@ -417,7 +444,7 @@ public final class DamageInterception {
                         attackBonus, armorClass, damageDice, critRange, RollMode.NORMAL, fumbleSuppressed),
                 rules,
                 RollRuntime.roller(),
-                weaponStack,
+                heldStack,
                 weaponProfile,
                 attackerProfile);
         AttackResult result = bundle.result();
@@ -459,21 +486,12 @@ public final class DamageInterception {
                 damageDice.toString(),
                 rules.damageDice(),
                 consequences,
-                ProfileLookup.forFlavor(weaponStack),
+                ProfileLookup.forFlavor(weaponStack, delivery),
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
                 target.level().getGameTime());
         FeedbackSink.get().roll(attacker, target, payload, rules.feedback().visibility());
-    }
-
-    /** Maps the classified category onto the public delivery enum for event context (issue #9). */
-    private static AttackDelivery deliveryOf(DamageSource source) {
-        return switch (DamageClassifier.classify(source)) {
-            case PROJECTILE -> AttackDelivery.PROJECTILE;
-            case SPELL -> AttackDelivery.SPELL;
-            default -> AttackDelivery.MELEE;
-        };
     }
 
     /**

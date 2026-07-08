@@ -34,12 +34,22 @@ itself; mobs that hold weapons get their tables from the weapon's item profile i
 | Tag | `"#minecraft:undead"` | 2 |
 | Namespace wildcard | `"alexsmobs:*"` (one JSON tunes a whole mod) | 1 |
 
-When several profiles match the same entity/item, the winner is chosen by:
+**Item profiles and flavor pools** may additionally carry a `delivery` list restricting the
+profile to how the attack was delivered: `"melee"`, `"projectile"`, `"thrown"`, and/or `"spell"`.
+Absent means every delivery. This is how hybrid weapons split: a trident stab resolves `melee`
+profiles, a thrown trident resolves `thrown` ones — and the same works for any modded throwing
+weapon whose projectile records the weapon item as what launched it. Entity and spell profiles
+have no `delivery` key.
+
+When several profiles match the same entity/item, profiles restricted to a *different* delivery
+are out first; among the rest the winner is chosen by:
 
 1. highest `priority` (an integer, default 0 — the shipped defaults all use 0, so any positive
    priority in your pack overrides them),
 2. then the most specific matching entry (exact id beats tag beats wildcard),
-3. then the lexicographically smaller file id, so resolution is deterministic.
+3. then a delivery-restricted profile beats an unrestricted one (it is the more specific
+   declaration),
+4. then the lexicographically smaller file id, so resolution is deterministic.
 
 Use `/critfall inspect [<entity>]` and `/critfall check [<item>]` (permission level 2) to see
 the effective stats and which file won. `inspect` without an argument inspects whatever your
@@ -92,6 +102,7 @@ precedence as damage dice.
 {
   "format_version": 1,
   "matches": ["#minecraft:swords"],
+  "delivery": ["melee"],
   "damage": "1d8",
   "modifier_from": "attack_damage_attribute",
   "crit_range": 20,
@@ -219,14 +230,17 @@ never triggers another attack roll.
 ## Flavor pool
 
 Narrative flavor lines shown by the M6 client feedback module, keyed by **weapon category** and
-**outcome**. Matched against the attack's weapon item with the same `matches` / `priority` resolution
-as the other profiles (see *Matching & priority*); an empty-handed / mob attack carries item
-`minecraft:air`, so a low-priority pool matching `minecraft:air` acts as the catch-all.
+**outcome**. Matched against the attack's weapon item with the same `matches` / `priority` /
+`delivery` resolution as the other profiles (see *Matching & priority*); an empty-handed / mob
+attack carries item `minecraft:air`, so a low-priority pool matching `minecraft:air` acts as the
+catch-all. A `delivery` list picks the pool by how the attack landed — the shipped trident pools
+use it so a stab and a throw read differently.
 
 ```json
 {
   "format_version": 1,
   "matches": ["#minecraft:swords"],
+  "delivery": ["melee"],
   "priority": 1,
   "lines": {
     "crit":   ["critfall.flavor.sword.crit.0", "critfall.flavor.sword.crit.1"],
@@ -242,8 +256,9 @@ as the other profiles (see *Matching & priority*); an empty-handed / mob attack 
 - Values are **translation keys**, not literal text. The mod ships English in
   `assets/critfall/lang/en_us.json`; add your own via a resource pack (the client resolves them, so
   they localize). One key is picked at random per pool per outcome.
-- The mod ships default pools for swords, axes, ranged (bow/crossbow), trident, mace, and a
-  `minecraft:air` catch-all, each with a couple of lines per outcome.
+- The mod ships default pools for swords, axes, ranged (bow/crossbow), trident (split into
+  `trident_melee` and `trident_thrown` by `delivery`), mace, and a `minecraft:air` catch-all, each
+  with a couple of lines per outcome.
 
 Server-side anti-spam (crit/fumble/kill only, per-target cooldown, nat-20/nat-1 priority) and the
 per-client display/sound/particle toggles are documented in [client-feedback.md](client-feedback.md).

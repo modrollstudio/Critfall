@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import net.minecraft.resources.ResourceLocation;
+import studio.modroll.critfall.api.AttackDelivery;
 
 /**
  * A pool of narrative flavor-line translation keys (PLAN §4.5), loaded from
@@ -15,7 +16,12 @@ import net.minecraft.resources.ResourceLocation;
  * the same {@code matches}/{@code priority} resolution as the other profiles. {@code lines} groups
  * keys by outcome — only {@code crit}, {@code fumble}, and {@code kill} ever produce flavor.
  */
-public record FlavorPool(ResourceLocation id, List<MatchEntry> matches, Map<String, List<String>> lines, int priority)
+public record FlavorPool(
+        ResourceLocation id,
+        List<MatchEntry> matches,
+        Set<AttackDelivery> deliveries,
+        Map<String, List<String>> lines,
+        int priority)
         implements Profile {
 
     public static final int FORMAT_VERSION = 1;
@@ -42,6 +48,7 @@ public record FlavorPool(ResourceLocation id, List<MatchEntry> matches, Map<Stri
             matches.add(MatchEntry.parse(text));
         }
 
+        Set<AttackDelivery> deliveries = Profile.parseDeliveries(j);
         LenientJson linesJson = j.object("lines");
         Map<String, List<String>> lines = new LinkedHashMap<>();
         for (String outcome : KNOWN_OUTCOMES) {
@@ -55,6 +62,6 @@ public record FlavorPool(ResourceLocation id, List<MatchEntry> matches, Map<Stri
 
         int priority = j.getInt("priority", 0);
         j.finish();
-        return new FlavorPool(id, List.copyOf(matches), Map.copyOf(lines), priority);
+        return new FlavorPool(id, List.copyOf(matches), deliveries, Map.copyOf(lines), priority);
     }
 }

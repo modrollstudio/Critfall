@@ -1,0 +1,11 @@
+{
+  "format_version": 1,
+  "matches": ["minecraft:trident"],
+  "delivery": ["melee"],
+  "priority": 1,
+  "lines": {
+    "crit": ["critfall.flavor.trident_melee.crit.0", "critfall.flavor.trident_melee.crit.1"],
+    "fumble": ["critfall.flavor.trident_melee.fumble.0", "critfall.flavor.trident_melee.fumble.1"],
+    "kill": ["critfall.flavor.trident_melee.kill.0", "critfall.flavor.trident_melee.kill.1"]
+  }
+}

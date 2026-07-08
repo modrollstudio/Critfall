@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import net.minecraft.resources.ResourceLocation;
+import studio.modroll.critfall.api.AttackDelivery;
 
 /**
  * The loaded datapack state, swapped atomically on every (re)load. Reads happen on the server
@@ -67,33 +68,46 @@ public final class ProfileStore {
 
     public static Optional<EntityProfile> findEntityProfile(
             ResourceLocation entityTypeId, Predicate<ResourceLocation> tagTest) {
-        return resolve(entityProfiles.values(), entityTypeId, tagTest);
+        return resolve(entityProfiles.values(), entityTypeId, tagTest, null);
     }
 
     public static Optional<ItemProfile> findItemProfile(ResourceLocation itemId, Predicate<ResourceLocation> tagTest) {
-        return resolve(itemProfiles.values(), itemId, tagTest);
+        return resolve(itemProfiles.values(), itemId, tagTest, null);
+    }
+
+    public static Optional<ItemProfile> findItemProfile(
+            ResourceLocation itemId, Predicate<ResourceLocation> tagTest, AttackDelivery delivery) {
+        return resolve(itemProfiles.values(), itemId, tagTest, delivery);
     }
 
     public static Optional<SpellProfile> findSpellProfile(
             ResourceLocation damageTypeId, Predicate<ResourceLocation> tagTest) {
-        return resolve(spellProfiles.values(), damageTypeId, tagTest);
+        return resolve(spellProfiles.values(), damageTypeId, tagTest, null);
     }
 
-    public static Optional<FlavorPool> findFlavorPool(ResourceLocation itemId, Predicate<ResourceLocation> tagTest) {
-        return resolve(flavorPools.values(), itemId, tagTest);
+    public static Optional<FlavorPool> findFlavorPool(
+            ResourceLocation itemId, Predicate<ResourceLocation> tagTest, AttackDelivery delivery) {
+        return resolve(flavorPools.values(), itemId, tagTest, delivery);
     }
 
     /**
-     * Picks the winning profile for {@code id}: highest {@code priority} first; among equals the
-     * most specific matching entry wins (exact id &gt; tag &gt; namespace wildcard); a remaining
-     * tie goes to the lexicographically smaller file id so resolution is deterministic across
-     * reloads.
+     * Picks the winning profile for {@code id}: profiles constrained to other delivery methods are
+     * out (a {@code null} delivery — no-context lookups like commands — ignores the constraint);
+     * then highest {@code priority}; among equals the most specific matching entry wins (exact id
+     * &gt; tag &gt; namespace wildcard), then a delivery-constrained profile beats an unconstrained
+     * one (it is the more specific declaration); a remaining tie goes to the lexicographically
+     * smaller file id so resolution is deterministic across reloads.
      */
     static <T extends Profile> Optional<T> resolve(
-            Collection<T> profiles, ResourceLocation id, Predicate<ResourceLocation> tagTest) {
+            Collection<T> profiles, ResourceLocation id, Predicate<ResourceLocation> tagTest, AttackDelivery delivery) {
         T best = null;
         int bestSpecificity = 0;
         for (T profile : profiles) {
+            if (delivery != null
+                    && !profile.deliveries().isEmpty()
+                    && !profile.deliveries().contains(delivery)) {
+                continue;
+            }
             int specificity = 0;
             for (MatchEntry entry : profile.matches()) {
                 if (entry.specificity() > specificity && entry.matches(id, tagTest)) {
@@ -117,6 +131,10 @@ public final class ProfileStore {
         }
         if (specificity != bestSpecificity) {
             return specificity > bestSpecificity;
+        }
+        boolean candidateConstrained = !candidate.deliveries().isEmpty();
+        if (candidateConstrained != !best.deliveries().isEmpty()) {
+            return candidateConstrained;
         }
         return candidate.id().compareTo(best.id()) < 0;
     }

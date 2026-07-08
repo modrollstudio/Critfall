@@ -8,6 +8,7 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Consumer;
 import net.minecraft.resources.ResourceLocation;
+import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.dice.DiceExpression;
 
 /**
@@ -18,6 +19,7 @@ import studio.modroll.critfall.dice.DiceExpression;
 public record ItemProfile(
         ResourceLocation id,
         List<MatchEntry> matches,
+        Set<AttackDelivery> deliveries,
         Optional<DiceExpression> damage,
         ModifierFrom modifierFrom,
         OptionalInt critRange,
@@ -60,6 +62,7 @@ public record ItemProfile(
             matches.add(MatchEntry.parse(text));
         }
 
+        Set<AttackDelivery> deliveries = Profile.parseDeliveries(j);
         Optional<DiceExpression> damage = j.optionalString("damage").map(DiceExpression::parse);
         ModifierFrom modifierFrom = ModifierFrom.parse(j.getString("modifier_from", "attack_damage_attribute"));
         OptionalInt critRange = j.optionalInt("crit_range");
@@ -73,6 +76,7 @@ public record ItemProfile(
         return new ItemProfile(
                 id,
                 List.copyOf(matches),
+                deliveries,
                 damage,
                 modifierFrom,
                 critRange,

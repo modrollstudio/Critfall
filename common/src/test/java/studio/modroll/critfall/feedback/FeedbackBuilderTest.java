@@ -26,6 +26,7 @@ class FeedbackBuilderTest {
         return Optional.of(new studio.modroll.critfall.data.FlavorPool(
                 ResourceLocation.parse("test:p"),
                 List.of(),
+                java.util.Set.of(),
                 Map.of(
                         studio.modroll.critfall.data.FlavorPool.CRIT, List.of("crit.line"),
                         studio.modroll.critfall.data.FlavorPool.FUMBLE, List.of("fumble.line"),
@@ -128,8 +129,12 @@ class FeedbackBuilderTest {
 
     @Test
     void nonCritKillWithEmptyPoolRecordsNoCooldown() {
-        Optional<FlavorPool> critOnlyPool = Optional.of(
-                new FlavorPool(ResourceLocation.parse("test:p"), List.of(), Map.of(FlavorPool.CRIT, List.of("c")), 0));
+        Optional<FlavorPool> critOnlyPool = Optional.of(new FlavorPool(
+                ResourceLocation.parse("test:p"),
+                List.of(),
+                java.util.Set.of(),
+                Map.of(FlavorPool.CRIT, List.of("c")),
+                0));
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
                 new AttackResult(AttackOutcome.HIT, 13, 13, 10, 0),
                 true,

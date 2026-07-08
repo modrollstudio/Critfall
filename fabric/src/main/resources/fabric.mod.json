@@ -23,7 +23,8 @@
       "studio.modroll.critfall.fabric.gametest.FeedbackGameTests",
       "studio.modroll.critfall.fabric.gametest.OutcomeGameTests",
       "studio.modroll.critfall.fabric.gametest.ProjectileGameTests",
-      "studio.modroll.critfall.fabric.gametest.SpellGameTests"
+      "studio.modroll.critfall.fabric.gametest.SpellGameTests",
+      "studio.modroll.critfall.fabric.gametest.TridentGameTests"
     ]
   },
   "mixins": ["critfall.mixins.json"],
