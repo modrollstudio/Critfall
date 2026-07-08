@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-08
+
 ### Added
 
 - Delivery-aware profile and flavor matching (issue #3): item profiles and flavor pools accept an optional `"delivery": ["melee" | "projectile" | "thrown" | "spell"]` list restricting them to how the attack was delivered, so hybrid weapons resolve differently per use — a thrown trident and a melee trident stab now pick different dice and different flavor lines. The automatic pipeline detects THROWN for any projectile that is its own launcher (tridents, snowball-likes, and modded throwing weapons following the same pattern); API attacks already carry `AttackContext.delivery`. Resolution ties (same priority, same specificity) prefer the delivery-restricted profile. The shipped trident flavor pool split into `critfall:trident_melee` / `critfall:trident_thrown` (new melee stab lines; the old `critfall:trident` pool id and `critfall.flavor.trident.*` lang keys are gone). See `docs/datapack-formats.md`. Flavor for thrown weapons also now matches the weapon that flew instead of the (empty) hand that threw it.
