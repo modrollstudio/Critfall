@@ -1,8 +1,11 @@
 # Mod compatibility notes
 
 How Critfall's damage classification interacts with popular mods, and what pack devs need to
-tag or profile. Findings below were read from each mod's actual sources (versions noted); they
-can drift — re-verify on major updates.
+tag or profile. The Iron's Spells and Ars Nouveau sections are verified in-game against the
+versions noted: `SpellModCompatGameTests` (neoforge `gametest` source set) loads the real jars
+via `localRuntime` and drives damage through each mod's own damage-source factories —
+`./gradlew :neoforge:runGameTestServer` re-runs the whole suite. Findings can still drift on
+mod updates; bump the pinned versions in `gradle.properties` and re-run to re-verify.
 
 ## How spell classification works (M5)
 
@@ -31,7 +34,10 @@ caster's held-weapon dice.
 
 ## Iron's Spells 'n Spellbooks
 
-Verified against the `1.21` branch of `iron431/irons-spells-n-spellbooks` (NeoForge 1.21.1).
+Verified in-game against `irons_spellbooks` **1.21.1-3.16.2** (NeoForge 1.21.1, GeckoLib 4.9.2,
+Iron's Lib 1.21.1-2.1.0): self-cast sources classify as SPELL and roll a d20, school-tag save
+profiles resolve as saving throws (half on success), `fire_field` ticks stay vanilla, and
+`attack_rolls.spells: false` restores vanilla for spell damage while melee rolls stay on.
 
 - **Damage types** (all registered under `irons_spellbooks:`): nine school types — `fire_magic`,
   `ice_magic`, `lightning_magic`, `holy_magic`, `ender_magic`, `blood_magic`, `evocation_magic`,
@@ -57,7 +63,9 @@ Verified against the `1.21` branch of `iron431/irons-spells-n-spellbooks` (NeoFo
   - Summon minions (`IMagicSummon`) attack with regular mob melee — those roll as MELEE, which
     is correct.
 
-Example datapack tuning (fireballs feel like a DEX save, cantrips stay attack rolls):
+Example datapack tuning (fire-school spells feel like a DEX save, other schools stay attack
+rolls). Watch the school assignments, not the spell names: as of 3.16.x **Fireball deals
+`evocation_magic`, not `fire_magic`** — profile the school tag a spell actually deals.
 
 ```json
 // data/mypack/critfall/spell_profile/irons_fire.json
@@ -71,7 +79,10 @@ Example datapack tuning (fireballs feel like a DEX save, cantrips stay attack ro
 
 ## Ars Nouveau
 
-Verified against `baileyholl/Ars-Nouveau` `main` (5.12.x, MC 1.21.1).
+Verified in-game against `ars_nouveau` **5.12.1** (NeoForge 1.21.1, GeckoLib 4.9.2, Curios
+9.5.1): self-cast `DamageUtil` sources classify as SPELL and roll a d20, an `ars_nouveau:spell`
+save profile resolves as a saving throw (half on success), `sourceberry_bush` stays vanilla,
+casterless sources pass through vanilla, and `attack_rolls.spells: false` restores vanilla.
 
 - **Damage types:** `ars_nouveau:spell` (generic spell damage — most damage effects),
   `ars_nouveau:flare`, `ars_nouveau:frost` (cold snap), `ars_nouveau:windshear`,

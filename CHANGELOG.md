@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Spell-mod compatibility verified in a running game (issue #2): Iron's Spells 'n Spellbooks 1.21.1-3.16.2 and Ars Nouveau 5.12.1 (plus GeckoLib/Curios/Player Animator/Iron's Lib) now load in dev runs via a `localRuntime` dependency set from the Modrinth maven, and `SpellModCompatGameTests` drives damage through each mod's own damage-source factories: self-cast spell damage classifies as SPELL (not MELEE) and rolls a d20, school-tag save profiles resolve as saving throws with half damage on success, ground-AoE tick types (`fire_field`, `sourceberry_bush`) never roll, casterless Ars damage passes through, and `attack_rolls.spells: false` restores vanilla spell damage while melee rolls stay on. `docs/compat.md` upgraded from source-reading to verified-against-versions; note there that ISS 3.16.x deals `evocation_magic` (not `fire_magic`) for Fireball.
+
 ### Fixed
 
 - API-driven attacks (`RollService.performAttack`) no longer double-dip armor: the damage they apply now bypasses vanilla armor reduction exactly like the automatic pipeline (AC already stood in for armor), governed by the same `balance.disable_vanilla_armor_reduction` flag. The `hurt` inside `performAttack` also never re-rolls through the automatic interception, even when the participants were not suppressed. GameTests prove API and automatic attacks deal identical final damage to an armored target on both loaders.

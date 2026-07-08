@@ -2,8 +2,32 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
+// Compat-verification GameTests (docs/compat.md): compiled against the real Iron's Spells /
+// Ars Nouveau jars, loaded on dev runs only, never shipped in the production jar.
+sourceSets {
+    gametest
+}
+
+// Runtime-only mods for dev runs: on runtimeClasspath (so FML loads jars with a
+// neoforge.mods.toml as mods) but not in any published/consumed configuration. This is what
+// newer ModDevGradle versions ship built-in as localRuntime; 2.0.141 predates it.
+configurations {
+    localRuntime
+    runtimeClasspath.extendsFrom localRuntime
+}
+
+repositories {
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
+}
+
 neoForge {
     version = neoforge_version
+
+    addModdingDependenciesTo sourceSets.gametest
 
     runs {
         client {
@@ -24,6 +48,8 @@ neoForge {
             sourceSet project(':common').sourceSets.main
             // Shared GameTest bodies — loaded on the gameTestServer run, not shipped in the jar.
             sourceSet project(':common').sourceSets.gametest
+            // NeoForge-only compat GameTests (reference Iron's Spells / Ars Nouveau classes).
+            sourceSet sourceSets.gametest
         }
     }
 }
@@ -32,6 +58,18 @@ dependencies {
     compileOnly project(':common')
     // The gametest delegators compile against the shared *Scenarios classes.
     compileOnly project(':common').sourceSets.gametest.output
+
+    // Spell-compat verification (docs/compat.md): the real mods on the dev-run classpath.
+    localRuntime "maven.modrinth:irons-spells-n-spellbooks:${irons_spellbooks_version}"
+    localRuntime "maven.modrinth:irons-lib:${irons_lib_version}"
+    localRuntime "maven.modrinth:playeranimator:${playeranimator_version}"
+    localRuntime "maven.modrinth:curios:${curios_version}"
+    localRuntime "maven.modrinth:ars-nouveau:${ars_nouveau_version}"
+    localRuntime "maven.modrinth:geckolib:${geckolib_version}"
+
+    gametestCompileOnly project(':common')
+    gametestCompileOnly "maven.modrinth:irons-spells-n-spellbooks:${irons_spellbooks_version}"
+    gametestCompileOnly "maven.modrinth:ars-nouveau:${ars_nouveau_version}"
 }
 
 // Bundle common's compiled classes into the NeoForge jar. Common's resources come through
