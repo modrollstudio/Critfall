@@ -140,6 +140,80 @@ class ProfileStoreTest {
     }
 
     @Test
+    void entityResolutionIsCachedBetweenLookups() {
+        EntityProfile byTag = profile("pack:by_tag", 0, "#minecraft:undead");
+        ProfileStore.setEntityProfiles(java.util.Map.of(byTag.id(), byTag));
+        try {
+            java.util.concurrent.atomic.AtomicInteger tagTests = new java.util.concurrent.atomic.AtomicInteger();
+            java.util.function.Predicate<ResourceLocation> countingTagTest = tag -> {
+                tagTests.incrementAndGet();
+                return ZOMBIE_TAGS.contains(tag);
+            };
+            assertEquals(
+                    "pack:by_tag",
+                    ProfileStore.findEntityProfile(ZOMBIE, countingTagTest)
+                            .orElseThrow()
+                            .id()
+                            .toString());
+            int afterFirstLookup = tagTests.get();
+            assertEquals(
+                    "pack:by_tag",
+                    ProfileStore.findEntityProfile(ZOMBIE, countingTagTest)
+                            .orElseThrow()
+                            .id()
+                            .toString());
+            assertEquals(afterFirstLookup, tagTests.get(), "second lookup for the same id must hit the cache");
+        } finally {
+            ProfileStore.setEntityProfiles(java.util.Map.of());
+        }
+    }
+
+    @Test
+    void storeSwapInvalidatesCachedResolution() {
+        EntityProfile first = profile("pack:first", 0, "minecraft:zombie");
+        EntityProfile second = profile("pack:second", 0, "minecraft:zombie");
+        try {
+            ProfileStore.setEntityProfiles(java.util.Map.of(first.id(), first));
+            assertEquals(
+                    "pack:first",
+                    ProfileStore.findEntityProfile(ZOMBIE, ZOMBIE_TAGS::contains)
+                            .orElseThrow()
+                            .id()
+                            .toString());
+            ProfileStore.setEntityProfiles(java.util.Map.of(second.id(), second));
+            assertEquals(
+                    "pack:second",
+                    ProfileStore.findEntityProfile(ZOMBIE, ZOMBIE_TAGS::contains)
+                            .orElseThrow()
+                            .id()
+                            .toString(),
+                    "a /reload store swap must invalidate cached resolutions");
+        } finally {
+            ProfileStore.setEntityProfiles(java.util.Map.of());
+        }
+    }
+
+    @Test
+    void cachedItemResolutionKeysIncludeDelivery() {
+        ItemProfile thrownOnly = itemProfile("pack:thrown_only", ", \"delivery\": [\"thrown\"]");
+        try {
+            ProfileStore.setItemProfiles(java.util.Map.of(thrownOnly.id(), thrownOnly));
+            assertEquals(
+                    "pack:thrown_only",
+                    ProfileStore.findItemProfile(TRIDENT, t -> false, studio.modroll.critfall.api.AttackDelivery.THROWN)
+                            .orElseThrow()
+                            .id()
+                            .toString());
+            assertTrue(
+                    ProfileStore.findItemProfile(TRIDENT, t -> false, studio.modroll.critfall.api.AttackDelivery.MELEE)
+                            .isEmpty(),
+                    "a THROWN resolution must never be served for a MELEE lookup");
+        } finally {
+            ProfileStore.setItemProfiles(java.util.Map.of());
+        }
+    }
+
+    @Test
     void storeRoundTrip() {
         EntityProfile zombie = profile("pack:zombie", 0, "minecraft:zombie");
         ProfileStore.setEntityProfiles(java.util.Map.of(zombie.id(), zombie));

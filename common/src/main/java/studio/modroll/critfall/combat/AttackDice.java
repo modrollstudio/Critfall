@@ -17,6 +17,20 @@ public final class AttackDice {
 
     public record Resolved(DiceExpression dice, int critRange) {}
 
+    /**
+     * Pre-parsed flat-bonus terms for {@code modifier_from: attack_damage_attribute}, indexed by
+     * bonus value ({@link Derivation#itemDamageBonus} clamps to 0..12) — appending via
+     * {@link DiceExpression#plus} yields the identical canonical expression the previous
+     * string-concat-and-reparse produced, without a per-hit parse.
+     */
+    private static final DiceExpression[] BONUS_TERMS = new DiceExpression[13];
+
+    static {
+        for (int i = 1; i < BONUS_TERMS.length; i++) {
+            BONUS_TERMS[i] = DiceExpression.parse(Integer.toString(i));
+        }
+    }
+
     private AttackDice() {}
 
     public static Optional<Resolved> resolve(
@@ -25,10 +39,7 @@ public final class AttackDice {
         if (weaponDice.isPresent()) {
             DiceExpression dice = weaponDice.get();
             if (weapon.get().modifierFrom() == ItemProfile.ModifierFrom.ATTACK_DAMAGE_ATTRIBUTE) {
-                int bonus = Derivation.itemDamageBonus(attackDamageAttribute, dice.averageValue());
-                if (bonus > 0) {
-                    dice = DiceExpression.parse(dice + "+" + bonus);
-                }
+                dice = withBonus(dice, Derivation.itemDamageBonus(attackDamageAttribute, dice.averageValue()));
             }
             // A weapon's crit range beats the wielder's; a keen blade stays keen in anyone's hands.
             int critRange = weapon.get().critRange().orElse(entityCritRange(attacker));
@@ -56,10 +67,7 @@ public final class AttackDice {
         if (launcherDice.isPresent()) {
             DiceExpression dice = launcherDice.get();
             if (launcher.get().modifierFrom() == ItemProfile.ModifierFrom.ATTACK_DAMAGE_ATTRIBUTE) {
-                int bonus = Derivation.itemDamageBonus(vanillaDamage, dice.averageValue());
-                if (bonus > 0) {
-                    dice = DiceExpression.parse(dice + "+" + bonus);
-                }
+                dice = withBonus(dice, Derivation.itemDamageBonus(vanillaDamage, dice.averageValue()));
             }
             int critRange = launcher.get().critRange().orElse(entityCritRange(attacker));
             return Optional.of(new Resolved(withAmmo(dice, ammoDice), critRange));
@@ -76,6 +84,18 @@ public final class AttackDice {
             return base.plus(ammo.get());
         } catch (DiceParseException e) {
             return base; // combined term count over the engine limit — the ammo bonus is dropped
+        }
+    }
+
+    /** Appends the flat attribute bonus, dropping it when the dice already sit at the term cap. */
+    private static DiceExpression withBonus(DiceExpression dice, int bonus) {
+        if (bonus <= 0) {
+            return dice;
+        }
+        try {
+            return dice.plus(BONUS_TERMS[bonus]);
+        } catch (DiceParseException e) {
+            return dice; // profile dice already at MAX_TERMS — same policy as withAmmo
         }
     }
 

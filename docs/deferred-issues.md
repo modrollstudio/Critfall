@@ -1,13 +1,35 @@
 # Deferred issues
 
-Enhancements identified during development but out of scope for the milestone/issue that surfaced them. Tracked here until filed as GitHub issues.
+Tracked findings from `docs/audit-0.2.md` that were deliberately **not** fixed in 0.2. Each entry
+says why it was deferred and what would justify picking it up.
 
-## Environmental / creative-kill flavor lines
+## From the 0.2 pre-release audit
 
-**Surfaced during:** issue #4 (flavor-line quality pass, 0.2.0).
+### A5 (Low) — GameTest seams live in a production class
+`neoforge/src/main/java/studio/modroll/critfall/neoforge/network/FeedbackDispatcher.java`
 
-**What's missing:** Flavor lines for environmental and creative-mode kills — fall damage, lava, drowning, and similar death causes — have no dedicated crit/fumble/kill lines. The current `flavor_pool` matching resolves against the *weapon* (`data/<ns>/critfall/flavor_pool/`, matched by item id/tag), and environmental deaths have no weapon to match against.
+`lastRollPayload` and `actionBarSink` are mutable statics used by GameTests. Memory impact is a
+single small record; the risk is conceptual (test hooks in shipped code), not operational.
+Pick up if the dispatcher grows more seams — then extract a proper test double behind
+`FeedbackSink` instead.
 
-**Why deferred:** Text-only work (new lang keys + pool JSON) can't fill this gap by itself. It needs a death-cause / damage-source hook — a way to key a flavor pool off `DamageSource`/damage-type id instead of (or in addition to) the wielded item, similar to how `spell_profile` already matches by damage type. That's a resolution-logic change, not a content edit, so it's out of scope for a flavor text pass.
+### C3 (Low) — `OutcomeExecutor.applyingEffects` is a plain static boolean
+`common/src/main/java/studio/modroll/critfall/outcome/OutcomeExecutor.java`
 
-**Future enhancement:** Add damage-source-keyed flavor pool matching (e.g. a `damage_type` match key alongside the existing weapon `matches`), then ship `en_us` lines for fall, lava, drowning, and other environmental causes.
+Correct under the documented invariant (all entity damage runs on the server thread; effects never
+nest; set/reset is try/finally). A `ThreadLocal` would defend against mods hurting entities
+off-thread — which already violates vanilla's threading contract — at a hot-path cost. Revisit only
+if a real off-thread damage path shows up in a bug report.
+
+### D2-adjacent (Low) — `readEnum` on a hostile ordinal
+`common/src/main/java/studio/modroll/critfall/feedback/RollFeedbackPayload.java`,
+`SaveFeedbackPayload.java`
+
+A crafted payload with an out-of-range enum ordinal throws `ArrayIndexOutOfBoundsException` in
+decode, which the network layer already turns into a clean disconnect — the same behavior vanilla
+payloads exhibit. Bounding it would only change the exception type. No action planned.
+
+### B5 (Low) — small per-hit allocations
+Short-lived `Optional`/record/lambda allocations in `DamageInterception.rollAndApply` and friends.
+Nursery-collected, invisible next to the (now removed) per-hit scans and parses. Revisit only with
+profiler evidence from a large server.

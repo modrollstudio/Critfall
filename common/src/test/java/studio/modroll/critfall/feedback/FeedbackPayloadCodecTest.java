@@ -1,9 +1,11 @@
 package studio.modroll.critfall.feedback;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.DecoderException;
 import java.util.List;
 import java.util.Optional;
 import net.minecraft.network.FriendlyByteBuf;
@@ -57,6 +59,23 @@ class FeedbackPayloadCodecTest {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         SaveFeedbackPayload.STREAM_CODEC.encode(buf, payload);
         assertTrue(SaveFeedbackPayload.STREAM_CODEC.decode(buf).dryRun());
+    }
+
+    @Test
+    void decodeRejectsAbsurdConsequenceCountInsteadOfAllocating() {
+        // A hostile/corrupted server can claim a 2^31-1 element consequence list; the decoder must
+        // fail as a normal decode error (clean disconnect), not preallocate gigabytes and OOM.
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        buf.writeEnum(AttackOutcome.HIT);
+        buf.writeVarInt(13); // natural
+        buf.writeInt(16); // attackTotal
+        buf.writeVarInt(10); // armorClass
+        buf.writeVarInt(5); // damage
+        buf.writeUtf("1d6");
+        buf.writeBoolean(true); // showDamage
+        buf.writeOptional(Optional.<String>empty(), FriendlyByteBuf::writeUtf); // flavorKey
+        buf.writeVarInt(Integer.MAX_VALUE); // claimed consequence count
+        assertThrows(DecoderException.class, () -> RollFeedbackPayload.STREAM_CODEC.decode(buf));
     }
 
     @Test

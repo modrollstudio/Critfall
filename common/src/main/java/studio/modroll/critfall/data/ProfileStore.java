@@ -3,6 +3,7 @@ package studio.modroll.critfall.data;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import net.minecraft.resources.ResourceLocation;
 import studio.modroll.critfall.api.AttackDelivery;
@@ -11,6 +12,13 @@ import studio.modroll.critfall.api.AttackDelivery;
  * The loaded datapack state, swapped atomically on every (re)load. Reads happen on the server
  * thread mid-combat; loads happen from {@code /reload} — hence immutable snapshots behind
  * volatile fields, same pattern as {@link studio.modroll.critfall.RollRuntime}.
+ *
+ * <p>Resolution is memoized per {@code (registry id, delivery)} (audit 0.2 finding B1: the linear
+ * scan over every profile ran 4–6× per hit, server-wide). The cache is sound because a registry id
+ * fully determines the match outcome within one datapack generation — tag membership hangs off the
+ * id's registry entry, not the individual stack/entity — and every path that can change profiles
+ * OR tags is a {@code /reload}, which re-runs the reload listeners and swaps the store, clearing
+ * the cache here. Size is bounded by registry size × deliveries.
  */
 public final class ProfileStore {
 
@@ -20,18 +28,28 @@ public final class ProfileStore {
     private static volatile Map<ResourceLocation, OutcomeTable> outcomeTables = Map.of();
     private static volatile Map<ResourceLocation, FlavorPool> flavorPools = Map.of();
 
+    private record LookupKey(ResourceLocation id, AttackDelivery delivery) {}
+
+    private static final Map<LookupKey, Optional<EntityProfile>> entityCache = new ConcurrentHashMap<>();
+    private static final Map<LookupKey, Optional<ItemProfile>> itemCache = new ConcurrentHashMap<>();
+    private static final Map<LookupKey, Optional<SpellProfile>> spellCache = new ConcurrentHashMap<>();
+    private static final Map<LookupKey, Optional<FlavorPool>> flavorCache = new ConcurrentHashMap<>();
+
     private ProfileStore() {}
 
     public static void setEntityProfiles(Map<ResourceLocation, EntityProfile> profiles) {
         entityProfiles = Map.copyOf(profiles);
+        entityCache.clear();
     }
 
     public static void setItemProfiles(Map<ResourceLocation, ItemProfile> profiles) {
         itemProfiles = Map.copyOf(profiles);
+        itemCache.clear();
     }
 
     public static void setSpellProfiles(Map<ResourceLocation, SpellProfile> profiles) {
         spellProfiles = Map.copyOf(profiles);
+        spellCache.clear();
     }
 
     public static void setOutcomeTables(Map<ResourceLocation, OutcomeTable> tables) {
@@ -40,6 +58,7 @@ public final class ProfileStore {
 
     public static void setFlavorPools(Map<ResourceLocation, FlavorPool> pools) {
         flavorPools = Map.copyOf(pools);
+        flavorCache.clear();
     }
 
     public static Map<ResourceLocation, EntityProfile> entityProfiles() {
@@ -68,26 +87,31 @@ public final class ProfileStore {
 
     public static Optional<EntityProfile> findEntityProfile(
             ResourceLocation entityTypeId, Predicate<ResourceLocation> tagTest) {
-        return resolve(entityProfiles.values(), entityTypeId, tagTest, null);
+        return entityCache.computeIfAbsent(
+                new LookupKey(entityTypeId, null),
+                key -> resolve(entityProfiles.values(), entityTypeId, tagTest, null));
     }
 
     public static Optional<ItemProfile> findItemProfile(ResourceLocation itemId, Predicate<ResourceLocation> tagTest) {
-        return resolve(itemProfiles.values(), itemId, tagTest, null);
+        return findItemProfile(itemId, tagTest, null);
     }
 
     public static Optional<ItemProfile> findItemProfile(
             ResourceLocation itemId, Predicate<ResourceLocation> tagTest, AttackDelivery delivery) {
-        return resolve(itemProfiles.values(), itemId, tagTest, delivery);
+        return itemCache.computeIfAbsent(
+                new LookupKey(itemId, delivery), key -> resolve(itemProfiles.values(), itemId, tagTest, delivery));
     }
 
     public static Optional<SpellProfile> findSpellProfile(
             ResourceLocation damageTypeId, Predicate<ResourceLocation> tagTest) {
-        return resolve(spellProfiles.values(), damageTypeId, tagTest, null);
+        return spellCache.computeIfAbsent(
+                new LookupKey(damageTypeId, null), key -> resolve(spellProfiles.values(), damageTypeId, tagTest, null));
     }
 
     public static Optional<FlavorPool> findFlavorPool(
             ResourceLocation itemId, Predicate<ResourceLocation> tagTest, AttackDelivery delivery) {
-        return resolve(flavorPools.values(), itemId, tagTest, delivery);
+        return flavorCache.computeIfAbsent(
+                new LookupKey(itemId, delivery), key -> resolve(flavorPools.values(), itemId, tagTest, delivery));
     }
 
     /**

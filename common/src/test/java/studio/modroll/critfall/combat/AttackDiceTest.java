@@ -140,6 +140,17 @@ class AttackDiceTest {
     }
 
     @Test
+    void attributeBonusIsDroppedWhenDiceAlreadyAtTermLimit() {
+        // A valid, loadable profile can already sit at the engine's 100-term cap; appending the
+        // attribute bonus must not throw mid-hit — the bonus is dropped, dice used as-is.
+        String maxTerms = "1" + "+1".repeat(99);
+        ItemProfile crowded = item("{\"matches\": [\"test:flail\"], \"damage\": \"" + maxTerms + "\"}");
+        AttackDice.Resolved resolved = AttackDice.resolve(Optional.of(crowded), Optional.empty(), 150.0)
+                .orElseThrow();
+        assertEquals(maxTerms, resolved.dice().toString());
+    }
+
+    @Test
     void itemDamageBonusDerivation() {
         assertEquals(2, Derivation.itemDamageBonus(6.0, 4.5), "iron sword over 1d8");
         assertEquals(4, Derivation.itemDamageBonus(8.0, 4.5), "netherite sword over 1d8");

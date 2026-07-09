@@ -155,8 +155,10 @@ public final class RulesLoader {
 
         LenientJson balance = j.object("balance");
         double multiplier = balance.getDouble("global_damage_multiplier", 1.0);
-        if (multiplier <= 0) {
-            warn.accept("rules.json: 'global_damage_multiplier' must be positive, using 1.0");
+        // isFinite guards the 1e999-style overflow-to-Infinity (and NaN, which passes "<= 0"
+        // because NaN comparisons are false) — either would poison every rolled hit's damage.
+        if (!Double.isFinite(multiplier) || multiplier <= 0) {
+            warn.accept("rules.json: 'global_damage_multiplier' must be a positive finite number, using 1.0");
             multiplier = 1.0;
         }
         Rules.Balance balanceRules =

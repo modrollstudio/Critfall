@@ -201,6 +201,40 @@ class RulesLoaderTest {
     }
 
     @Test
+    void lenientNanIntFieldWarnsAndFallsBack() {
+        // Pins existing behavior: the lenient parser turns an unquoted NaN literal into a STRING
+        // primitive, so numeric readers take the wrong-type path — warn + default, never throw.
+        List<String> warnings = new ArrayList<>();
+        Rules rules = RulesLoader.parse(json("{\"fumbles\": {\"cooldown_ticks\": NaN}}"), warnings::add);
+        assertEquals(200, rules.fumbles().cooldownTicks());
+        assertEquals(1, warnings.size(), warnings.toString());
+    }
+
+    @Test
+    void nonFiniteGlobalDamageMultiplierWarnsAndFallsBack() {
+        // 1e999 is a legitimate number token that overflows double to Infinity, slips past the
+        // "<= 0" check, and would make every rolled hit deal infinite damage. NaN/Infinity
+        // literals arrive as strings (wrong-type path); all three must fall back to 1.0.
+        List<String> warnings = new ArrayList<>();
+        Rules overflow = RulesLoader.parse(json("{\"balance\": {\"global_damage_multiplier\": 1e999}}"), warnings::add);
+        assertEquals(1.0, overflow.balance().globalDamageMultiplier());
+        assertEquals(1, warnings.size(), warnings.toString());
+        Rules nan = RulesLoader.parse(json("{\"balance\": {\"global_damage_multiplier\": NaN}}"), warnings::add);
+        assertEquals(1.0, nan.balance().globalDamageMultiplier());
+        Rules infinity =
+                RulesLoader.parse(json("{\"balance\": {\"global_damage_multiplier\": Infinity}}"), warnings::add);
+        assertEquals(1.0, infinity.balance().globalDamageMultiplier());
+        assertEquals(3, warnings.size(), warnings.toString());
+    }
+
+    @Test
+    void fileWithNanNumberNeverThrows(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("rules.json");
+        Files.writeString(file, "{\"fumbles\": {\"cooldown_ticks\": NaN}}");
+        assertEquals(200, RulesLoader.load(file).fumbles().cooldownTicks());
+    }
+
+    @Test
     void missingFileIsCreatedWithDefaults(@TempDir Path dir) throws Exception {
         Path file = dir.resolve("critfall").resolve("rules.json");
         Rules rules = RulesLoader.load(file);

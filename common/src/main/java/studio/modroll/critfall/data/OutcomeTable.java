@@ -52,6 +52,16 @@ public record OutcomeTable(ResourceLocation id, Trigger trigger, List<WeightedEf
         if (effects.isEmpty()) {
             throw new IllegalArgumentException("no effect in 'effects' is of a known type");
         }
+        // Each weight is validated >= 1, but the SUM must also stay int-safe: an overflowed
+        // (negative) total would make the weighted pick roll a die with negative sides mid-combat.
+        long totalWeight = 0;
+        for (WeightedEffect effect : effects) {
+            totalWeight += effect.weight();
+        }
+        if (totalWeight > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException(
+                    "total effect weight " + totalWeight + " exceeds the maximum of " + Integer.MAX_VALUE);
+        }
         j.finish();
         return new OutcomeTable(id, trigger, List.copyOf(effects));
     }

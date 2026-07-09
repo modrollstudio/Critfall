@@ -162,6 +162,35 @@ class OutcomeTableTest {
     }
 
     @Test
+    void weightSumOverflowingIntRejects() {
+        // Two individually-valid weights whose sum wraps negative would make the weighted pick
+        // roll a die with negative sides mid-combat — the file must be rejected at load instead.
+        assertThrows(IllegalArgumentException.class, () -> parse("""
+                        {
+                          "trigger": "nat_1",
+                          "effects": [
+                            { "type": "critfall:nothing", "weight": 2000000000 },
+                            { "type": "critfall:damage_durability", "weight": 2000000000 }
+                          ]
+                        }
+                        """));
+    }
+
+    @Test
+    void largeButSafeWeightSumParses() {
+        OutcomeTable table = parse("""
+                {
+                  "trigger": "nat_1",
+                  "effects": [
+                    { "type": "critfall:nothing", "weight": 1000000000 },
+                    { "type": "critfall:damage_durability", "weight": 1000000000 }
+                  ]
+                }
+                """);
+        assertEquals(2000000000, table.totalWeight());
+    }
+
+    @Test
     void badKnownEffectParamsReject() {
         assertThrows(
                 IllegalArgumentException.class,

@@ -12,11 +12,22 @@ public final class Derivation {
 
     private static final int MAX_ATTACK_BONUS = 12;
 
-    /** Flat damage 1..15 mapped to the dice expression with the same average (±0.5). */
-    private static final String[] DICE_TABLE = {
-        "1", "1d4", "1d6", "1d8", "1d10", "1d12", "2d6", "2d6+1", "2d8", "2d8+1", "2d10", "2d10+1", "2d12", "2d12+1",
-        "2d12+2",
-    };
+    /**
+     * Flat damage 1..15 mapped to the dice expression with the same average (±0.5). Pre-parsed
+     * once — this table is hit on every derived-fallback attack, the out-of-box path for every
+     * unprofiled mob, and re-parsing the notation per hit was pure hot-path waste (audit 0.2 B2).
+     */
+    private static final DiceExpression[] DICE_TABLE = parseAll(
+            "1", "1d4", "1d6", "1d8", "1d10", "1d12", "2d6", "2d6+1", "2d8", "2d8+1", "2d10", "2d10+1", "2d12",
+            "2d12+1", "2d12+2");
+
+    private static DiceExpression[] parseAll(String... notations) {
+        DiceExpression[] parsed = new DiceExpression[notations.length];
+        for (int i = 0; i < notations.length; i++) {
+            parsed[i] = DiceExpression.parse(notations[i]);
+        }
+        return parsed;
+    }
 
     private Derivation() {}
 
@@ -49,7 +60,7 @@ public final class Derivation {
     public static DiceExpression damageDice(double flatDamage) {
         int target = Math.max(1, (int) Math.round(flatDamage));
         if (target <= DICE_TABLE.length) {
-            return DiceExpression.parse(DICE_TABLE[target - 1]);
+            return DICE_TABLE[target - 1];
         }
         int count = Math.max(2, (int) Math.round(target / 6.5));
         int adjustment = target - (int) Math.round(count * 6.5);

@@ -32,6 +32,15 @@ class ClientConfigLoaderTest {
     }
 
     @Test
+    void lenientNanNumberDoesNotThrow() {
+        // Same boundary contract as rules.json: a NaN literal (accepted by the lenient parser)
+        // in a numeric field must warn and fall back, never crash client init.
+        ClientConfig config = ClientConfigLoader.parse(
+                JsonParser.parseString("{ \"format_version\": NaN }").getAsJsonObject(), w -> {});
+        assertEquals(ClientConfig.DEFAULTS, config);
+    }
+
+    @Test
     void writesDefaultFileWhenMissing(@TempDir Path dir) throws Exception {
         Path file = dir.resolve("client.json");
         ClientConfig config = ClientConfigLoader.load(file);

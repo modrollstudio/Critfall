@@ -89,13 +89,13 @@ class FeedbackBuilderTest {
 
     @Test
     void critAlwaysGetsFlavorEvenOnCooldown() {
-        FlavorCooldowns.record(target, 100);
+        FlavorCooldowns.record(target, 100, 20);
         assertTrue(build(AttackOutcome.CRIT, 20, false, 105).flavorKey().isPresent());
     }
 
     @Test
     void nonCritKillSuppressedWhileOnCooldown() {
-        FlavorCooldowns.record(target, 100);
+        FlavorCooldowns.record(target, 100, 20);
         assertTrue(build(AttackOutcome.HIT, 13, true, 105).flavorKey().isEmpty());
     }
 
@@ -123,7 +123,7 @@ class FeedbackBuilderTest {
 
     @Test
     void fumbleAlwaysGetsFlavorEvenOnCooldown() {
-        FlavorCooldowns.record(target, 100);
+        FlavorCooldowns.record(target, 100, 20);
         assertTrue(build(AttackOutcome.FUMBLE, 1, false, 105).flavorKey().isPresent());
     }
 
@@ -157,7 +157,7 @@ class FeedbackBuilderTest {
 
     @Test
     void saveKillOnCooldownSuppressed() {
-        FlavorCooldowns.record(target, 100);
+        FlavorCooldowns.record(target, 100, 20);
         assertTrue(buildSave(true, Rules.DEFAULTS, 105).flavorKey().isEmpty());
     }
 

@@ -54,7 +54,13 @@ public final class CritfallFabric implements ModInitializer {
         // LivingEntityMixin applies the rolled amount + armor bypass it decides.
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(FabricDamageHook::allowDamage);
 
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> CombatSuppression.clear());
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            CombatSuppression.clear();
+            // Per-entity cooldown maps outlive a world in one JVM (audit 0.2 A1/A2): drop them so
+            // a fresh world never sees another world's timestamps and nothing accumulates.
+            studio.modroll.critfall.combat.FumbleCooldowns.clear();
+            studio.modroll.critfall.feedback.FlavorCooldowns.clear();
+        });
 
         CommandRegistrationCallback.EVENT.register(
                 (dispatcher, registryAccess, environment) -> CritfallCommands.register(dispatcher, registryAccess));

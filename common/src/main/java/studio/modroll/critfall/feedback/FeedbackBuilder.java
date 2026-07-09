@@ -65,7 +65,7 @@ public final class FeedbackBuilder {
             if (!FlavorCooldowns.isOnCooldown(targetId, gameTime, cooldown)) {
                 flavor = FlavorSelector.pick(pool, FlavorPool.KILL, roller);
                 if (flavor.isPresent()) {
-                    FlavorCooldowns.record(targetId, gameTime);
+                    FlavorCooldowns.record(targetId, gameTime, cooldown);
                 }
             }
         }
@@ -93,27 +93,27 @@ public final class FeedbackBuilder {
         if (!rules.feedback().flavor().enabled()) {
             return Optional.empty();
         }
+        int cooldown = rules.feedback().flavor().cooldownTicks();
         // Priority lines: nat 20 crit and nat 1 fumble always show and reset the cooldown.
         if (outcome == AttackOutcome.CRIT) {
-            return record(FlavorSelector.pick(pool, FlavorPool.CRIT, roller), targetId, gameTime);
+            return record(FlavorSelector.pick(pool, FlavorPool.CRIT, roller), targetId, gameTime, cooldown);
         }
         if (outcome == AttackOutcome.FUMBLE) {
-            return record(FlavorSelector.pick(pool, FlavorPool.FUMBLE, roller), targetId, gameTime);
+            return record(FlavorSelector.pick(pool, FlavorPool.FUMBLE, roller), targetId, gameTime, cooldown);
         }
         // A non-crit kill is low priority: gated by the per-target cooldown.
         if (isKill && (outcome == AttackOutcome.HIT)) {
-            int cooldown = rules.feedback().flavor().cooldownTicks();
             if (FlavorCooldowns.isOnCooldown(targetId, gameTime, cooldown)) {
                 return Optional.empty();
             }
-            return record(FlavorSelector.pick(pool, FlavorPool.KILL, roller), targetId, gameTime);
+            return record(FlavorSelector.pick(pool, FlavorPool.KILL, roller), targetId, gameTime, cooldown);
         }
         return Optional.empty();
     }
 
-    private static Optional<String> record(Optional<String> flavor, UUID targetId, long gameTime) {
+    private static Optional<String> record(Optional<String> flavor, UUID targetId, long gameTime, int cooldownTicks) {
         if (flavor.isPresent()) {
-            FlavorCooldowns.record(targetId, gameTime);
+            FlavorCooldowns.record(targetId, gameTime, cooldownTicks);
         }
         return flavor;
     }

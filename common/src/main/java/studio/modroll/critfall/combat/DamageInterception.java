@@ -457,7 +457,8 @@ public final class DamageInterception {
             case MISS -> dmg.cancel();
             case FUMBLE -> {
                 dmg.cancel();
-                FumbleCooldowns.record(attacker.getUUID(), gameTime);
+                FumbleCooldowns.record(
+                        attacker.getUUID(), gameTime, rules.fumbles().cooldownTicks());
             }
             case HIT, CRIT -> {
                 if (rules.damageDice()) {

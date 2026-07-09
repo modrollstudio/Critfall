@@ -17,6 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Pre-release hardening audit (`docs/audit-0.2.md`) — correctness/robustness only, no behavior or balance change:
+  - The per-attacker fumble-cooldown and per-target flavor-cooldown maps no longer grow without bound on a long-running server: entries are skipped when the cooldown is disabled, expired entries are pruned once the maps grow, and both loaders clear them on server stop. This also fixes a singleplayer bug where a cooldown stamped in one world could suppress fumbles (or flavor lines) near-permanently in a newer world whose game clock was behind.
+  - An outcome table whose effect weights sum past `Integer.MAX_VALUE` is now rejected at datapack load instead of crashing the server with a negative-sided die the first time the table fires.
+  - A weapon profile whose damage dice already sit at the 100-term engine cap no longer crashes the server when the attribute-derived flat bonus is appended mid-hit — the bonus is dropped, same policy as ammo dice.
+  - The S2C roll-feedback decoder bounds the consequence-list length (max 64), so a hostile or corrupted server produces a clean decode-error disconnect instead of an `OutOfMemoryError` on the client.
+  - `rules.json` `global_damage_multiplier` must now be a positive **finite** number: `1e999` (which overflows to Infinity and would deal infinite damage on every hit) falls back to 1.0 with a warning, as NaN would too.
+
+### Changed (internal, from the audit)
+
+- Profile/flavor/spell resolution is memoized per registry id (and delivery) instead of linearly scanning every loaded profile 4–6 times per hit; the cache is invalidated on every `/reload` store swap. Derivation's damage-dice table and the attribute-bonus terms are pre-parsed, removing per-hit dice-expression string parsing. Resolution semantics, RNG draw order, and canonical dice are unchanged (pinned by tests). Low-severity items deliberately not fixed are tracked in `docs/deferred-issues.md`.
+
 - API-driven attacks (`RollService.performAttack`) no longer double-dip armor: the damage they apply now bypasses vanilla armor reduction exactly like the automatic pipeline (AC already stood in for armor), governed by the same `balance.disable_vanilla_armor_reduction` flag. The `hurt` inside `performAttack` also never re-rolls through the automatic interception, even when the participants were not suppressed. GameTests prove API and automatic attacks deal identical final damage to an armored target on both loaders.
 
 ### Changed

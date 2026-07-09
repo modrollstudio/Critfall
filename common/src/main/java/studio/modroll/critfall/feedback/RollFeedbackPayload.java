@@ -1,5 +1,7 @@
 package studio.modroll.critfall.feedback;
 
+import io.netty.handler.codec.DecoderException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import net.minecraft.network.FriendlyByteBuf;
@@ -53,6 +55,14 @@ public record RollFeedbackPayload(
                 false);
     }
 
+    /**
+     * Decode-side cap on the consequence list. Real payloads carry at most a couple of lines (one
+     * per fired outcome table); without a cap a hostile/corrupted server could claim a 2³¹−1
+     * element list and the vanilla collection reader would preallocate it — OOM instead of a
+     * clean decode-error disconnect (audit 0.2 finding D2).
+     */
+    private static final int MAX_CONSEQUENCES = 64;
+
     public static final Type<RollFeedbackPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "roll_feedback"));
 
@@ -86,7 +96,15 @@ public record RollFeedbackPayload(
         String dice = buf.readUtf();
         boolean showDamage = buf.readBoolean();
         Optional<String> flavor = buf.readOptional(FriendlyByteBuf::readUtf);
-        List<ConsequenceLine> lines = buf.readList(RollFeedbackPayload::readLine);
+        List<ConsequenceLine> lines = buf.readCollection(
+                size -> {
+                    if (size < 0 || size > MAX_CONSEQUENCES) {
+                        throw new DecoderException(
+                                "consequence list length " + size + " out of bounds (max " + MAX_CONSEQUENCES + ")");
+                    }
+                    return new ArrayList<>(size);
+                },
+                RollFeedbackPayload::readLine);
         boolean dryRun = buf.readBoolean();
         return new RollFeedbackPayload(
                 outcome,
