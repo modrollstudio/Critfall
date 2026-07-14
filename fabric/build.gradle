@@ -2,6 +2,19 @@ plugins {
     id 'fabric-loom' version "${fabric_loom_version}"
 }
 
+// The gametest delegators and their fabric.mod.json (mod id critfall_gametest) live in their own
+// source set, loaded only by the gametest run below. Shipping the entrypoints in the production
+// fabric.mod.json broke consumers: fabric-api invokes every mod's fabric-gametest entrypoints, and
+// the shared *Scenarios bodies are (deliberately) not in the jar.
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.compileClasspath
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.officialMojangMappings()
@@ -14,10 +27,10 @@ dependencies {
     // modImplementation) keeps Loom from trying to remap common — dev runs want its named classes.
     implementation project(':common')
 
-    // Shared GameTest bodies: on the compile + dev-run classpath (so the fabric-gametest entrypoint
-    // delegators resolve them), but not bundled into the production jar — the same way NeoForge only
-    // loads them on its gameTestServer run.
-    implementation project(':common').sourceSets.gametest.output
+    // Shared GameTest bodies: compile + runtime for the gametest source set only, so the
+    // fabric-gametest delegators resolve them without anything leaking into the production jar —
+    // the same way NeoForge only loads them on its gameTestServer run.
+    gametestImplementation project(':common').sourceSets.gametest.output
 }
 
 loom {
@@ -32,6 +45,7 @@ loom {
         gametest {
             server()
             name = 'Game Test'
+            source sourceSets.gametest
             property 'fabric-api.gametest'
             property 'fabric-api.gametest.report-file', "${project.buildDir}/junit.xml"
             ideConfigGenerated = true

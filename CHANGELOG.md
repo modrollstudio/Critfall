@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The release Fabric jar no longer declares `fabric-gametest` entrypoints (caught by Initiative M0):
+  the entrypoint classes delegated to shared scenario bodies that are deliberately not shipped, so
+  any consumer running Fabric GameTests with Critfall installed saw all of Critfall's tests fail
+  with `NoClassDefFoundError`. The delegators and a dev-only `critfall_gametest` mod json moved to
+  a `gametest` source set that only the `runGametest` run loads, mirroring the NeoForge layout.
+
 ### Added
 
 - `maven-publish` wiring: `./gradlew publishToMavenLocal` publishes `studio.modroll:critfall-common/-neoforge/-fabric` so external mods (e.g. Critfall: Initiative) can consume the API as a real Maven artifact until the Modrinth maven artifact exists.
