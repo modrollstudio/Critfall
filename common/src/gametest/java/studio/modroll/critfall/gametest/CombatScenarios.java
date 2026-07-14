@@ -16,10 +16,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.combat.Derivation;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
-import studio.modroll.critfall.dice.DiceRoller;
 
 /**
  * End-to-end tests of the damage interception: real entities, real {@code LivingEntity.hurt},

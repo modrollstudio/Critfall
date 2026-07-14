@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 import net.minecraft.resources.ResourceLocation;
-import studio.modroll.critfall.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceExpression;
 
 /**
  * Tabletop stats for entity types, loaded from {@code data/<ns>/critfall/entity_profile/*.json}
@@ -34,7 +34,7 @@ public record EntityProfile(
 
     /**
      * Parses one profile file. Throws {@link IllegalArgumentException} (or {@link
-     * studio.modroll.critfall.dice.DiceParseException}) on author errors that must reject the file;
+     * studio.modroll.critfall.api.dice.DiceParseException}) on author errors that must reject the file;
      * recoverable oddities go to {@code warn}.
      */
     public static EntityProfile parse(ResourceLocation id, JsonObject json, Consumer<String> warn) {

@@ -2,10 +2,10 @@ package studio.modroll.critfall.combat;
 
 import java.util.Optional;
 import java.util.OptionalInt;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceParseException;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ItemProfile;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.DiceParseException;
 
 /**
  * Picks the damage dice and crit range for one attack. Precedence: the held weapon's item

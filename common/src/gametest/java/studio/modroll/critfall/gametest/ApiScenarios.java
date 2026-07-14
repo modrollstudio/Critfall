@@ -12,12 +12,12 @@ import net.minecraft.world.item.Items;
 import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.RollService;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.api.event.CritfallEvents;
-import studio.modroll.critfall.combat.AttackOutcome;
-import studio.modroll.critfall.combat.AttackResult;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
-import studio.modroll.critfall.dice.DiceRoller;
 
 /**
  * Drives combat purely through the public API (PLAN §12): the automatic damage interception is

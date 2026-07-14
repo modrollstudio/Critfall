@@ -9,14 +9,14 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
-import studio.modroll.critfall.combat.AttackOutcome;
-import studio.modroll.critfall.combat.AttackResult;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.SequenceRandom;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.OutcomeEffect;
 import studio.modroll.critfall.data.OutcomeTable;
 import studio.modroll.critfall.data.Trigger;
-import studio.modroll.critfall.dice.DiceRoller;
-import studio.modroll.critfall.dice.SequenceRandom;
 
 class OutcomeSelectorTest {
 

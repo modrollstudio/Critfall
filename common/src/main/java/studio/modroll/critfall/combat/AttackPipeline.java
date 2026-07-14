@@ -5,15 +5,17 @@ import java.util.Optional;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import studio.modroll.critfall.api.AttackContext;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.event.CritfallEvents;
 import studio.modroll.critfall.api.event.PostAttackRollEvent;
 import studio.modroll.critfall.api.event.PreAttackRollEvent;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ItemProfile;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.DiceRoller;
-import studio.modroll.critfall.dice.RollMode;
-import studio.modroll.critfall.feedback.ConsequenceLine;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**

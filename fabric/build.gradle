@@ -2,10 +2,8 @@ plugins {
     id 'fabric-loom' version "${fabric_loom_version}"
 }
 
-// The gametest delegators and their fabric.mod.json (mod id critfall_gametest) live in their own
-// source set, loaded only by the gametest run below. Shipping the entrypoints in the production
-// fabric.mod.json broke consumers: fabric-api invokes every mod's fabric-gametest entrypoints, and
-// the shared *Scenarios bodies are (deliberately) not in the jar.
+// Gametest delegators live here, not main: shipping them in the release fabric.mod.json broke
+// consumers, since the shared *Scenarios bodies they call are deliberately not in the jar.
 sourceSets {
     gametest {
         compileClasspath += sourceSets.main.compileClasspath
@@ -21,15 +19,9 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
 
-    // Common is compiled against the same Mojang mappings. Use implementation (not compileOnly) so
-    // common's classes/resources are on the dev-run runtime classpath; the production jar bundles
-    // and remaps them via the jar/processResources wiring below. Plain implementation (not
-    // modImplementation) keeps Loom from trying to remap common — dev runs want its named classes.
+    // Plain implementation, not modImplementation: keeps Loom from remapping common's classes.
     implementation project(':common')
 
-    // Shared GameTest bodies: compile + runtime for the gametest source set only, so the
-    // fabric-gametest delegators resolve them without anything leaking into the production jar —
-    // the same way NeoForge only loads them on its gameTestServer run.
     gametestImplementation project(':common').sourceSets.gametest.output
 }
 
@@ -53,8 +45,6 @@ loom {
     }
 }
 
-// Bundle common's compiled classes so remapJar remaps them into the Fabric jar. Common's
-// resources come through processResources below (bundling output too would duplicate them).
 jar {
     from project(':common').sourceSets.main.output.classesDirs
 }

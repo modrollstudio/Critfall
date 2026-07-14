@@ -6,6 +6,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import studio.modroll.critfall.Critfall;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
 /** S2C feedback for one resolved saving throw (M6). Flat primitives only; see {@link RollFeedbackPayload}. */

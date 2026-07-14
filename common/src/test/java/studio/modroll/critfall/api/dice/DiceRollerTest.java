@@ -1,4 +1,4 @@
-package studio.modroll.critfall.dice;
+package studio.modroll.critfall.api.dice;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

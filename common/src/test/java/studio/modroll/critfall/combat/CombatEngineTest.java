@@ -5,11 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.SaveResult;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.api.dice.SequenceRandom;
 import studio.modroll.critfall.combat.CombatEngine.AttackInput;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.DiceRoller;
-import studio.modroll.critfall.dice.RollMode;
-import studio.modroll.critfall.dice.SequenceRandom;
 
 class CombatEngineTest {
 
@@ -237,7 +240,7 @@ class CombatEngineTest {
     @Test
     void saveMeetingTheDcSucceeds() {
         SequenceRandom rng = SequenceRandom.ofDieFaces(11);
-        CombatEngine.SaveResult result = CombatEngine.resolveSave(new DiceRoller(rng), 2, 13);
+        SaveResult result = CombatEngine.resolveSave(new DiceRoller(rng), 2, 13);
         assertTrue(result.saved(), "11 + 2 = 13 vs DC 13 — meets it beats it");
         assertEquals(11, result.natural());
         assertEquals(13, result.saveTotal());
@@ -247,7 +250,7 @@ class CombatEngineTest {
     @Test
     void saveBelowTheDcFails() {
         SequenceRandom rng = SequenceRandom.ofDieFaces(10);
-        CombatEngine.SaveResult result = CombatEngine.resolveSave(new DiceRoller(rng), 2, 13);
+        SaveResult result = CombatEngine.resolveSave(new DiceRoller(rng), 2, 13);
         assertFalse(result.saved(), "10 + 2 = 12 vs DC 13 fails");
     }
 

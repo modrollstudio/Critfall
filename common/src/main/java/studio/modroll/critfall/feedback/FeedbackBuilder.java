@@ -3,12 +3,14 @@ package studio.modroll.critfall.feedback;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import studio.modroll.critfall.combat.AttackOutcome;
-import studio.modroll.critfall.combat.AttackResult;
-import studio.modroll.critfall.combat.CombatEngine;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.SaveResult;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.FlavorPool;
-import studio.modroll.critfall.dice.DiceRoller;
 
 /**
  * Builds the S2C feedback payloads and owns the server-authoritative flavor anti-spam gate
@@ -47,7 +49,7 @@ public final class FeedbackBuilder {
     }
 
     public static SaveFeedbackPayload buildSave(
-            CombatEngine.SaveResult save,
+            SaveResult save,
             boolean isKill,
             Rules.SaveOutcome onSuccess,
             String diceNotation,

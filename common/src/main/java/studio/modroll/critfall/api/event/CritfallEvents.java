@@ -6,8 +6,8 @@ import java.util.function.Consumer;
 import net.minecraft.world.entity.LivingEntity;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.api.AttackContext;
-import studio.modroll.critfall.combat.AttackResult;
-import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.RollMode;
 
 /**
  * The public, loader-agnostic event bus for Critfall (PLAN §4.4). Mods and KubeJS scripts register

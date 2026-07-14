@@ -1,7 +1,6 @@
-package studio.modroll.critfall.feedback;
+package studio.modroll.critfall.api.feedback;
 
 import java.util.Optional;
-import studio.modroll.critfall.combat.Rules;
 
 /**
  * One player-facing announcement of a fired outcome consequence (PLAN §4.5: "a triggered outcome
@@ -29,7 +28,7 @@ public record ConsequenceLine(String key, Optional<String> arg) {
         return new ConsequenceLine(key, Optional.of(arg));
     }
 
-    public static ConsequenceLine durability(Rules.DurabilityMode mode) {
-        return of(mode == Rules.DurabilityMode.SET_TO_1 ? DURABILITY_BROKEN : DURABILITY_WORN);
+    public static ConsequenceLine durability(boolean broken) {
+        return of(broken ? DURABILITY_BROKEN : DURABILITY_WORN);
     }
 }

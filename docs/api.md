@@ -1,12 +1,22 @@
 # Critfall Public API
 
-Everything a mod or KubeJS script needs lives in **`studio.modroll.critfall.api`** (and its
-`.event` subpackage). Nothing outside `api` is required to consume Critfall. The API is
-**loader-agnostic** — it works identically on NeoForge and (from M8) Fabric — and is covered by the
-semantic-versioning promise: it will not break without a major version bump.
+Everything a mod or KubeJS script needs lives in **`studio.modroll.critfall.api`** and its
+subpackages (`.event`, `.dice`, `.combat`, `.feedback`). Nothing outside `api` is required to
+consume Critfall — every type appearing in an `api` signature is itself in `api` (since 0.2.1).
+The API is **loader-agnostic** — it works identically on NeoForge and (from M8) Fabric — and is
+covered by the semantic-versioning promise: it will not break without a major version bump.
 
 All rolls are server-authoritative and go through Critfall's injectable combat RNG, so the API adds
 no randomness of its own and stays deterministic under test.
+
+The `api` subpackages:
+
+| Package | Types |
+|---------|-------|
+| `api.dice` | `DiceExpression`, `DiceRoller`, `RollResult`, `DieRoll`, `RollMode`, `DiceParseException` |
+| `api.combat` | `AttackResult`, `AttackOutcome`, `SaveResult` |
+| `api.feedback` | `RollFeedbackPayload`, `ConsequenceLine` |
+| `api.event` | the events below |
 
 ## `RollService`
 
@@ -18,6 +28,25 @@ The static entry point (`studio.modroll.critfall.api.RollService`).
 RollResult r = RollService.roll("2d6+3");   // or roll(DiceExpression)
 int total = r.total();
 ```
+
+### Deterministic testing (the RNG seam)
+
+`RollService.setRoller(DiceRoller)` replaces the roller behind every combat roll, so an external
+mod's tests can force exact die faces — a nat 1, a nat 20 — the same way Critfall's own tests do.
+Build a `DiceRoller` on your own scripted `java.util.random.RandomGenerator` (have `nextInt(bound)`
+return `face - 1`) and restore afterwards:
+
+```java
+RollService.setRoller(new DiceRoller(myScriptedGenerator)); // next d20 shows the face you script
+try {
+    AttackResult result = RollService.performAttack(attacker, target, ctx); // e.g. a forced crit
+} finally {
+    RollService.resetRoller();
+}
+```
+
+**Test scope only.** Rolls are server-authoritative; swapping the server's RNG in normal gameplay
+changes combat for everyone on it. `resetRoller()` restores the default randomly seeded roller.
 
 ### Effective-profile queries
 
@@ -113,7 +142,8 @@ it, so a listener sees **every** attack from either path. A listener that throws
 ```java
 import studio.modroll.critfall.api.*;
 import studio.modroll.critfall.api.event.*;
-import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.api.combat.AttackOutcome;
 
 // Grant advantage when the attacker is sneaking:
 CritfallEvents.onPreAttackRoll(event -> {
@@ -124,7 +154,7 @@ CritfallEvents.onPreAttackRoll(event -> {
 
 // Halve all crit damage:
 CritfallEvents.onPostAttackRoll(event -> {
-    if (event.result().outcome() == studio.modroll.critfall.combat.AttackOutcome.CRIT) {
+    if (event.result().outcome() == AttackOutcome.CRIT) {
         event.finalDamage(event.finalDamage() / 2);
     }
 });
@@ -133,11 +163,11 @@ CritfallEvents.onPostAttackRoll(event -> {
 A canceled `PreAttackRollEvent` means the attack does not happen (no damage, no outcome tables).
 A vetoed `PostAttackRollEvent` means it resolved but applies no damage and runs no outcome tables.
 
-## Feedback (`FeedbackSink`)
+## Feedback
 
-`studio.modroll.critfall.feedback.FeedbackSink` is the seam through which roll/flavor packets are sent.
 API consumers emit the same packets the internal pipeline does via
-`RollService.sendRollFeedback(attacker, target, payload)`; headless contexts keep the no-op default.
+`RollService.sendRollFeedback(attacker, target, payload)` with an
+`api.feedback.RollFeedbackPayload`; headless contexts keep the no-op default sink.
 
 ## KubeJS
 

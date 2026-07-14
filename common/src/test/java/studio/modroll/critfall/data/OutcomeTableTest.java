@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
-import studio.modroll.critfall.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceExpression;
 
 class OutcomeTableTest {
 
@@ -208,7 +208,7 @@ class OutcomeTableTest {
                         "{\"trigger\": \"nat_20\", \"effects\": [{\"type\": \"critfall:apply_effect\", \"effect\": \"minecraft:slowness\"}]}"),
                 "apply_effect without ticks must reject");
         assertThrows(
-                studio.modroll.critfall.dice.DiceParseException.class,
+                studio.modroll.critfall.api.dice.DiceParseException.class,
                 () -> parse(
                         "{\"trigger\": \"nat_1\", \"effects\": [{\"type\": \"critfall:self_damage\", \"dice\": \"not dice\"}]}"),
                 "bad dice must reject");

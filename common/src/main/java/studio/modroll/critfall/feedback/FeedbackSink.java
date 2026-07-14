@@ -1,6 +1,7 @@
 package studio.modroll.critfall.feedback;
 
 import net.minecraft.world.entity.LivingEntity;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
 /**

@@ -8,9 +8,9 @@ import java.util.Map;
 import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.SequenceRandom;
 import studio.modroll.critfall.data.FlavorPool;
-import studio.modroll.critfall.dice.DiceRoller;
-import studio.modroll.critfall.dice.SequenceRandom;
 
 class FlavorSelectorTest {
 

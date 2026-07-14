@@ -17,14 +17,14 @@ import net.minecraft.world.entity.projectile.ThrownTrident;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.data.ProfileStore;
-import studio.modroll.critfall.dice.DiceRoller;
 import studio.modroll.critfall.feedback.CapturingFeedbackSink;
 import studio.modroll.critfall.feedback.FeedbackSink;
-import studio.modroll.critfall.feedback.RollFeedbackPayload;
 
 /**
  * End-to-end tests of issue #3 delivery-aware resolution: the same trident resolves different item

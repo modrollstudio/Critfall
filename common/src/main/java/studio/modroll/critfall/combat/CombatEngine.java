@@ -1,9 +1,12 @@
 package studio.modroll.critfall.combat;
 
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.DiceRoller;
-import studio.modroll.critfall.dice.RollMode;
-import studio.modroll.critfall.dice.RollResult;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.SaveResult;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.api.dice.RollResult;
 
 /**
  * Resolves one attack: d20 (+ bonus) vs AC, then damage dice. Pure JVM — no Minecraft classes —
@@ -71,17 +74,6 @@ public final class CombatEngine {
         int damage =
                 rules.damageDice() ? Math.max(0, roller.roll(input.damageDice()).total()) : 0;
         return new AttackResult(AttackOutcome.HIT, natural, attackTotal, input.armorClass(), damage);
-    }
-
-    /**
-     * The target's saving throw against a save-based spell (M5, PLAN.md §4.2): meets-it-beats-it,
-     * no nat-1/nat-20 special cases (5e saves have none). The damage consequence ({@link
-     * Rules.SaveOutcome}) is applied by the caller.
-     */
-    public record SaveResult(int natural, int saveTotal, int dc) {
-        public boolean saved() {
-            return saveTotal >= dc;
-        }
     }
 
     public static SaveResult resolveSave(DiceRoller roller, int saveBonus, int dc) {

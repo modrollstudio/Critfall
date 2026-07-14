@@ -19,12 +19,12 @@ import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Husk;
 import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ProfileStore;
 import studio.modroll.critfall.data.SpellProfile;
-import studio.modroll.critfall.dice.DiceRoller;
 
 /**
  * End-to-end tests of M5 spell handling. Indirect living-caused damage (caster != direct entity,

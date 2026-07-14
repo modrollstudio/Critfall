@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import net.minecraft.resources.ResourceLocation;
 import studio.modroll.critfall.api.AttackDelivery;
-import studio.modroll.critfall.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceExpression;
 
 /**
  * Weapon/item stats, loaded from {@code data/<ns>/critfall/item_profile/*.json} (see

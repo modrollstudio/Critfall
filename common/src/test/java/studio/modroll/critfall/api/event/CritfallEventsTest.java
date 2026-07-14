@@ -9,9 +9,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.AttackContext;
-import studio.modroll.critfall.combat.AttackOutcome;
-import studio.modroll.critfall.combat.AttackResult;
-import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.RollMode;
 
 class CritfallEventsTest {
 

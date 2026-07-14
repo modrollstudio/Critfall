@@ -1,6 +1,6 @@
 package studio.modroll.critfall.combat;
 
-import studio.modroll.critfall.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceExpression;
 
 /**
  * Fallback derivation (PLAN.md §4.3): plausible tabletop stats computed from vanilla attribute

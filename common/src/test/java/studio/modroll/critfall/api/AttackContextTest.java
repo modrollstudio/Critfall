@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import net.minecraft.world.item.ItemStack;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.RollMode;
 
 class AttackContextTest {
 

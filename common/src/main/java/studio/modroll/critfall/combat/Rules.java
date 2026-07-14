@@ -1,6 +1,6 @@
 package studio.modroll.critfall.combat;
 
-import studio.modroll.critfall.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceExpression;
 
 /**
  * Feature flags for every combat mechanic, loaded from {@code config/critfall/rules.json} (see
