@@ -1,4 +1,4 @@
-package studio.modroll.critfall.dice;
+package studio.modroll.critfall.api.dice;
 
 import java.util.random.RandomGenerator;
 

@@ -9,9 +9,9 @@ import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
-import studio.modroll.critfall.dice.DiceRoller;
 
 /**
  * Dry-run mode (PLAN §8.2.3): rolls are computed and shown, but vanilla damage still applies and no

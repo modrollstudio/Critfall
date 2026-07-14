@@ -10,13 +10,14 @@ import java.util.UUID;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import studio.modroll.critfall.combat.AttackOutcome;
-import studio.modroll.critfall.combat.AttackResult;
-import studio.modroll.critfall.combat.CombatEngine;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.SaveResult;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.SequenceRandom;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.FlavorPool;
-import studio.modroll.critfall.dice.DiceRoller;
-import studio.modroll.critfall.dice.SequenceRandom;
 
 class FeedbackBuilderTest {
 
@@ -50,7 +51,7 @@ class FeedbackBuilderTest {
     }
 
     private SaveFeedbackPayload buildSave(boolean isKill, Rules rules, long gameTime) {
-        CombatEngine.SaveResult save = new CombatEngine.SaveResult(13, 15, 13);
+        SaveResult save = new SaveResult(13, 15, 13);
         return FeedbackBuilder.buildSave(
                 save,
                 isKill,

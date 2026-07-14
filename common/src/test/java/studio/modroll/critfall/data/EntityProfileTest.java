@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
-import studio.modroll.critfall.dice.DiceParseException;
+import studio.modroll.critfall.api.dice.DiceParseException;
 
 class EntityProfileTest {
 

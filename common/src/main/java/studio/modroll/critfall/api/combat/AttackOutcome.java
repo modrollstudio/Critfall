@@ -1,4 +1,4 @@
-package studio.modroll.critfall.combat;
+package studio.modroll.critfall.api.combat;
 
 /** Result of a d20 attack roll against an armor class. */
 public enum AttackOutcome {

@@ -6,6 +6,7 @@ plugins {
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'com.diffplug.spotless'
+    apply plugin: 'maven-publish'
 
     group = mod_group
     version = mod_version
@@ -50,5 +51,45 @@ subprojects {
             trimTrailingWhitespace()
             endWithNewline()
         }
+    }
+
+    // Local-Maven publishing for external consumers (e.g. Initiative) until the Modrinth maven
+    // artifact exists. Fabric publishes the remapped (intermediary) jar, as Modrinth would.
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                artifactId = "${mod_id}-${project.name}"
+            }
+        }
+    }
+    afterEvaluate {
+        publishing.publications.mavenJava.artifact(
+                plugins.hasPlugin('fabric-loom') ? tasks.remapJar : tasks.jar)
+
+        // Initiative M0 caught a shipped Fabric gametest entrypoint with no body in the jar,
+        // breaking every consumer's gametest run — this guard fails the build if it happens again.
+        def releaseJar = plugins.hasPlugin('fabric-loom') ? tasks.remapJar : tasks.jar
+        def guard = tasks.register('verifyNoGametestInReleaseJar') {
+            dependsOn releaseJar
+            def jarFile = releaseJar.archiveFile
+            doLast {
+                def offenders = []
+                new java.util.zip.ZipFile(jarFile.get().asFile).withCloseable { zip ->
+                    zip.entries().each { entry ->
+                        if (entry.name.toLowerCase().contains('gametest')) {
+                            offenders << entry.name
+                        }
+                    }
+                    def modJson = zip.getEntry('fabric.mod.json')
+                    if (modJson != null && zip.getInputStream(modJson).getText('UTF-8').contains('gametest')) {
+                        offenders << 'fabric.mod.json declares a gametest entrypoint'
+                    }
+                }
+                if (!offenders.isEmpty()) {
+                    throw new GradleException("gametest leaked into ${jarFile.get().asFile.name}: ${offenders}")
+                }
+            }
+        }
+        tasks.named('check') { it.dependsOn(guard) }
     }
 }

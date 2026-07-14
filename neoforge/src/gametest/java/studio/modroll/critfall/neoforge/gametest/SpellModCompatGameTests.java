@@ -30,11 +30,11 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.ProfileStore;
 import studio.modroll.critfall.data.SpellProfile;
-import studio.modroll.critfall.dice.DiceRoller;
 
 /**
  * In-game verification of docs/compat.md against the REAL Iron's Spells 'n Spellbooks and Ars

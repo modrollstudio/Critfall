@@ -1,4 +1,4 @@
-package studio.modroll.critfall.combat;
+package studio.modroll.critfall.api.combat;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

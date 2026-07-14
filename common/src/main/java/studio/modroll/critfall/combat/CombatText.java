@@ -2,8 +2,8 @@ package studio.modroll.critfall.combat;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import studio.modroll.critfall.feedback.ConsequenceLine;
-import studio.modroll.critfall.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
 /**

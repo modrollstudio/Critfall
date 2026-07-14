@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "critfall_gametest",
+  "version": "1.0.0",
+  "name": "Critfall GameTests",
+  "description": "Dev-only GameTest registration for Critfall; never shipped.",
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      "studio.modroll.critfall.fabric.gametest.ApiGameTests",
+      "studio.modroll.critfall.fabric.gametest.CombatGameTests",
+      "studio.modroll.critfall.fabric.gametest.CommandGameTests",
+      "studio.modroll.critfall.fabric.gametest.FeedbackGameTests",
+      "studio.modroll.critfall.fabric.gametest.OutcomeGameTests",
+      "studio.modroll.critfall.fabric.gametest.ProjectileGameTests",
+      "studio.modroll.critfall.fabric.gametest.SpellGameTests",
+      "studio.modroll.critfall.fabric.gametest.TridentGameTests"
+    ]
+  },
+  "depends": {
+    "critfall": "*"
+  }
+}

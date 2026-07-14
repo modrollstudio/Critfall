@@ -14,16 +14,18 @@ import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.CombatSuppression;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.SaveResult;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.data.SpellProfile;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.RollMode;
-import studio.modroll.critfall.feedback.ConsequenceLine;
 import studio.modroll.critfall.feedback.FeedbackBuilder;
 import studio.modroll.critfall.feedback.FeedbackSink;
-import studio.modroll.critfall.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
@@ -356,7 +358,7 @@ public final class DamageInterception {
         int dc = profile.saveDc().orElse(saves.defaultDc());
         Rules.SaveOutcome onSuccess = profile.onSuccess().orElse(saves.onSuccess());
         int saveBonus = intStat(targetProfile.map(EntityProfile::saveBonus), () -> 0);
-        CombatEngine.SaveResult save = CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc);
+        SaveResult save = CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc);
 
         boolean useDice = rules.damageDice() && profile.damage().isPresent();
         float damage;

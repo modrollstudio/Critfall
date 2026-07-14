@@ -2,7 +2,7 @@ package studio.modroll.critfall.api.event;
 
 import net.minecraft.world.entity.LivingEntity;
 import studio.modroll.critfall.api.AttackContext;
-import studio.modroll.critfall.combat.AttackResult;
+import studio.modroll.critfall.api.combat.AttackResult;
 
 /**
  * Fired after the attack resolved but before damage is applied (PLAN §4.4). Listeners see the full

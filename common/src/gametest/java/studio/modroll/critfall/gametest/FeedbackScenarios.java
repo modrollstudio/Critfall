@@ -7,13 +7,13 @@ import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import studio.modroll.critfall.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.feedback.CapturingFeedbackSink;
-import studio.modroll.critfall.feedback.ConsequenceLine;
 import studio.modroll.critfall.feedback.FeedbackSink;
-import studio.modroll.critfall.feedback.RollFeedbackPayload;
 
 /**
  * The modless fallback must stay legible: a vanilla-client player still learns WHICH consequence

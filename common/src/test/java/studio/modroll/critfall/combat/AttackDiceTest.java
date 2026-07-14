@@ -7,9 +7,9 @@ import com.google.gson.JsonParser;
 import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
+import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ItemProfile;
-import studio.modroll.critfall.dice.DiceExpression;
 
 class AttackDiceTest {
 

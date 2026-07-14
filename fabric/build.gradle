@@ -2,22 +2,27 @@ plugins {
     id 'fabric-loom' version "${fabric_loom_version}"
 }
 
+// Gametest delegators live here, not main: shipping them in the release fabric.mod.json broke
+// consumers, since the shared *Scenarios bodies they call are deliberately not in the jar.
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.compileClasspath
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.officialMojangMappings()
     modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
 
-    // Common is compiled against the same Mojang mappings. Use implementation (not compileOnly) so
-    // common's classes/resources are on the dev-run runtime classpath; the production jar bundles
-    // and remaps them via the jar/processResources wiring below. Plain implementation (not
-    // modImplementation) keeps Loom from trying to remap common — dev runs want its named classes.
+    // Plain implementation, not modImplementation: keeps Loom from remapping common's classes.
     implementation project(':common')
 
-    // Shared GameTest bodies: on the compile + dev-run classpath (so the fabric-gametest entrypoint
-    // delegators resolve them), but not bundled into the production jar — the same way NeoForge only
-    // loads them on its gameTestServer run.
-    implementation project(':common').sourceSets.gametest.output
+    gametestImplementation project(':common').sourceSets.gametest.output
 }
 
 loom {
@@ -32,6 +37,7 @@ loom {
         gametest {
             server()
             name = 'Game Test'
+            source sourceSets.gametest
             property 'fabric-api.gametest'
             property 'fabric-api.gametest.report-file', "${project.buildDir}/junit.xml"
             ideConfigGenerated = true
@@ -39,8 +45,6 @@ loom {
     }
 }
 
-// Bundle common's compiled classes so remapJar remaps them into the Fabric jar. Common's
-// resources come through processResources below (bundling output too would duplicate them).
 jar {
     from project(':common').sourceSets.main.output.classesDirs
 }

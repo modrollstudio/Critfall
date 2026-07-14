@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Optional;
 import net.minecraft.network.FriendlyByteBuf;
 import org.junit.jupiter.api.Test;
-import studio.modroll.critfall.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
 class FeedbackPayloadCodecTest {
