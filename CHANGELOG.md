@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `maven-publish` wiring: `./gradlew publishToMavenLocal` publishes `studio.modroll:critfall-common/-neoforge/-fabric` so external mods (e.g. Critfall: Initiative) can consume the API as a real Maven artifact until the Modrinth maven artifact exists.
+
 ## [0.2.0] - 2026-07-08
 
 ### Added

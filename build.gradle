@@ -6,6 +6,7 @@ plugins {
 subprojects {
     apply plugin: 'java-library'
     apply plugin: 'com.diffplug.spotless'
+    apply plugin: 'maven-publish'
 
     group = mod_group
     version = mod_version
@@ -50,5 +51,19 @@ subprojects {
             trimTrailingWhitespace()
             endWithNewline()
         }
+    }
+
+    // Local-Maven publishing for external consumers (e.g. Initiative) until the Modrinth maven
+    // artifact exists. Fabric publishes the remapped (intermediary) jar, as Modrinth would.
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                artifactId = "${mod_id}-${project.name}"
+            }
+        }
+    }
+    afterEvaluate {
+        publishing.publications.mavenJava.artifact(
+                plugins.hasPlugin('fabric-loom') ? tasks.remapJar : tasks.jar)
     }
 }
