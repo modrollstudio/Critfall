@@ -6,9 +6,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Backing state for {@link studio.modroll.critfall.api.CombatSuppression}. Internal so the global
- * wipe stays off the public production surface: both loaders call {@link #clear()} on server stop
- * (a restart ends any encounter), while API consumers only get per-UUID mutation plus a read view.
+ * Backing state for {@link studio.modroll.critfall.api.CombatSuppression}, internal so the global
+ * wipe stays off the public surface: both loaders clear it on server stop.
  */
 public final class SuppressionStore {
 

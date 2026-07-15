@@ -86,8 +86,8 @@ public final class DamageInterception {
             return; // damage dealt BY an outcome effect (redirected swing, self damage) never re-rolls
         }
         if (source.getEntity() instanceof LivingEntity attacker) {
-            // Observe-only detection signal, fired before ALL gating below — the docs/api.md
-            // contract promises consumers it fires even for suppressed, exempt, or cancelled damage.
+            // Before all gating below: docs/api.md promises this fires even for suppressed,
+            // exempt, or cancelled damage.
             CritfallEvents.fireCombatInteraction(attacker, target, source, interactionDelivery(source));
         }
         if (isSuppressed(source, target)) {
@@ -109,10 +109,7 @@ public final class DamageInterception {
         }
     }
 
-    /**
-     * Delivery for the interaction event, classified from the source's shape exactly like the roll
-     * pipeline — best-effort for damage the pipeline itself would never roll (exempt/always-hits).
-     */
+    /** Classified like the roll pipeline; best-effort for damage it would never roll. */
     private static AttackDelivery interactionDelivery(DamageSource source) {
         if (source.is(CritfallTags.SPELL)) {
             return AttackDelivery.SPELL;

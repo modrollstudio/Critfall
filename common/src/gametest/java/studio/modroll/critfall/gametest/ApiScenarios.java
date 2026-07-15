@@ -212,7 +212,7 @@ public final class ApiScenarios {
             withRolls(
                     helper,
                     () -> {
-                        // 13 + 3 = 16 vs AC 10 -> hit for 5; the interaction event fires alongside.
+                        // 13 + 3 = 16 vs AC 10 -> hit for 5.
                         pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
                         expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
                         expectInteraction(helper, seen, husk, pig, AttackDelivery.MELEE);
@@ -235,7 +235,7 @@ public final class ApiScenarios {
             withRolls(
                     helper,
                     () -> {
-                        // 5 + 3 = 8 vs AC 10 -> miss, Critfall cancels the damage — event still fires.
+                        // 5 + 3 = 8 vs AC 10 -> miss; the damage is cancelled.
                         pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
                         expectHealth(helper, pig, pig.getMaxHealth());
                         expectInteraction(helper, seen, husk, pig, AttackDelivery.MELEE);
@@ -259,7 +259,7 @@ public final class ApiScenarios {
             e.cancel();
         });
         try {
-            // No faces scripted: the pre-cancel happens before any die is drawn.
+            // No faces scripted: a pre-cancel draws no die.
             withRolls(helper, () -> {
                 pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
                 expectHealth(helper, pig, pig.getMaxHealth());
@@ -283,7 +283,7 @@ public final class ApiScenarios {
         List<CombatInteractionEvent> seen = new ArrayList<>();
         CritfallEvents.onCombatInteraction(seen::add);
         try {
-            // No faces scripted: the auto pipeline stands down, vanilla applies — event still fires.
+            // No faces scripted: the auto pipeline stands down, vanilla applies.
             withRolls(helper, () -> {
                 pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
                 expectHealth(helper, pig, pig.getMaxHealth() - VANILLA_HIT);

@@ -27,18 +27,16 @@ public final class CombatSuppression {
     }
 
     /**
-     * An unmodifiable live view of every currently suppressed UUID, across all mods. Read-only:
-     * iteration is weakly consistent under concurrent suppress/release, and mutating the view
-     * throws {@link UnsupportedOperationException}.
+     * An unmodifiable live view of every currently suppressed UUID, across all mods; iteration is
+     * weakly consistent under concurrent suppress/release.
      */
     public static Set<UUID> suppressedUuids() {
         return SuppressionStore.view();
     }
 
     /**
-     * Wipes every mod's suppressions at once — test cleanup ONLY, never production code (it would
-     * destroy other mods' running encounters). Production code releases per entity via
-     * {@link #release}; Critfall itself clears internally on server stop.
+     * Wipes every mod's suppressions — test cleanup ONLY; production code releases per entity via
+     * {@link #release}. Critfall clears internally on server stop.
      */
     public static void clearAllForTesting() {
         SuppressionStore.clear();
