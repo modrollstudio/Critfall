@@ -122,9 +122,22 @@ combat itself via `performAttack`.
 RollService.suppress(entity);          // or CombatSuppression.suppress(uuid)
 boolean owned = RollService.isSuppressed(entity);
 RollService.release(entity);
+
+Set<UUID> all = CombatSuppression.suppressedUuids();   // read-only, every mod's suppressions
 ```
 
-Suppression is in-memory and transient: it is cleared on server stop (a restart ends any encounter).
+Suppression is in-memory and transient: Critfall clears it internally on server stop (a restart
+ends any encounter).
+
+`suppressedUuids()` (since 0.2.2) is an **unmodifiable live view** of every currently suppressed
+UUID across all mods — mutating it throws, and iteration is weakly consistent under concurrent
+suppress/release. Use it for global leak checks in tests: assert it is empty once your encounter
+has released everything, without having to enumerate known UUIDs.
+
+**Test scope only:** `CombatSuppression.clearAllForTesting()` (the renamed 0.2.1 `clear()`) wipes
+every mod's suppressions at once. It exists for test cleanup; calling it in production would
+destroy other mods' running encounters. The production mutation surface is per-entity
+`suppress`/`release` only.
 
 ## Events (`studio.modroll.critfall.api.event`)
 
