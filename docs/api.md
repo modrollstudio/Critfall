@@ -123,21 +123,16 @@ RollService.suppress(entity);          // or CombatSuppression.suppress(uuid)
 boolean owned = RollService.isSuppressed(entity);
 RollService.release(entity);
 
-Set<UUID> all = CombatSuppression.suppressedUuids();   // read-only, every mod's suppressions
+Set<UUID> all = CombatSuppression.suppressedUuids();   // read-only view, all mods
 ```
 
-Suppression is in-memory and transient: Critfall clears it internally on server stop (a restart
-ends any encounter).
+Suppression is in-memory and transient: Critfall clears it internally on server stop.
 
-`suppressedUuids()` (since 0.2.2) is an **unmodifiable live view** of every currently suppressed
-UUID across all mods — mutating it throws, and iteration is weakly consistent under concurrent
-suppress/release. Use it for global leak checks in tests: assert it is empty once your encounter
-has released everything, without having to enumerate known UUIDs.
+`suppressedUuids()` is an unmodifiable live view of every suppressed UUID — useful as a global
+leak check in tests (assert it is empty once your encounter has released everything).
 
-**Test scope only:** `CombatSuppression.clearAllForTesting()` (the renamed 0.2.1 `clear()`) wipes
-every mod's suppressions at once. It exists for test cleanup; calling it in production would
-destroy other mods' running encounters. The production mutation surface is per-entity
-`suppress`/`release` only.
+**Test scope only:** `clearAllForTesting()` (was `clear()`) wipes every mod's suppressions at
+once. Never call it in production — release per entity instead.
 
 ## Events (`studio.modroll.critfall.api.event`)
 
@@ -177,35 +172,10 @@ CritfallEvents.onPostAttackRoll(event -> {
 A canceled `PreAttackRollEvent` means the attack does not happen (no damage, no outcome tables).
 A vetoed `PostAttackRollEvent` means it resolved but applies no damage and runs no outcome tables.
 
-### `CombatInteractionEvent` — combat detection for orchestrators
+### `CombatInteractionEvent` — detecting combat
 
-`CritfallEvents.onCombatInteraction(...)` is the supported way to detect "combat has started":
-an orchestrator (e.g. a turn-based encounter mod) no longer needs to listen to the raw loader
-damage events and out-prioritize Critfall's own listener. The firing contract:
-
-- **Where.** Server-side, fired by the shared interception on both loaders at the loader-parity
-  point (after the game's invulnerability/i-frame checks, before mitigation) — behavior is
-  identical on NeoForge and Fabric.
-- **When.** Before *all* of Critfall's own resolution for that damage: before rules gating,
-  damage classification, `PreAttackRollEvent`, and the d20. It therefore fires regardless of what
-  happens to the damage afterwards — a rolled hit, a miss/fumble that cancels it, a listener
-  `cancel()`/`veto()`, an `#critfall:exempt` or `#critfall:always_hits` damage type, a vanilla
-  passthrough fallback, dry-run mode, `attack_rolls.enabled: false`, a **suppressed** attacker or
-  target (so an orchestrator can see a new mob join an encounter it already owns), and zero-damage
-  interactions (snowballs) all still fire it.
-- **Never fired for:** damage with no living attacker (environmental / entity-less), the damage a
-  consumer applies itself via `RollService.performAttack` (the consumer already has that result),
-  and damage dealt by Critfall's own outcome effects (a redirected swing, fumble self-damage).
-- **Cadence.** Once per qualifying damage event — every melee swing, every projectile impact. It
-  means "a combat interaction was detected", not "a fight began"; debounce in the listener if you
-  need encounter-session semantics.
-- **Payload.** `attacker()` and `target()` (both `LivingEntity`), `source()` (the raw
-  `DamageSource`), and `delivery()` (`AttackDelivery`, classified like the roll pipeline — THROWN
-  for self-launched projectiles, SPELL for tagged/indirect magic, MELEE for direct hits;
-  best-effort from the source's shape for damage the pipeline itself would never roll).
-- **Observe-only.** The record is immutable and firing changes nothing about combat resolution.
-  Ordering for one damage event: `CombatInteractionEvent` → `PreAttackRollEvent` → d20 →
-  `PostAttackRollEvent` → `CritEvent`/`FumbleEvent`.
+The supported "combat started" signal: it fires whenever one living entity damages another, so an
+orchestrator never needs to touch the raw loader damage events.
 
 ```java
 CritfallEvents.onCombatInteraction(event -> {
@@ -214,6 +184,30 @@ CritfallEvents.onCombatInteraction(event -> {
     }
 });
 ```
+
+**Fires:**
+
+- Server-side, on both loaders at the same point: after the game's invulnerability checks, before
+  mitigation.
+- Before everything Critfall does with the damage — so it *always* fires, even when the damage is
+  then cancelled (miss, fumble, listener cancel/veto), exempt or always-hits, a vanilla
+  passthrough, dry-run, disabled in rules, zero damage, or between suppressed entities (so you can
+  see a new mob join an encounter you already own).
+- Once per damage event — every swing, every projectile impact. Debounce in the listener if you
+  need "a fight began" semantics.
+
+**Never fires for:**
+
+- Environmental damage (no living attacker).
+- Damage you apply yourself via `RollService.performAttack`.
+- Damage dealt by Critfall's own outcome effects.
+
+**Carries** `attacker()`, `target()`, `source()` (the raw `DamageSource`), and `delivery()`
+(`AttackDelivery`, classified like the roll pipeline).
+
+**Observe-only.** Firing changes nothing about combat resolution. Order per damage event:
+`CombatInteractionEvent` → `PreAttackRollEvent` → d20 → `PostAttackRollEvent` →
+`CritEvent`/`FumbleEvent`.
 
 ## Feedback
 
