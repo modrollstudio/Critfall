@@ -37,4 +37,24 @@ public class ApiGameTests implements FabricGameTest {
     public void drivenAttackKeepsArmorReductionWhenBypassFlagOff(GameTestHelper helper) {
         ApiScenarios.drivenAttackKeepsArmorReductionWhenBypassFlagOff(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void combatInteractionFiresOnNormalHit(GameTestHelper helper) {
+        ApiScenarios.combatInteractionFiresOnNormalHit(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void combatInteractionFiresWhenRollCancelsDamage(GameTestHelper helper) {
+        ApiScenarios.combatInteractionFiresWhenRollCancelsDamage(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void combatInteractionFiresBeforeListenerCancel(GameTestHelper helper) {
+        ApiScenarios.combatInteractionFiresBeforeListenerCancel(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void combatInteractionFiresForSuppressedParticipants(GameTestHelper helper) {
+        ApiScenarios.combatInteractionFiresForSuppressedParticipants(helper);
+    }
 }

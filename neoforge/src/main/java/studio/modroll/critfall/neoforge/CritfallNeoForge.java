@@ -30,7 +30,7 @@ public final class CritfallNeoForge {
         studio.modroll.critfall.feedback.FeedbackSink.set(
                 studio.modroll.critfall.neoforge.network.FeedbackDispatcher.asSink());
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppingEvent e) -> {
-            studio.modroll.critfall.api.CombatSuppression.clear();
+            studio.modroll.critfall.combat.SuppressionStore.clear();
             // Per-entity cooldown maps outlive a world in one JVM (audit 0.2 A1/A2): drop them so
             // a fresh world never sees another world's timestamps and nothing accumulates.
             studio.modroll.critfall.combat.FumbleCooldowns.clear();

@@ -122,9 +122,17 @@ combat itself via `performAttack`.
 RollService.suppress(entity);          // or CombatSuppression.suppress(uuid)
 boolean owned = RollService.isSuppressed(entity);
 RollService.release(entity);
+
+Set<UUID> all = CombatSuppression.suppressedUuids();   // read-only view, all mods
 ```
 
-Suppression is in-memory and transient: it is cleared on server stop (a restart ends any encounter).
+Suppression is in-memory and transient: Critfall clears it internally on server stop.
+
+`suppressedUuids()` is an unmodifiable live view of every suppressed UUID — useful as a global
+leak check in tests (assert it is empty once your encounter has released everything).
+
+**Test scope only:** `clearAllForTesting()` (was `clear()`) wipes every mod's suppressions at
+once. Never call it in production — release per entity instead.
 
 ## Events (`studio.modroll.critfall.api.event`)
 
@@ -134,6 +142,7 @@ it, so a listener sees **every** attack from either path. A listener that throws
 
 | Event | When | Listener can |
 |-------|------|--------------|
+| `CombatInteractionEvent` | a damaging combat interaction is detected, before everything else (since 0.2.2) | observe |
 | `PreAttackRollEvent`  | before the d20 | change `attackBonus`, force `mode` (advantage/disadvantage), or `cancel()` |
 | `PostAttackRollEvent` | after resolving, before damage | change `finalDamage`, or `veto()` |
 | `FumbleEvent`         | outcome is a fumble | observe |
@@ -162,6 +171,43 @@ CritfallEvents.onPostAttackRoll(event -> {
 
 A canceled `PreAttackRollEvent` means the attack does not happen (no damage, no outcome tables).
 A vetoed `PostAttackRollEvent` means it resolved but applies no damage and runs no outcome tables.
+
+### `CombatInteractionEvent` — detecting combat
+
+The supported "combat started" signal: it fires whenever one living entity damages another, so an
+orchestrator never needs to touch the raw loader damage events.
+
+```java
+CritfallEvents.onCombatInteraction(event -> {
+    if (!encounter.isRunning()) {
+        encounter.start(event.attacker(), event.target());
+    }
+});
+```
+
+**Fires:**
+
+- Server-side, on both loaders at the same point: after the game's invulnerability checks, before
+  mitigation.
+- Before everything Critfall does with the damage — so it *always* fires, even when the damage is
+  then cancelled (miss, fumble, listener cancel/veto), exempt or always-hits, a vanilla
+  passthrough, dry-run, disabled in rules, zero damage, or between suppressed entities (so you can
+  see a new mob join an encounter you already own).
+- Once per damage event — every swing, every projectile impact. Debounce in the listener if you
+  need "a fight began" semantics.
+
+**Never fires for:**
+
+- Environmental damage (no living attacker).
+- Damage you apply yourself via `RollService.performAttack`.
+- Damage dealt by Critfall's own outcome effects.
+
+**Carries** `attacker()`, `target()`, `source()` (the raw `DamageSource`), and `delivery()`
+(`AttackDelivery`, classified like the roll pipeline).
+
+**Observe-only.** Firing changes nothing about combat resolution. Order per damage event:
+`CombatInteractionEvent` → `PreAttackRollEvent` → d20 → `PostAttackRollEvent` →
+`CritEvent`/`FumbleEvent`.
 
 ## Feedback
 
