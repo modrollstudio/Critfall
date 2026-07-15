@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-15
+
+API additions from Critfall: Initiative's M1 integration findings.
+
+### Added
+
+- `CombatInteractionEvent` + `CritfallEvents.onCombatInteraction(...)`: an observe-only API event
+  that fires the moment the damage interception detects a damaging interaction between two living
+  entities — server-side, at the same loader-parity point on NeoForge and Fabric, and before all of
+  Critfall's own gating and resolution. It therefore fires even when the damage is subsequently
+  cancelled (a miss/fumble or a listener cancel/veto), exempt/always-hits, a vanilla passthrough,
+  dry-run, or involves suppressed participants — so an orchestrator (e.g. Critfall: Initiative) can
+  detect combat without listening to the raw loader damage events and out-prioritizing Critfall's
+  listener. The precise firing contract is documented in `docs/api.md`; GameTests on both loaders
+  prove it fires for a normal hit and still fires when the damage is cancelled.
+- `CombatSuppression.suppressedUuids()`: an unmodifiable read-only view of every currently
+  suppressed UUID across all mods, so consumer tests can write global suppression leak checks
+  instead of probing known UUIDs one by one.
+
+### Changed
+
+- The global suppression wipe is no longer part of the normal production API surface:
+  `CombatSuppression.clear()` was renamed to `clearAllForTesting()` (test cleanup only — in
+  production it would destroy every mod's running encounters). Critfall clears suppression state
+  internally on server stop; the production mutation surface stays per-UUID `suppress`/`release`.
+
 ## [0.2.1] - 2026-07-14
 
 API-hardening release from Critfall: Initiative's M0 integration findings.
