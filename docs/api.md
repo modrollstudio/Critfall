@@ -147,6 +147,7 @@ it, so a listener sees **every** attack from either path. A listener that throws
 
 | Event | When | Listener can |
 |-------|------|--------------|
+| `CombatInteractionEvent` | a damaging combat interaction is detected, before everything else (since 0.2.2) | observe |
 | `PreAttackRollEvent`  | before the d20 | change `attackBonus`, force `mode` (advantage/disadvantage), or `cancel()` |
 | `PostAttackRollEvent` | after resolving, before damage | change `finalDamage`, or `veto()` |
 | `FumbleEvent`         | outcome is a fumble | observe |
@@ -175,6 +176,44 @@ CritfallEvents.onPostAttackRoll(event -> {
 
 A canceled `PreAttackRollEvent` means the attack does not happen (no damage, no outcome tables).
 A vetoed `PostAttackRollEvent` means it resolved but applies no damage and runs no outcome tables.
+
+### `CombatInteractionEvent` — combat detection for orchestrators
+
+`CritfallEvents.onCombatInteraction(...)` is the supported way to detect "combat has started":
+an orchestrator (e.g. a turn-based encounter mod) no longer needs to listen to the raw loader
+damage events and out-prioritize Critfall's own listener. The firing contract:
+
+- **Where.** Server-side, fired by the shared interception on both loaders at the loader-parity
+  point (after the game's invulnerability/i-frame checks, before mitigation) — behavior is
+  identical on NeoForge and Fabric.
+- **When.** Before *all* of Critfall's own resolution for that damage: before rules gating,
+  damage classification, `PreAttackRollEvent`, and the d20. It therefore fires regardless of what
+  happens to the damage afterwards — a rolled hit, a miss/fumble that cancels it, a listener
+  `cancel()`/`veto()`, an `#critfall:exempt` or `#critfall:always_hits` damage type, a vanilla
+  passthrough fallback, dry-run mode, `attack_rolls.enabled: false`, a **suppressed** attacker or
+  target (so an orchestrator can see a new mob join an encounter it already owns), and zero-damage
+  interactions (snowballs) all still fire it.
+- **Never fired for:** damage with no living attacker (environmental / entity-less), the damage a
+  consumer applies itself via `RollService.performAttack` (the consumer already has that result),
+  and damage dealt by Critfall's own outcome effects (a redirected swing, fumble self-damage).
+- **Cadence.** Once per qualifying damage event — every melee swing, every projectile impact. It
+  means "a combat interaction was detected", not "a fight began"; debounce in the listener if you
+  need encounter-session semantics.
+- **Payload.** `attacker()` and `target()` (both `LivingEntity`), `source()` (the raw
+  `DamageSource`), and `delivery()` (`AttackDelivery`, classified like the roll pipeline — THROWN
+  for self-launched projectiles, SPELL for tagged/indirect magic, MELEE for direct hits;
+  best-effort from the source's shape for damage the pipeline itself would never roll).
+- **Observe-only.** The record is immutable and firing changes nothing about combat resolution.
+  Ordering for one damage event: `CombatInteractionEvent` → `PreAttackRollEvent` → d20 →
+  `PostAttackRollEvent` → `CritEvent`/`FumbleEvent`.
+
+```java
+CritfallEvents.onCombatInteraction(event -> {
+    if (!encounter.isRunning()) {
+        encounter.start(event.attacker(), event.target());
+    }
+});
+```
 
 ## Feedback
 

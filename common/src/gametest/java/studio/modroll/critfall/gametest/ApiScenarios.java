@@ -1,5 +1,7 @@
 package studio.modroll.critfall.gametest;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.EntityType;
@@ -11,10 +13,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.AttackContext;
+import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.event.CombatInteractionEvent;
 import studio.modroll.critfall.api.event.CritfallEvents;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
@@ -197,6 +201,120 @@ public final class ApiScenarios {
             cleanup(attacker, armored);
         }
         helper.succeed();
+    }
+
+    public static void combatInteractionFiresOnNormalHit(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        List<CombatInteractionEvent> seen = new ArrayList<>();
+        CritfallEvents.onCombatInteraction(seen::add);
+        try {
+            withRolls(
+                    helper,
+                    () -> {
+                        // 13 + 3 = 16 vs AC 10 -> hit for 5; the interaction event fires alongside.
+                        pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
+                        expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
+                        expectInteraction(helper, seen, husk, pig, AttackDelivery.MELEE);
+                    },
+                    13,
+                    4);
+        } finally {
+            CritfallEvents.clearListeners();
+            cleanup(husk, pig);
+        }
+        helper.succeed();
+    }
+
+    public static void combatInteractionFiresWhenRollCancelsDamage(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        List<CombatInteractionEvent> seen = new ArrayList<>();
+        CritfallEvents.onCombatInteraction(seen::add);
+        try {
+            withRolls(
+                    helper,
+                    () -> {
+                        // 5 + 3 = 8 vs AC 10 -> miss, Critfall cancels the damage — event still fires.
+                        pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
+                        expectHealth(helper, pig, pig.getMaxHealth());
+                        expectInteraction(helper, seen, husk, pig, AttackDelivery.MELEE);
+                    },
+                    5);
+        } finally {
+            CritfallEvents.clearListeners();
+            cleanup(husk, pig);
+        }
+        helper.succeed();
+    }
+
+    public static void combatInteractionFiresBeforeListenerCancel(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        List<CombatInteractionEvent> seen = new ArrayList<>();
+        boolean[] firedBeforePreAttack = {false};
+        CritfallEvents.onCombatInteraction(seen::add);
+        CritfallEvents.onPreAttackRoll(e -> {
+            firedBeforePreAttack[0] = !seen.isEmpty();
+            e.cancel();
+        });
+        try {
+            // No faces scripted: the pre-cancel happens before any die is drawn.
+            withRolls(helper, () -> {
+                pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
+                expectHealth(helper, pig, pig.getMaxHealth());
+                expectInteraction(helper, seen, husk, pig, AttackDelivery.MELEE);
+                if (!firedBeforePreAttack[0]) {
+                    helper.fail("the interaction event must fire before PreAttackRollEvent");
+                }
+            });
+        } finally {
+            CritfallEvents.clearListeners();
+            cleanup(husk, pig);
+        }
+        helper.succeed();
+    }
+
+    public static void combatInteractionFiresForSuppressedParticipants(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        List<CombatInteractionEvent> seen = new ArrayList<>();
+        CritfallEvents.onCombatInteraction(seen::add);
+        try {
+            // No faces scripted: the auto pipeline stands down, vanilla applies — event still fires.
+            withRolls(helper, () -> {
+                pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
+                expectHealth(helper, pig, pig.getMaxHealth() - VANILLA_HIT);
+                expectInteraction(helper, seen, husk, pig, AttackDelivery.MELEE);
+            });
+        } finally {
+            CritfallEvents.clearListeners();
+            cleanup(husk, pig);
+        }
+        helper.succeed();
+    }
+
+    private static void expectInteraction(
+            GameTestHelper helper,
+            List<CombatInteractionEvent> seen,
+            LivingEntity attacker,
+            LivingEntity target,
+            AttackDelivery delivery) {
+        if (seen.size() != 1) {
+            helper.fail("expected exactly one combat interaction event, got " + seen.size());
+        }
+        CombatInteractionEvent event = seen.get(0);
+        if (event.attacker() != attacker || event.target() != target) {
+            helper.fail("the interaction event carried the wrong participants");
+        }
+        if (event.delivery() != delivery) {
+            helper.fail("expected delivery " + delivery + " but was " + event.delivery());
+        }
+        if (event.source() == null) {
+            helper.fail("the interaction event must carry the damage source");
+        }
     }
 
     private static void withRolls(GameTestHelper helper, Runnable action, int... faces) {
