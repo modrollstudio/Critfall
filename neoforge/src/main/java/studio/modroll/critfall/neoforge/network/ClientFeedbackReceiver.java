@@ -7,10 +7,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import studio.modroll.critfall.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.feedback.ClientConfig;
-import studio.modroll.critfall.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 import studio.modroll.critfall.neoforge.client.CritfallClient;
 

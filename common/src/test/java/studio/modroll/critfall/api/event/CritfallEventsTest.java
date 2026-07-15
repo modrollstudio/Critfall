@@ -2,6 +2,8 @@ package studio.modroll.critfall.api.event;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import net.minecraft.world.item.ItemStack;
@@ -9,9 +11,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.AttackContext;
-import studio.modroll.critfall.combat.AttackOutcome;
-import studio.modroll.critfall.combat.AttackResult;
-import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.api.AttackDelivery;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.RollMode;
 
 class CritfallEventsTest {
 
@@ -59,6 +62,26 @@ class CritfallEventsTest {
         PostAttackRollEvent fired = CritfallEvents.firePostAttackRoll(null, null, ctx(), result);
         assertEquals(12, fired.finalDamage());
         assertTrue(fired.isVetoed());
+    }
+
+    @Test
+    void combatInteractionListenerObservesAttackerTargetAndDelivery() {
+        CombatInteractionEvent[] seen = new CombatInteractionEvent[1];
+        CritfallEvents.onCombatInteraction(e -> seen[0] = e);
+        CritfallEvents.fireCombatInteraction(null, null, null, AttackDelivery.THROWN);
+        assertNotNull(seen[0]);
+        assertNull(seen[0].attacker());
+        assertNull(seen[0].target());
+        assertEquals(AttackDelivery.THROWN, seen[0].delivery());
+    }
+
+    @Test
+    void clearListenersDropsCombatInteractionListeners() {
+        boolean[] called = {false};
+        CritfallEvents.onCombatInteraction(e -> called[0] = true);
+        CritfallEvents.clearListeners();
+        CritfallEvents.fireCombatInteraction(null, null, null, AttackDelivery.MELEE);
+        assertFalse(called[0]);
     }
 
     @Test

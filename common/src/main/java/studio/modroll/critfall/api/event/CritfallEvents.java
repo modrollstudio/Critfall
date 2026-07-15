@@ -3,11 +3,13 @@ package studio.modroll.critfall.api.event;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.api.AttackContext;
-import studio.modroll.critfall.combat.AttackResult;
-import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.api.AttackDelivery;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.RollMode;
 
 /**
  * The public, loader-agnostic event bus for Critfall (PLAN §4.4). Mods and KubeJS scripts register
@@ -17,12 +19,17 @@ import studio.modroll.critfall.dice.RollMode;
  */
 public final class CritfallEvents {
 
+    private static final List<Consumer<CombatInteractionEvent>> combatInteraction = new CopyOnWriteArrayList<>();
     private static final List<Consumer<PreAttackRollEvent>> preAttack = new CopyOnWriteArrayList<>();
     private static final List<Consumer<PostAttackRollEvent>> postAttack = new CopyOnWriteArrayList<>();
     private static final List<Consumer<FumbleEvent>> fumble = new CopyOnWriteArrayList<>();
     private static final List<Consumer<CritEvent>> crit = new CopyOnWriteArrayList<>();
 
     private CritfallEvents() {}
+
+    public static void onCombatInteraction(Consumer<CombatInteractionEvent> listener) {
+        combatInteraction.add(listener);
+    }
 
     public static void onPreAttackRoll(Consumer<PreAttackRollEvent> listener) {
         preAttack.add(listener);
@@ -38,6 +45,11 @@ public final class CritfallEvents {
 
     public static void onCrit(Consumer<CritEvent> listener) {
         crit.add(listener);
+    }
+
+    public static void fireCombatInteraction(
+            LivingEntity attacker, LivingEntity target, DamageSource source, AttackDelivery delivery) {
+        dispatch(combatInteraction, new CombatInteractionEvent(attacker, target, source, delivery));
     }
 
     public static PreAttackRollEvent firePreAttackRoll(
@@ -76,6 +88,7 @@ public final class CritfallEvents {
 
     /** For tests. */
     public static void clearListeners() {
+        combatInteraction.clear();
         preAttack.clear();
         postAttack.clear();
         fumble.clear();

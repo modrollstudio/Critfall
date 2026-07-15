@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-15
+
+API additions from Critfall: Initiative's M1 integration findings.
+
+### Added
+
+- `CombatInteractionEvent` + `CritfallEvents.onCombatInteraction(...)`: an observe-only API event
+  that fires the moment the damage interception detects a damaging interaction between two living
+  entities — server-side, at the same loader-parity point on NeoForge and Fabric, and before all of
+  Critfall's own gating and resolution. It therefore fires even when the damage is subsequently
+  cancelled (a miss/fumble or a listener cancel/veto), exempt/always-hits, a vanilla passthrough,
+  dry-run, or involves suppressed participants — so an orchestrator (e.g. Critfall: Initiative) can
+  detect combat without listening to the raw loader damage events and out-prioritizing Critfall's
+  listener. The precise firing contract is documented in `docs/api.md`; GameTests on both loaders
+  prove it fires for a normal hit and still fires when the damage is cancelled.
+- `CombatSuppression.suppressedUuids()`: an unmodifiable read-only view of every currently
+  suppressed UUID across all mods, so consumer tests can write global suppression leak checks
+  instead of probing known UUIDs one by one.
+
+### Changed
+
+- The global suppression wipe is no longer part of the normal production API surface:
+  `CombatSuppression.clear()` was renamed to `clearAllForTesting()` (test cleanup only — in
+  production it would destroy every mod's running encounters). Critfall clears suppression state
+  internally on server stop; the production mutation surface stays per-UUID `suppress`/`release`.
+
+## [0.2.1] - 2026-07-14
+
+API-hardening release from Critfall: Initiative's M0 integration findings.
+
+### Fixed
+
+- The release Fabric jar no longer declares `fabric-gametest` entrypoints (caught by Initiative M0):
+  the entrypoint classes delegated to shared scenario bodies that are deliberately not shipped, so
+  any consumer running Fabric GameTests with Critfall installed saw all of Critfall's tests fail
+  with `NoClassDefFoundError`. The delegators and a dev-only `critfall_gametest` mod json moved to
+  a `gametest` source set that only the `runGametest` run loads, mirroring the NeoForge layout.
+- The NeoForge registration shims (and the `critfall:empty` gametest structure) likewise moved out
+  of the release jar into the `gametest` source set, and a `verifyNoGametestInReleaseJar` check —
+  wired into `./gradlew check` for every module — fails the build if gametest classes, entrypoints,
+  or resources ever leak into a release jar again.
+
+### Changed
+
+- The public API surface is now self-contained: every type appearing in an `api` signature lives in
+  `studio.modroll.critfall.api` (or an `api` subpackage), as `docs/api.md` always claimed. Relocated
+  (packages only — no behavior change): the `dice` package → `api.dice`; `AttackResult` and
+  `AttackOutcome` → `api.combat`; `CombatEngine.SaveResult` → top-level `api.combat.SaveResult`;
+  `ConsequenceLine` and `RollFeedbackPayload` → `api.feedback`
+  (`ConsequenceLine.durability(Rules.DurabilityMode)` became `durability(boolean broken)` to shed
+  its internal-type parameter). Consumers compiled against 0.2.0's unofficial locations must
+  re-import; the semver stability promise now formally covers these types.
+
+### Added
+
+- A deterministic-testing RNG seam for consumers: `RollService.setRoller(DiceRoller)` /
+  `RollService.resetRoller()` let an external mod script exact die faces (nat 1, nat 20) in its own
+  tests, the same way Critfall's tests do. Documented (test scope only) in `docs/api.md`.
+- `maven-publish` wiring: `./gradlew publishToMavenLocal` publishes `studio.modroll:critfall-common/-neoforge/-fabric` so external mods (e.g. Critfall: Initiative) can consume the API as a real Maven artifact until the Modrinth maven artifact exists.
+
 ## [0.2.0] - 2026-07-08
 
 ### Added

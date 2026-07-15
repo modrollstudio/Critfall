@@ -1,8 +1,10 @@
 package studio.modroll.critfall.api;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -13,7 +15,7 @@ class CombatSuppressionTest {
 
     @AfterEach
     void cleanup() {
-        CombatSuppression.clear();
+        CombatSuppression.clearAllForTesting();
     }
 
     @Test
@@ -30,10 +32,35 @@ class CombatSuppressionTest {
     }
 
     @Test
-    void clearRemovesAll() {
+    void clearAllForTestingRemovesAll() {
         CombatSuppression.suppress(id);
         CombatSuppression.suppress(UUID.randomUUID());
-        CombatSuppression.clear();
+        CombatSuppression.clearAllForTesting();
         assertFalse(CombatSuppression.isSuppressed(id));
+        assertTrue(CombatSuppression.suppressedUuids().isEmpty());
+    }
+
+    @Test
+    void suppressedUuidsReflectsSuppressAndRelease() {
+        CombatSuppression.suppress(id);
+        assertTrue(CombatSuppression.suppressedUuids().contains(id));
+        CombatSuppression.release(id);
+        assertTrue(CombatSuppression.suppressedUuids().isEmpty());
+    }
+
+    @Test
+    void suppressedUuidsIsUnmodifiable() {
+        CombatSuppression.suppress(id);
+        Set<UUID> view = CombatSuppression.suppressedUuids();
+        assertThrows(UnsupportedOperationException.class, () -> view.remove(id));
+        assertThrows(UnsupportedOperationException.class, () -> view.add(UUID.randomUUID()));
+        assertTrue(CombatSuppression.isSuppressed(id));
+    }
+
+    @Test
+    void suppressedUuidsIsLiveView() {
+        Set<UUID> view = CombatSuppression.suppressedUuids();
+        CombatSuppression.suppress(id);
+        assertTrue(view.contains(id));
     }
 }

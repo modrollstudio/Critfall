@@ -16,16 +16,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import studio.modroll.critfall.Critfall;
-import studio.modroll.critfall.combat.AttackResult;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.data.OutcomeEffect;
 import studio.modroll.critfall.data.OutcomeTable;
 import studio.modroll.critfall.data.ProfileStore;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.DiceRoller;
-import studio.modroll.critfall.feedback.ConsequenceLine;
 
 /**
  * Applies outcome tables (PLAN.md §4.2/M4) after an attack roll resolved: gathers the tables the
@@ -139,7 +139,8 @@ public final class OutcomeExecutor {
             case OutcomeEffect.DamageDurability ignored -> {
                 boolean damaged = damageDurability(weapon, rules.fumbles());
                 yield damaged
-                        ? Optional.of(ConsequenceLine.durability(rules.fumbles().durabilityMode()))
+                        ? Optional.of(ConsequenceLine.durability(
+                                rules.fumbles().durabilityMode() == Rules.DurabilityMode.SET_TO_1))
                         : Optional.empty();
             }
             case OutcomeEffect.HitNearestAlly ally -> hitNearestAlly(attacker, target, ally, damageDice, rules, roller);

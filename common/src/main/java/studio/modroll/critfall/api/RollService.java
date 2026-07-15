@@ -1,15 +1,22 @@
 package studio.modroll.critfall.api;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.SaveResult;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.RollResult;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.AttackDice;
 import studio.modroll.critfall.combat.AttackPipeline;
-import studio.modroll.critfall.combat.AttackResult;
 import studio.modroll.critfall.combat.CombatEngine;
 import studio.modroll.critfall.combat.DamageInterception;
 import studio.modroll.critfall.combat.Derivation;
@@ -17,13 +24,8 @@ import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.data.ProfileLookup;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.DiceRoller;
-import studio.modroll.critfall.dice.RollResult;
-import studio.modroll.critfall.feedback.ConsequenceLine;
 import studio.modroll.critfall.feedback.FeedbackBuilder;
 import studio.modroll.critfall.feedback.FeedbackSink;
-import studio.modroll.critfall.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
@@ -52,6 +54,18 @@ public final class RollService {
         return RollRuntime.feedbackRoller();
     }
 
+    /**
+     * Deterministic-testing seam: forces exact die faces via a scripted roller. Test scope only —
+     * rolls are server-authoritative, so this must not be left installed outside a test.
+     */
+    public static void setRoller(DiceRoller roller) {
+        RollRuntime.setRoller(Objects.requireNonNull(roller, "roller"));
+    }
+
+    public static void resetRoller() {
+        RollRuntime.resetRoller();
+    }
+
     public static void suppress(Entity entity) {
         CombatSuppression.suppress(entity.getUUID());
     }
@@ -78,7 +92,7 @@ public final class RollService {
         return EffectiveItemProfile.of(ProfileLookup.forItem(stack), 0.0);
     }
 
-    public static CombatEngine.SaveResult savingThrow(LivingEntity target, int saveBonus, int dc) {
+    public static SaveResult savingThrow(LivingEntity target, int saveBonus, int dc) {
         return CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc);
     }
 

@@ -2,8 +2,7 @@ plugins {
     id 'net.neoforged.moddev'
 }
 
-// Compat-verification GameTests (docs/compat.md): compiled against the real Iron's Spells /
-// Ars Nouveau jars, loaded on dev runs only, never shipped in the production jar.
+// GameTest shims and compat-verification GameTests (docs/compat.md): dev runs only, never shipped.
 sourceSets {
     gametest
 }
@@ -56,8 +55,6 @@ neoForge {
 
 dependencies {
     compileOnly project(':common')
-    // The gametest delegators compile against the shared *Scenarios classes.
-    compileOnly project(':common').sourceSets.gametest.output
 
     // Spell-compat verification (docs/compat.md): the real mods on the dev-run classpath.
     localRuntime "maven.modrinth:irons-spells-n-spellbooks:${irons_spellbooks_version}"
@@ -68,6 +65,8 @@ dependencies {
     localRuntime "maven.modrinth:geckolib:${geckolib_version}"
 
     gametestCompileOnly project(':common')
+    // The gametest delegators compile against the shared *Scenarios classes.
+    gametestCompileOnly project(':common').sourceSets.gametest.output
     gametestCompileOnly "maven.modrinth:irons-spells-n-spellbooks:${irons_spellbooks_version}"
     gametestCompileOnly "maven.modrinth:ars-nouveau:${ars_nouveau_version}"
 }

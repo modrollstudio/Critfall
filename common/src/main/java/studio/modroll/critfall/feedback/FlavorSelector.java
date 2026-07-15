@@ -2,8 +2,8 @@ package studio.modroll.critfall.feedback;
 
 import java.util.List;
 import java.util.Optional;
+import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.data.FlavorPool;
-import studio.modroll.critfall.dice.DiceRoller;
 
 /** Randomly picks one flavor translation key from a pool for an outcome, using the injected RNG. */
 public final class FlavorSelector {

@@ -1,4 +1,4 @@
-package studio.modroll.critfall.feedback;
+package studio.modroll.critfall.api.feedback;
 
 import io.netty.handler.codec.DecoderException;
 import java.util.ArrayList;
@@ -9,7 +9,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import studio.modroll.critfall.Critfall;
-import studio.modroll.critfall.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackOutcome;
 
 /**
  * S2C feedback for one resolved attack roll (M6). Flat primitives only — the client rebuilds every

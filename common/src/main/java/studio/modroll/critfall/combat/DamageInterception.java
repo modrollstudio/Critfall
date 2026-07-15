@@ -3,6 +3,7 @@ package studio.modroll.critfall.combat;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -14,16 +15,19 @@ import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.CombatSuppression;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.SaveResult;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.api.event.CritfallEvents;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.data.SpellProfile;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.RollMode;
-import studio.modroll.critfall.feedback.ConsequenceLine;
 import studio.modroll.critfall.feedback.FeedbackBuilder;
 import studio.modroll.critfall.feedback.FeedbackSink;
-import studio.modroll.critfall.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
@@ -81,6 +85,11 @@ public final class DamageInterception {
         if (OutcomeExecutor.isApplyingEffects()) {
             return; // damage dealt BY an outcome effect (redirected swing, self damage) never re-rolls
         }
+        if (source.getEntity() instanceof LivingEntity attacker) {
+            // Before all gating below: docs/api.md promises this fires even for suppressed,
+            // exempt, or cancelled damage.
+            CritfallEvents.fireCombatInteraction(attacker, target, source, interactionDelivery(source));
+        }
         if (isSuppressed(source, target)) {
             return; // an orchestrator (§12) owns this entity's combat — auto pipeline stands down
         }
@@ -98,6 +107,17 @@ public final class DamageInterception {
             case SPELL -> rollSpell(dmg, rules, source, target);
             case EXEMPT, ALWAYS_HITS, ENVIRONMENTAL -> {} // vanilla passthrough
         }
+    }
+
+    /** Classified like the roll pipeline; best-effort for damage it would never roll. */
+    private static AttackDelivery interactionDelivery(DamageSource source) {
+        if (source.is(CritfallTags.SPELL)) {
+            return AttackDelivery.SPELL;
+        }
+        if (source.is(DamageTypeTags.IS_PROJECTILE)) {
+            return projectileDelivery(source, launcherStack(source));
+        }
+        return source.isDirect() ? AttackDelivery.MELEE : AttackDelivery.SPELL;
     }
 
     /** True when the target or the (living) attacker is externally suppressed (PLAN §12). */
@@ -356,7 +376,7 @@ public final class DamageInterception {
         int dc = profile.saveDc().orElse(saves.defaultDc());
         Rules.SaveOutcome onSuccess = profile.onSuccess().orElse(saves.onSuccess());
         int saveBonus = intStat(targetProfile.map(EntityProfile::saveBonus), () -> 0);
-        CombatEngine.SaveResult save = CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc);
+        SaveResult save = CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc);
 
         boolean useDice = rules.damageDice() && profile.damage().isPresent();
         float damage;

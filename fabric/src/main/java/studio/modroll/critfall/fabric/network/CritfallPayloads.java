@@ -1,7 +1,7 @@
 package studio.modroll.critfall.fabric.network;
 
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import studio.modroll.critfall.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
 /**

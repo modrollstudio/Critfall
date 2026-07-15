@@ -6,7 +6,7 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 import net.minecraft.resources.ResourceLocation;
-import studio.modroll.critfall.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceExpression;
 
 /**
  * One consequence an outcome table can inflict, parsed and validated at datapack load. Effects

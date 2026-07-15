@@ -1,4 +1,4 @@
-package studio.modroll.critfall.dice;
+package studio.modroll.critfall.api.dice;
 
 /** How a d20 check is rolled: straight, or with advantage/disadvantage (roll two, keep one). */
 public enum RollMode {

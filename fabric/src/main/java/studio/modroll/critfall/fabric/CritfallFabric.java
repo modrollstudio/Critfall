@@ -19,7 +19,6 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.RollRuntime;
-import studio.modroll.critfall.api.CombatSuppression;
 import studio.modroll.critfall.command.CritfallCommands;
 import studio.modroll.critfall.data.ProfileReloadListener;
 import studio.modroll.critfall.data.RulesLoader;
@@ -55,7 +54,7 @@ public final class CritfallFabric implements ModInitializer {
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(FabricDamageHook::allowDamage);
 
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            CombatSuppression.clear();
+            studio.modroll.critfall.combat.SuppressionStore.clear();
             // Per-entity cooldown maps outlive a world in one JVM (audit 0.2 A1/A2): drop them so
             // a fresh world never sees another world's timestamps and nothing accumulates.
             studio.modroll.critfall.combat.FumbleCooldowns.clear();

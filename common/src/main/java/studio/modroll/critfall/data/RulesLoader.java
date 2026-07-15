@@ -10,9 +10,9 @@ import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 import studio.modroll.critfall.Critfall;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceParseException;
 import studio.modroll.critfall.combat.Rules;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.DiceParseException;
 
 /**
  * Reads {@code config/critfall/rules.json}. A missing file is created with the defaults; a

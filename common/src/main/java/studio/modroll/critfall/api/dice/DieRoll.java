@@ -1,4 +1,4 @@
-package studio.modroll.critfall.dice;
+package studio.modroll.critfall.api.dice;
 
 /**
  * A single physical die rolled during evaluation.

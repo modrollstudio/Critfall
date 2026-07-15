@@ -6,8 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import studio.modroll.critfall.feedback.ConsequenceLine;
-import studio.modroll.critfall.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 
 class CombatTextTest {
 

@@ -1,8 +1,8 @@
 package studio.modroll.critfall;
 
 import java.util.Random;
+import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.combat.Rules;
-import studio.modroll.critfall.dice.DiceRoller;
 
 /**
  * Composition root for combat randomness and rules. This is the ONLY place a real RNG is
@@ -40,6 +40,10 @@ public final class RollRuntime {
     /** Injection point for tests and (from M3) the dry-run/config commands. */
     public static void setRoller(DiceRoller newRoller) {
         roller = newRoller;
+    }
+
+    public static void resetRoller() {
+        roller = new DiceRoller(new Random());
     }
 
     /** Injection point for tests, same as {@link #setRoller}, but for the cosmetic flavor roller. */

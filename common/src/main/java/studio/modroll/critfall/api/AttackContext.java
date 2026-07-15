@@ -5,8 +5,8 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.item.ItemStack;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.RollMode;
 
 /**
  * Everything a consumer supplies to drive an attack through {@link RollService}. {@code delivery}

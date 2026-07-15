@@ -1,6 +1,6 @@
 # Dice expression syntax
 
-The dice engine (`studio.modroll.critfall.dice`) parses tabletop-style dice notation. This is the
+The dice engine (`studio.modroll.critfall.api.dice`) parses tabletop-style dice notation. This is the
 format used everywhere a profile or config asks for dice (e.g. `"damage": { "melee": "2d6+3" }`).
 
 ## Grammar

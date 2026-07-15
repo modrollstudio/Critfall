@@ -7,8 +7,8 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 import net.minecraft.resources.ResourceLocation;
+import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.combat.Rules;
-import studio.modroll.critfall.dice.DiceExpression;
 
 /**
  * How spell-classified damage resolves, matched by DAMAGE TYPE id/tag (not entity or item),

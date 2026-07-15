@@ -28,8 +28,11 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
 import studio.modroll.critfall.RollRuntime;
-import studio.modroll.critfall.combat.AttackOutcome;
-import studio.modroll.critfall.combat.AttackResult;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.combat.Derivation;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
@@ -38,9 +41,6 @@ import studio.modroll.critfall.data.OutcomeTable;
 import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.data.ProfileStore;
 import studio.modroll.critfall.data.Trigger;
-import studio.modroll.critfall.dice.DiceExpression;
-import studio.modroll.critfall.dice.DiceRoller;
-import studio.modroll.critfall.feedback.ConsequenceLine;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**

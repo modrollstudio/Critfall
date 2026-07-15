@@ -4,10 +4,10 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 import net.minecraft.resources.ResourceLocation;
+import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.combat.AttackDice;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ItemProfile;
-import studio.modroll.critfall.dice.DiceExpression;
 
 /**
  * The resolved combat stats an item contributes — its profile dice (with the attack-damage modifier
@@ -22,7 +22,7 @@ public record EffectiveItemProfile(
         Optional<ResourceLocation> critTable,
         Set<String> properties) {
 
-    public static EffectiveItemProfile of(Optional<ItemProfile> profile, double attackDamageAttr) {
+    static EffectiveItemProfile of(Optional<ItemProfile> profile, double attackDamageAttr) {
         // Reuse the melee resolver with an empty entity: it folds in the attack-damage modifier
         // exactly as combat does, and yields the item dice only (no entity fallback).
         Optional<DiceExpression> damage = AttackDice.resolve(profile, Optional.<EntityProfile>empty(), attackDamageAttr)

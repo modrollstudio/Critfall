@@ -1,12 +1,12 @@
 package studio.modroll.critfall.outcome;
 
-import studio.modroll.critfall.combat.AttackOutcome;
-import studio.modroll.critfall.combat.AttackResult;
+import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.OutcomeEffect;
 import studio.modroll.critfall.data.OutcomeTable;
 import studio.modroll.critfall.data.Trigger;
-import studio.modroll.critfall.dice.DiceRoller;
 
 /**
  * The pure half of the outcome-table executor: does a trigger fire for this roll, which weighted

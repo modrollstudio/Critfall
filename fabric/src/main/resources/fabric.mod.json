@@ -15,17 +15,7 @@
   "environment": "*",
   "entrypoints": {
     "main": ["studio.modroll.critfall.fabric.CritfallFabric"],
-    "client": ["studio.modroll.critfall.fabric.client.CritfallFabricClient"],
-    "fabric-gametest": [
-      "studio.modroll.critfall.fabric.gametest.ApiGameTests",
-      "studio.modroll.critfall.fabric.gametest.CombatGameTests",
-      "studio.modroll.critfall.fabric.gametest.CommandGameTests",
-      "studio.modroll.critfall.fabric.gametest.FeedbackGameTests",
-      "studio.modroll.critfall.fabric.gametest.OutcomeGameTests",
-      "studio.modroll.critfall.fabric.gametest.ProjectileGameTests",
-      "studio.modroll.critfall.fabric.gametest.SpellGameTests",
-      "studio.modroll.critfall.fabric.gametest.TridentGameTests"
-    ]
+    "client": ["studio.modroll.critfall.fabric.client.CritfallFabricClient"]
   },
   "mixins": ["critfall.mixins.json"],
   "depends": {

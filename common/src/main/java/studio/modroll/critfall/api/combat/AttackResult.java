@@ -1,4 +1,4 @@
-package studio.modroll.critfall.combat;
+package studio.modroll.critfall.api.combat;
 
 /**
  * Everything the damage pipeline needs to know after an attack roll was resolved.

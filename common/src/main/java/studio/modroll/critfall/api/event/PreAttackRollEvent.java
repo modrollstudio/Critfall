@@ -2,7 +2,7 @@ package studio.modroll.critfall.api.event;
 
 import net.minecraft.world.entity.LivingEntity;
 import studio.modroll.critfall.api.AttackContext;
-import studio.modroll.critfall.dice.RollMode;
+import studio.modroll.critfall.api.dice.RollMode;
 
 /**
  * Fired before the d20 is rolled (PLAN §4.4). Listeners may raise/lower the attack bonus, force
