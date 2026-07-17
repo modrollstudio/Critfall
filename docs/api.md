@@ -93,9 +93,37 @@ AttackResult applied = RollService.performAttack(attacker, target, ctx);
 > interception, suppressed or not. Still call `RollService.suppress(...)` when an orchestrator
 > owns an entity's combat, so *other* real-time damage involving it stands down too.
 
+> **Invulnerability frames.** Driven attacks are deliberate, discrete combat events, not the
+> accidental rapid-fire that vanilla invulnerability frames guard against, so `performAttack`
+> clears the target's hurt cooldown before its damage lands. Each driven attack therefore applies
+> its **full rolled damage** even when the target was hit moments earlier — an opportunity attack,
+> or several attackers focusing one target in the same round, are never swallowed. The hurt re-arms
+> the cooldown just as a normal successful hit would, so vanilla i-frame behaviour for ordinary
+> real-time damage is unchanged.
+
 Fine-grained helpers are also available: `savingThrow(target, saveBonus, dc)`,
 `fireOutcomes(attacker, target, result, damageDice, weapon)`, and
 `sendRollFeedback(attacker, target, payload)`.
+
+### Detecting driven damage
+
+`RollService.isDrivenDamage(target)` tells you whether the hurt **currently being applied** to
+`target` is a Critfall-driven attack — the damage from `performAttack` — as opposed to real-time
+vanilla or other-mod damage. Query it from inside your own loader damage listener to exempt
+Critfall's driven attacks from your handling (e.g. a participant-damage cancel that should not fire
+on your own driven swings). It is `true` only during the driven `hurt`, on the entity taking it,
+and `false` everywhere else.
+
+```java
+// NeoForge, inside a LivingIncomingDamageEvent listener:
+if (RollService.isDrivenDamage(event.getEntity())) {
+    return; // Critfall (or our orchestrator via Critfall) owns this hit — don't cancel it
+}
+```
+
+Prefer this over inspecting the `DamageSource` or Critfall internals: it is the supported signal and
+is covered by the semver promise. `CombatInteractionEvent` does **not** fire for driven damage (see
+below), so a damage listener is the right place to distinguish it.
 
 ### `AttackContext` and `AttackDelivery`
 

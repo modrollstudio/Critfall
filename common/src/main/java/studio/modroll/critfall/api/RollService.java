@@ -78,6 +78,16 @@ public final class RollService {
         return CombatSuppression.isSuppressed(entity.getUUID());
     }
 
+    /**
+     * Whether the hurt currently being applied to {@code target} is a Critfall-driven attack — the
+     * damage from {@link #performAttack} (equivalently the internal {@code applyRolledDamage}), as
+     * opposed to real-time vanilla or other-mod damage. Query it inside a loader damage listener to
+     * exempt Critfall's own driven attacks from your own combat handling. False everywhere else.
+     */
+    public static boolean isDrivenDamage(LivingEntity target) {
+        return DamageInterception.isDrivenApply(target);
+    }
+
     public static EffectiveEntityProfile effectiveEntity(LivingEntity entity) {
         return EffectiveEntityProfile.of(
                 ProfileLookup.forEntity(entity),
