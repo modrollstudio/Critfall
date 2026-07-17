@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-07-17
+
+API additions from Critfall: Initiative's M3 integration findings.
+
+### Fixed
+
+- Driven damage is no longer swallowed by invulnerability frames: the `hurt` behind
+  `RollService.performAttack` / `applyRolledDamage` clears the target's hurt cooldown before it
+  lands, so each driven attack applies its full rolled damage even when the target was hit moments
+  earlier (a turn-based swing, an opportunity attack, or several attackers focusing one target in a
+  round). The hurt re-arms the cooldown exactly as a normal successful hit would, so vanilla i-frame
+  behaviour for ordinary real-time damage is unchanged. GameTests on both loaders prove two driven
+  attacks in the same tick both land in full and that non-driven damage still respects i-frames.
+
+### Added
+
+- `RollService.isDrivenDamage(LivingEntity)`: a public query for consumers to detect that the hurt
+  currently being applied to an entity is a Critfall-driven attack (the damage from `performAttack`),
+  as opposed to real-time vanilla or other-mod damage. Callers checked it from inside their own
+  loader damage listeners to exempt Critfall's driven attacks from their handling, instead of
+  mirroring Critfall's internal guard. Documented in `docs/api.md`; GameTests on both loaders prove
+  an external-style damage listener reads the correct value for driven vs non-driven damage.
+
 ## [0.2.2] - 2026-07-15
 
 API additions from Critfall: Initiative's M1 integration findings.

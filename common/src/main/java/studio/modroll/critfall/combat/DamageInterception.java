@@ -54,11 +54,20 @@ public final class DamageInterception {
      * armor reduction bypassed, because the attack roll's AC already stood in for armor. Only the
      * hurt on {@code target} is scoped; recoil damage it triggers (thorns) is intercepted normally.
      *
+     * <p>Driven attacks are deliberate, discrete combat events (a turn-based swing, an opportunity
+     * attack, several attackers focusing one target in a round), not the accidental rapid-fire that
+     * vanilla invulnerability frames guard against. So the target's hurt cooldown is cleared before
+     * the driven hurt lands: each driven attack applies its full rolled damage even inside a recent
+     * target's i-frame window (two driven hits in one tick both land). The hurt then re-arms the
+     * cooldown exactly as a normal successful hit would, so vanilla i-frame behaviour for non-driven
+     * damage is unchanged.
+     *
      * @return what {@code LivingEntity.hurt} returned
      */
     public static boolean applyRolledDamage(LivingEntity target, DamageSource source, float amount) {
         LivingEntity previous = ROLLED_APPLY.get();
         ROLLED_APPLY.set(target);
+        target.invulnerableTime = 0;
         try {
             return target.hurt(source, amount);
         } finally {
@@ -68,6 +77,11 @@ public final class DamageInterception {
                 ROLLED_APPLY.set(previous);
             }
         }
+    }
+
+    /** True while {@code target} is taking an in-flight {@link #applyRolledDamage} hurt on this thread. */
+    public static boolean isDrivenApply(LivingEntity target) {
+        return ROLLED_APPLY.get() == target;
     }
 
     public static void handle(IncomingDamage dmg, LivingEntity target, DamageSource source) {
