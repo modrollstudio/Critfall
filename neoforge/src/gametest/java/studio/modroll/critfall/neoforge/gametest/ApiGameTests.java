@@ -1,7 +1,12 @@
 package studio.modroll.critfall.neoforge.gametest;
 
+import java.util.function.Consumer;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.entity.LivingEntity;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import studio.modroll.critfall.Critfall;
@@ -62,5 +67,46 @@ public class ApiGameTests {
     @GameTest(template = TEMPLATE)
     public void combatInteractionFiresForSuppressedParticipants(GameTestHelper helper) {
         ApiScenarios.combatInteractionFiresForSuppressedParticipants(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void drivenAttacksBypassInvulnerabilityFrames(GameTestHelper helper) {
+        ApiScenarios.drivenAttacksBypassInvulnerabilityFrames(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void vanillaDamageStillRespectsInvulnerabilityFrames(GameTestHelper helper) {
+        ApiScenarios.vanillaDamageStillRespectsInvulnerabilityFrames(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void listenerDetectsDrivenDamage(GameTestHelper helper) {
+        ApiScenarios.listenerDetectsDrivenDamage(helper, DamageObserver::install);
+    }
+
+    /** Bridges a shared-scenario observer to NeoForge's {@code LivingIncomingDamageEvent}. */
+    private static final class DamageObserver implements AutoCloseable {
+
+        private final Consumer<LivingEntity> observer;
+
+        private DamageObserver(Consumer<LivingEntity> observer) {
+            this.observer = observer;
+        }
+
+        static AutoCloseable install(Consumer<LivingEntity> observer) {
+            DamageObserver holder = new DamageObserver(observer);
+            NeoForge.EVENT_BUS.register(holder);
+            return holder;
+        }
+
+        @SubscribeEvent
+        public void onDamage(LivingIncomingDamageEvent event) {
+            observer.accept(event.getEntity());
+        }
+
+        @Override
+        public void close() {
+            NeoForge.EVENT_BUS.unregister(this);
+        }
     }
 }

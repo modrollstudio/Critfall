@@ -3,6 +3,7 @@ package studio.modroll.critfall.gametest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Consumer;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -294,6 +295,103 @@ public final class ApiScenarios {
             cleanup(husk, pig);
         }
         helper.succeed();
+    }
+
+    public static void drivenAttacksBypassInvulnerabilityFrames(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        withRolls(
+                helper,
+                () -> {
+                    // Two driven attacks in the same tick, each 13 + 3 = 16 vs AC 10 -> hit, die 2
+                    // -> 3 damage. The second lands inside the target's hurt cooldown and must not
+                    // be swallowed by it.
+                    AttackContext ctx = AttackContext.melee(
+                            helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem());
+                    AttackResult first = RollService.performAttack(husk, pig, ctx);
+                    AttackResult second = RollService.performAttack(husk, pig, ctx);
+                    if (first.outcome() != AttackOutcome.HIT || second.outcome() != AttackOutcome.HIT) {
+                        helper.fail("expected two HITs, got " + first.outcome() + " and " + second.outcome());
+                    }
+                    expectHealth(helper, pig, pig.getMaxHealth() - 6.0F);
+                },
+                13,
+                2,
+                13,
+                2);
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    public static void vanillaDamageStillRespectsInvulnerabilityFrames(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        // No faces scripted: suppressed participants take vanilla damage, no rolls.
+        withRolls(helper, () -> {
+            pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
+            boolean second = pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
+            if (second) {
+                helper.fail("a second vanilla hit inside the hurt cooldown must be swallowed");
+            }
+            expectHealth(helper, pig, pig.getMaxHealth() - VANILLA_HIT);
+        });
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    /** Installs a loader damage-event listener observing each hurt entity; close to deactivate. */
+    @FunctionalInterface
+    public interface DamageObserverInstaller {
+        AutoCloseable install(Consumer<LivingEntity> observer);
+    }
+
+    public static void listenerDetectsDrivenDamage(GameTestHelper helper, DamageObserverInstaller installer) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        List<Boolean> driven = new ArrayList<>();
+        AutoCloseable observer = installer.install(target -> {
+            if (target == pig) {
+                driven.add(RollService.isDrivenDamage(target));
+            }
+        });
+        try {
+            withRolls(
+                    helper,
+                    () -> {
+                        // Vanilla hit first (suppressed -> no roll), then a driven attack:
+                        // 13 + 3 = 16 vs AC 10 -> hit, die 4 -> 5 damage.
+                        pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
+                        AttackContext ctx = AttackContext.melee(
+                                helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem());
+                        RollService.performAttack(husk, pig, ctx);
+                    },
+                    13,
+                    4);
+        } finally {
+            close(observer);
+            cleanup(husk, pig);
+        }
+        if (RollService.isDrivenDamage(pig)) {
+            helper.fail("isDrivenDamage must be false outside a driven hurt");
+        }
+        if (!List.of(false, true).equals(driven)) {
+            helper.fail("expected the listener to see [non-driven, driven] but saw " + driven);
+        }
+        helper.succeed();
+    }
+
+    private static void close(AutoCloseable closeable) {
+        try {
+            closeable.close();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static void expectInteraction(
