@@ -7,8 +7,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import studio.modroll.critfall.api.combat.ContestResult;
+import studio.modroll.critfall.api.combat.ContestSide;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.dice.SequenceRandom;
 
 class RollServiceTest {
@@ -45,5 +48,17 @@ class RollServiceTest {
         SaveResult save = RollService.savingThrow(null, 0, 1);
         assertEquals(1, save.natural());
         assertTrue(save.saved());
+    }
+
+    @Test
+    void externalCallerRunsAContestThroughApiTypesOnly() {
+        RollService.setRoller(new DiceRoller(SequenceRandom.ofDieFaces(6, 14, 9)));
+        ContestContext ctx = ContestContext.of(5, 2).withInitiatorMode(RollMode.ADVANTAGE);
+        ContestResult result = RollService.contest(null, null, ctx);
+        assertEquals(14, result.initiatorNatural(), "advantage keeps the higher initiator d20");
+        assertEquals(19, result.initiatorTotal());
+        assertEquals(11, result.opponentTotal());
+        assertEquals(ContestSide.INITIATOR, result.winner());
+        assertTrue(result.initiatorWins());
     }
 }

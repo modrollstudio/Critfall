@@ -15,10 +15,14 @@ import net.minecraft.world.item.Items;
 import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.AttackDelivery;
+import studio.modroll.critfall.api.ContestContext;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.ContestResult;
+import studio.modroll.critfall.api.combat.ContestSide;
 import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.event.CombatInteractionEvent;
 import studio.modroll.critfall.api.event.CritfallEvents;
 import studio.modroll.critfall.combat.FumbleCooldowns;
@@ -383,6 +387,72 @@ public final class ApiScenarios {
         if (!List.of(false, true).equals(driven)) {
             helper.fail("expected the listener to see [non-driven, driven] but saw " + driven);
         }
+        helper.succeed();
+    }
+
+    public static void contestResolvesWinnerAndTotals(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        withRolls(
+                helper,
+                () -> {
+                    // 15+2=17 beats 10+0=10.
+                    ContestResult result = RollService.contest(husk, pig, ContestContext.of(2, 0));
+                    if (result.winner() != ContestSide.INITIATOR) {
+                        helper.fail("expected INITIATOR to win, got " + result.winner());
+                    }
+                    if (result.initiatorTotal() != 17 || result.opponentTotal() != 10) {
+                        helper.fail("unexpected totals: " + result.initiatorTotal() + " vs " + result.opponentTotal());
+                    }
+                },
+                15,
+                10);
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    public static void contestTieGoesToOpponent(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        withRolls(
+                helper,
+                () -> {
+                    // Both total 10 -> tie goes to the opponent.
+                    ContestResult result = RollService.contest(husk, pig, ContestContext.of(0, 2));
+                    if (result.winner() != ContestSide.OPPONENT || result.initiatorWins()) {
+                        helper.fail("a tie must go to the opponent, got " + result.winner());
+                    }
+                },
+                10,
+                8);
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    public static void contestAppliesRollModePerSide(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        withRolls(
+                helper,
+                () -> {
+                    // Advantage keeps 18 (of 3/18); disadvantage keeps 4 (of 12/4).
+                    ContestContext ctx = ContestContext.of(0, 0)
+                            .withInitiatorMode(RollMode.ADVANTAGE)
+                            .withOpponentMode(RollMode.DISADVANTAGE);
+                    ContestResult result = RollService.contest(husk, pig, ctx);
+                    if (result.initiatorNatural() != 18 || result.opponentNatural() != 4) {
+                        helper.fail("per-side roll mode not applied: kept " + result.initiatorNatural() + " and "
+                                + result.opponentNatural());
+                    }
+                    if (result.winner() != ContestSide.INITIATOR) {
+                        helper.fail("expected INITIATOR to win, got " + result.winner());
+                    }
+                },
+                3,
+                18,
+                12,
+                4);
+        cleanup(husk, pig);
         helper.succeed();
     }
 
