@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-07-19
+
+Contested rolls as a first-class primitive, from Critfall: Initiative's repeated need for opposed
+checks (M4b Hide, M5 Shove).
+
+### Added
+
+- `RollService.contest(initiator, opponent, ContestContext)` → `ContestResult`: a D&D 5e contested
+  (opposed) check — both entities roll a d20 + their supplied bonus, higher total wins. Rolls go
+  through the same injectable combat roller as attacks and saves, so a consumer forces both sides in
+  its own tests via the RNG seam. `ContestContext` carries each side's bonus and an independent
+  `RollMode` (advantage/disadvantage per side); the initiator rolls first. `ContestResult` reports
+  both naturals, both totals, `winner()` (`ContestSide.INITIATOR`/`OPPONENT`), and `initiatorWins()`.
+  **Ties go to the opponent** (5e default: the initiator's check fails), expressed as strict
+  `initiatorTotal > opponentTotal`; a consumer wanting the opposite compares the exposed totals
+  itself, so no config flag is needed. Bonuses are caller-supplied — Critfall stays a dice engine and
+  does not model skills or ability scores; the entities are in the signature for identity and so a
+  future data-driven per-entity modifier map stays a non-breaking addition. Contests emit no Critfall
+  readout (the attack-shaped feedback payload does not fit an opposed roll); consumers present the
+  result themselves. Documented in `docs/api.md`; unit tests plus GameTests on both loaders cover the
+  winner/totals, the tie rule, per-side advantage/disadvantage, and an external-style api-only caller.
+
+### Notes
+
+- The M4b/M5 feedback-payload gap (roll mode and both d20 faces are not on `RollFeedbackPayload` /
+  `AttackResult`, so consumers annotate their own) was **not** addressed: exposing them would thread
+  a roll mode and the dropped d20 through `AttackResult` and the whole feedback codec/renderer for an
+  attack-shaped payload unrelated to contests. It stays on record for a future release.
+
 ## [0.2.3] - 2026-07-17
 
 API additions from Critfall: Initiative's M3 integration findings.

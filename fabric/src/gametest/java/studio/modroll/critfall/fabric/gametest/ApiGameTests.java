@@ -76,6 +76,21 @@ public class ApiGameTests implements FabricGameTest {
         ApiScenarios.listenerDetectsDrivenDamage(helper, DamageObserver::install);
     }
 
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void contestResolvesWinnerAndTotals(GameTestHelper helper) {
+        ApiScenarios.contestResolvesWinnerAndTotals(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void contestTieGoesToOpponent(GameTestHelper helper) {
+        ApiScenarios.contestTieGoesToOpponent(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void contestAppliesRollModePerSide(GameTestHelper helper) {
+        ApiScenarios.contestAppliesRollModePerSide(helper);
+    }
+
     /** Bridges a shared-scenario observer to Fabric's {@code ALLOW_DAMAGE}, registered once. */
     private static final class DamageObserver {
 

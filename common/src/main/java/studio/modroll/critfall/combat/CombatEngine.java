@@ -2,6 +2,7 @@ package studio.modroll.critfall.combat;
 
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
@@ -79,6 +80,15 @@ public final class CombatEngine {
     public static SaveResult resolveSave(DiceRoller roller, int saveBonus, int dc) {
         int natural = roller.d20(RollMode.NORMAL).keptDice().getFirst().value();
         return new SaveResult(natural, natural + saveBonus, dc);
+    }
+
+    /** Each side rolls a d20 (own mode) + bonus; the initiator rolls first, so scripted rollers script it first. */
+    public static ContestResult resolveContest(
+            DiceRoller roller, int initiatorBonus, RollMode initiatorMode, int opponentBonus, RollMode opponentMode) {
+        int initiatorNatural = roller.d20(initiatorMode).keptDice().getFirst().value();
+        int opponentNatural = roller.d20(opponentMode).keptDice().getFirst().value();
+        return new ContestResult(
+                initiatorNatural, initiatorNatural + initiatorBonus, opponentNatural, opponentNatural + opponentBonus);
     }
 
     /** The fumble is confirmed (consequences fire) when the second d20 rolls BELOW the DC. */

@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.ContestResult;
+import studio.modroll.critfall.api.combat.ContestSide;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
@@ -252,6 +254,50 @@ class CombatEngineTest {
         SequenceRandom rng = SequenceRandom.ofDieFaces(10);
         SaveResult result = CombatEngine.resolveSave(new DiceRoller(rng), 2, 13);
         assertFalse(result.saved(), "10 + 2 = 12 vs DC 13 fails");
+    }
+
+    @Test
+    void contestInitiatorWinsOnHigherTotal() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(15, 10);
+        ContestResult result = CombatEngine.resolveContest(new DiceRoller(rng), 2, RollMode.NORMAL, 0, RollMode.NORMAL);
+        assertEquals(15, result.initiatorNatural());
+        assertEquals(17, result.initiatorTotal());
+        assertEquals(10, result.opponentNatural());
+        assertEquals(10, result.opponentTotal());
+        assertEquals(ContestSide.INITIATOR, result.winner());
+        assertTrue(result.initiatorWins());
+        assertTrue(rng.isExhausted(), "a contest draws exactly one d20 per side");
+    }
+
+    @Test
+    void contestOpponentWinsOnHigherTotal() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(4, 18);
+        ContestResult result = CombatEngine.resolveContest(new DiceRoller(rng), 3, RollMode.NORMAL, 0, RollMode.NORMAL);
+        assertEquals(7, result.initiatorTotal());
+        assertEquals(18, result.opponentTotal());
+        assertEquals(ContestSide.OPPONENT, result.winner());
+        assertFalse(result.initiatorWins());
+    }
+
+    @Test
+    void contestTieGoesToOpponent() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(10, 8);
+        ContestResult result = CombatEngine.resolveContest(new DiceRoller(rng), 0, RollMode.NORMAL, 2, RollMode.NORMAL);
+        assertEquals(10, result.initiatorTotal());
+        assertEquals(10, result.opponentTotal());
+        assertEquals(ContestSide.OPPONENT, result.winner(), "5e default: a tie goes to the opponent");
+        assertFalse(result.initiatorWins());
+    }
+
+    @Test
+    void contestAppliesRollModePerSide() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(3, 18, 12, 4);
+        ContestResult result =
+                CombatEngine.resolveContest(new DiceRoller(rng), 0, RollMode.ADVANTAGE, 0, RollMode.DISADVANTAGE);
+        assertEquals(18, result.initiatorNatural(), "advantage keeps the higher of the initiator's two d20s");
+        assertEquals(4, result.opponentNatural(), "disadvantage keeps the lower of the opponent's two d20s");
+        assertEquals(ContestSide.INITIATOR, result.winner());
+        assertTrue(rng.isExhausted());
     }
 
     @Test

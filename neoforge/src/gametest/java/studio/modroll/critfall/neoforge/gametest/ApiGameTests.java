@@ -84,6 +84,21 @@ public class ApiGameTests {
         ApiScenarios.listenerDetectsDrivenDamage(helper, DamageObserver::install);
     }
 
+    @GameTest(template = TEMPLATE)
+    public void contestResolvesWinnerAndTotals(GameTestHelper helper) {
+        ApiScenarios.contestResolvesWinnerAndTotals(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void contestTieGoesToOpponent(GameTestHelper helper) {
+        ApiScenarios.contestTieGoesToOpponent(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void contestAppliesRollModePerSide(GameTestHelper helper) {
+        ApiScenarios.contestAppliesRollModePerSide(helper);
+    }
+
     /** Bridges a shared-scenario observer to NeoForge's {@code LivingIncomingDamageEvent}. */
     private static final class DamageObserver implements AutoCloseable {
 
