@@ -469,13 +469,13 @@ public final class DamageInterception {
                         attacker.getUUID(), gameTime, rules.fumbles().cooldownTicks());
 
         AttackContext ctx = new AttackContext(
-                delivery, source, weaponStack, RollMode.NORMAL, java.util.OptionalInt.empty(), Optional.empty());
+                delivery, source, weaponStack, RollMode.NORMAL, java.util.OptionalInt.empty(), Optional.empty(), 0);
         AttackPipeline.Bundle bundle = AttackPipeline.resolve(
                 attacker,
                 target,
                 ctx,
                 new AttackPipeline.Params(
-                        attackBonus, armorClass, damageDice, critRange, RollMode.NORMAL, fumbleSuppressed),
+                        attackBonus, armorClass, damageDice, critRange, RollMode.NORMAL, fumbleSuppressed, 0),
                 rules,
                 RollRuntime.roller(),
                 heldStack,

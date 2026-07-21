@@ -25,6 +25,14 @@ class CombatEngineTest {
         return CombatEngine.resolveAttack(new DiceRoller(rng), rules, new AttackInput(bonus, ac, mode, dice));
     }
 
+    private static AttackResult resolveWithDefenderBonus(
+            SequenceRandom rng, Rules rules, int bonus, int ac, int defenderAcBonus, DiceExpression dice) {
+        return CombatEngine.resolveAttack(
+                new DiceRoller(rng),
+                rules,
+                new AttackInput(bonus, ac, RollMode.NORMAL, dice, 20, false, defenderAcBonus));
+    }
+
     @Test
     void missWhenTotalBelowAc() {
         SequenceRandom rng = SequenceRandom.ofDieFaces(5);
@@ -54,6 +62,55 @@ class CombatEngineTest {
         AttackResult result = resolve(rng, Rules.DEFAULTS, 1, 10, RollMode.NORMAL, D6);
         assertEquals(AttackOutcome.HIT, result.outcome());
         assertEquals(2, result.damage());
+    }
+
+    @Test
+    void defenderAcBonusRaisesTheEffectiveAcIntoAMiss() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(13);
+        AttackResult result = resolveWithDefenderBonus(rng, Rules.DEFAULTS, 1, 10, 5, D6);
+        assertEquals(AttackOutcome.MISS, result.outcome(), "14 vs effective AC 15 (10+5) misses");
+        assertEquals(15, result.armorClass(), "armorClass exposes the effective AC");
+        assertEquals(5, result.defenderAcBonus());
+        assertEquals(10, result.baseArmorClass());
+        assertTrue(rng.isExhausted(), "a miss must not roll damage dice");
+    }
+
+    @Test
+    void withoutTheDefenderBonusTheSameRollHits() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(13, 4);
+        AttackResult result = resolveWithDefenderBonus(rng, Rules.DEFAULTS, 1, 10, 0, D6);
+        assertEquals(AttackOutcome.HIT, result.outcome(), "14 vs base AC 10 hits — the +5 is what changed it");
+        assertEquals(10, result.armorClass());
+        assertEquals(0, result.defenderAcBonus());
+        assertEquals(10, result.baseArmorClass());
+    }
+
+    @Test
+    void negativeDefenderAcBonusTurnsAMissIntoAHit() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(5, 4);
+        AttackResult result = resolveWithDefenderBonus(rng, Rules.DEFAULTS, 1, 10, -5, D6);
+        assertEquals(
+                AttackOutcome.HIT, result.outcome(), "6 vs effective AC 5 (10-5) hits — base AC 10 would have missed");
+        assertEquals(5, result.armorClass());
+        assertEquals(-5, result.defenderAcBonus());
+        assertEquals(10, result.baseArmorClass());
+    }
+
+    @Test
+    void naturalTwentyStillCritsThroughAnImpossibleDefenderBonus() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(20);
+        AttackResult result = resolveWithDefenderBonus(rng, Rules.DEFAULTS, 0, 10, 50, DiceExpression.parse("2d6+1"));
+        assertEquals(AttackOutcome.CRIT, result.outcome(), "a natural 20 hits regardless of AC");
+        assertEquals(60, result.armorClass());
+        assertEquals(50, result.defenderAcBonus());
+    }
+
+    @Test
+    void naturalOneStillFumblesThroughANegativeDefenderBonus() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(1, 9);
+        AttackResult result = resolveWithDefenderBonus(rng, Rules.DEFAULTS, 20, 10, -50, D6);
+        assertEquals(AttackOutcome.FUMBLE, result.outcome(), "a natural 1 always misses, then confirms the fumble");
+        assertTrue(rng.isExhausted());
     }
 
     @Test
@@ -98,7 +155,7 @@ class CombatEngineTest {
         AttackResult result = CombatEngine.resolveAttack(
                 new DiceRoller(rng),
                 Rules.DEFAULTS,
-                new AttackInput(0, 10, RollMode.NORMAL, DiceExpression.parse("2d6+1"), 19, false));
+                new AttackInput(0, 10, RollMode.NORMAL, DiceExpression.parse("2d6+1"), 19, false, 0));
         assertEquals(AttackOutcome.CRIT, result.outcome());
         assertEquals(13, result.damage());
     }
@@ -107,7 +164,7 @@ class CombatEngineTest {
     void raisedCritRangeDoesNotAutoHit() {
         SequenceRandom rng = SequenceRandom.ofDieFaces(19);
         AttackResult result = CombatEngine.resolveAttack(
-                new DiceRoller(rng), Rules.DEFAULTS, new AttackInput(0, 25, RollMode.NORMAL, D6, 19, false));
+                new DiceRoller(rng), Rules.DEFAULTS, new AttackInput(0, 25, RollMode.NORMAL, D6, 19, false, 0));
         assertEquals(AttackOutcome.MISS, result.outcome(), "only a natural 20 auto-hits");
     }
 
@@ -175,7 +232,7 @@ class CombatEngineTest {
     void fumbleOnCooldownIsPlainMissWithoutConfirmationRoll() {
         SequenceRandom rng = SequenceRandom.ofDieFaces(1);
         AttackResult result = CombatEngine.resolveAttack(
-                new DiceRoller(rng), Rules.DEFAULTS, new AttackInput(0, 10, RollMode.NORMAL, D6, 20, true));
+                new DiceRoller(rng), Rules.DEFAULTS, new AttackInput(0, 10, RollMode.NORMAL, D6, 20, true, 0));
         assertEquals(AttackOutcome.MISS, result.outcome());
         assertTrue(rng.isExhausted(), "cooldown must short-circuit before the confirmation roll");
     }
