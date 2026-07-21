@@ -2,6 +2,7 @@ package studio.modroll.critfall.combat;
 
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
@@ -32,10 +33,15 @@ public final class CombatEngine {
             RollMode mode,
             DiceExpression damageDice,
             int critRange,
-            boolean fumbleSuppressed) {
+            boolean fumbleSuppressed,
+            int defenderAcBonus) {
 
         public AttackInput(int attackBonus, int armorClass, RollMode mode, DiceExpression damageDice) {
-            this(attackBonus, armorClass, mode, damageDice, 20, false);
+            this(attackBonus, armorClass, mode, damageDice, 20, false, 0);
+        }
+
+        int effectiveArmorClass() {
+            return armorClass + defenderAcBonus;
         }
     }
 
@@ -51,10 +57,12 @@ public final class CombatEngine {
     public static AttackResult resolveAttack(DiceRoller roller, Rules rules, AttackInput input) {
         int natural = roller.d20(input.mode()).keptDice().getFirst().value();
         int attackTotal = natural + input.attackBonus();
+        int armorClass = input.effectiveArmorClass();
+        int defenderAcBonus = input.defenderAcBonus();
 
         boolean forcedMiss = natural == 1 && rules.fumbles().nat1AlwaysMisses();
         boolean forcedHit = natural == 20 && rules.crits().nat20AlwaysHits();
-        boolean misses = forcedMiss || (!forcedHit && attackTotal < input.armorClass());
+        boolean misses = forcedMiss || (!forcedHit && attackTotal < armorClass);
 
         if (misses) {
             boolean fumble = natural == 1
@@ -62,23 +70,32 @@ public final class CombatEngine {
                     && !input.fumbleSuppressed()
                     && confirmFumble(roller, rules.fumbles());
             AttackOutcome outcome = fumble ? AttackOutcome.FUMBLE : AttackOutcome.MISS;
-            return new AttackResult(outcome, natural, attackTotal, input.armorClass(), 0);
+            return new AttackResult(outcome, natural, attackTotal, armorClass, defenderAcBonus, 0);
         }
         // With damage dice off the vanilla amount applies downstream — draw nothing from the RNG.
         if (natural >= input.critRange() && rules.crits().enabled()) {
             int damage = rules.damageDice()
                     ? Math.max(0, critDamage(roller, rules.crits().rule(), input.damageDice()))
                     : 0;
-            return new AttackResult(AttackOutcome.CRIT, natural, attackTotal, input.armorClass(), damage);
+            return new AttackResult(AttackOutcome.CRIT, natural, attackTotal, armorClass, defenderAcBonus, damage);
         }
         int damage =
                 rules.damageDice() ? Math.max(0, roller.roll(input.damageDice()).total()) : 0;
-        return new AttackResult(AttackOutcome.HIT, natural, attackTotal, input.armorClass(), damage);
+        return new AttackResult(AttackOutcome.HIT, natural, attackTotal, armorClass, defenderAcBonus, damage);
     }
 
     public static SaveResult resolveSave(DiceRoller roller, int saveBonus, int dc) {
         int natural = roller.d20(RollMode.NORMAL).keptDice().getFirst().value();
         return new SaveResult(natural, natural + saveBonus, dc);
+    }
+
+    /** Each side rolls a d20 (own mode) + bonus; the initiator rolls first, so scripted rollers script it first. */
+    public static ContestResult resolveContest(
+            DiceRoller roller, int initiatorBonus, RollMode initiatorMode, int opponentBonus, RollMode opponentMode) {
+        int initiatorNatural = roller.d20(initiatorMode).keptDice().getFirst().value();
+        int opponentNatural = roller.d20(opponentMode).keptDice().getFirst().value();
+        return new ContestResult(
+                initiatorNatural, initiatorNatural + initiatorBonus, opponentNatural, opponentNatural + opponentBonus);
     }
 
     /** The fumble is confirmed (consequences fire) when the second d20 rolls BELOW the DC. */

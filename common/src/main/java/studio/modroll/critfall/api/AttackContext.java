@@ -12,8 +12,8 @@ import studio.modroll.critfall.api.dice.RollMode;
  * Everything a consumer supplies to drive an attack through {@link RollService}. {@code delivery}
  * selects melee vs. ranged resolution and flavor matching (issue #9); {@code source} carries the
  * damage type (for resist/immune and the {@code hurt} call); {@code weapon} is the attacking stack.
- * The overrides let advanced callers force advantage/disadvantage, a fixed attack bonus, or explicit
- * damage dice instead of the resolved profile values.
+ * The overrides let advanced callers force advantage/disadvantage, a fixed attack bonus, explicit
+ * damage dice instead of the resolved profile values, or a per-attack modifier to the defender's AC.
  */
 public record AttackContext(
         AttackDelivery delivery,
@@ -21,7 +21,8 @@ public record AttackContext(
         ItemStack weapon,
         RollMode mode,
         OptionalInt attackBonusOverride,
-        Optional<DiceExpression> damageDiceOverride) {
+        Optional<DiceExpression> damageDiceOverride,
+        int defenderAcBonus) {
 
     public AttackContext {
         Objects.requireNonNull(delivery, "delivery");
@@ -32,7 +33,7 @@ public record AttackContext(
     }
 
     private static AttackContext of(AttackDelivery delivery, DamageSource source, ItemStack weapon) {
-        return new AttackContext(delivery, source, weapon, RollMode.NORMAL, OptionalInt.empty(), Optional.empty());
+        return new AttackContext(delivery, source, weapon, RollMode.NORMAL, OptionalInt.empty(), Optional.empty(), 0);
     }
 
     public static AttackContext melee(DamageSource source, ItemStack weapon) {
@@ -52,15 +53,23 @@ public record AttackContext(
     }
 
     public AttackContext withMode(RollMode newMode) {
-        return new AttackContext(delivery, source, weapon, newMode, attackBonusOverride, damageDiceOverride);
+        return new AttackContext(
+                delivery, source, weapon, newMode, attackBonusOverride, damageDiceOverride, defenderAcBonus);
     }
 
     public AttackContext withAttackBonus(int bonus) {
-        return new AttackContext(delivery, source, weapon, mode, OptionalInt.of(bonus), damageDiceOverride);
+        return new AttackContext(
+                delivery, source, weapon, mode, OptionalInt.of(bonus), damageDiceOverride, defenderAcBonus);
     }
 
     public AttackContext withDamageDice(DiceExpression dice) {
-        return new AttackContext(delivery, source, weapon, mode, attackBonusOverride, Optional.of(dice));
+        return new AttackContext(
+                delivery, source, weapon, mode, attackBonusOverride, Optional.of(dice), defenderAcBonus);
+    }
+
+    /** Negatives are penalties (flanked, restrained) — the value is not clamped. */
+    public AttackContext withDefenderAcBonus(int bonus) {
+        return new AttackContext(delivery, source, weapon, mode, attackBonusOverride, damageDiceOverride, bonus);
     }
 
     /** A ranged delivery (projectile or thrown) uses the entity profile's ranged dice, not melee. */

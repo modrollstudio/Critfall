@@ -30,6 +30,16 @@ public class ApiGameTests {
     }
 
     @GameTest(template = TEMPLATE)
+    public void defenderAcBonusTurnsHitIntoMiss(GameTestHelper helper) {
+        ApiScenarios.defenderAcBonusTurnsHitIntoMiss(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void negativeDefenderAcBonusTurnsMissIntoHit(GameTestHelper helper) {
+        ApiScenarios.negativeDefenderAcBonusTurnsMissIntoHit(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
     public void suppressedTargetIgnoredByAutoPipeline(GameTestHelper helper) {
         ApiScenarios.suppressedTargetIgnoredByAutoPipeline(helper);
     }
@@ -82,6 +92,21 @@ public class ApiGameTests {
     @GameTest(template = TEMPLATE)
     public void listenerDetectsDrivenDamage(GameTestHelper helper) {
         ApiScenarios.listenerDetectsDrivenDamage(helper, DamageObserver::install);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void contestResolvesWinnerAndTotals(GameTestHelper helper) {
+        ApiScenarios.contestResolvesWinnerAndTotals(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void contestTieGoesToOpponent(GameTestHelper helper) {
+        ApiScenarios.contestTieGoesToOpponent(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void contestAppliesRollModePerSide(GameTestHelper helper) {
+        ApiScenarios.contestAppliesRollModePerSide(helper);
     }
 
     /** Bridges a shared-scenario observer to NeoForge's {@code LivingIncomingDamageEvent}. */

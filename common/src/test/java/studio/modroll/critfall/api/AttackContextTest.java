@@ -40,6 +40,29 @@ class AttackContextTest {
     }
 
     @Test
+    void defenderAcBonusDefaultsToZeroAndIsSetByWither() {
+        AttackContext base = AttackContext.melee(null, ItemStack.EMPTY);
+        assertEquals(0, base.defenderAcBonus());
+
+        AttackContext cover = base.withDefenderAcBonus(5);
+        assertEquals(5, cover.defenderAcBonus());
+        assertEquals(0, base.defenderAcBonus(), "the wither returns a copy, leaving the original untouched");
+
+        assertEquals(-2, base.withDefenderAcBonus(-2).defenderAcBonus(), "penalties are allowed");
+    }
+
+    @Test
+    void defenderAcBonusComposesWithOtherWithers() {
+        AttackContext ctx = AttackContext.spell(null, ItemStack.EMPTY)
+                .withAttackBonus(3)
+                .withDefenderAcBonus(5)
+                .withMode(RollMode.ADVANTAGE);
+        assertEquals(5, ctx.defenderAcBonus());
+        assertEquals(3, ctx.attackBonusOverride().getAsInt());
+        assertEquals(RollMode.ADVANTAGE, ctx.mode());
+    }
+
+    @Test
     void nullDeliveryRejected() {
         assertThrows(
                 NullPointerException.class,
@@ -49,6 +72,7 @@ class AttackContextTest {
                         ItemStack.EMPTY,
                         RollMode.NORMAL,
                         java.util.OptionalInt.empty(),
-                        java.util.Optional.empty()));
+                        java.util.Optional.empty(),
+                        0));
     }
 }

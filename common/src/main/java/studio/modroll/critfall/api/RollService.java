@@ -9,6 +9,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
@@ -106,6 +107,16 @@ public final class RollService {
         return CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc);
     }
 
+    /** Resolves a contested check between two entities via {@link ContestContext}; see {@link ContestResult} for the tie rule. */
+    public static ContestResult contest(LivingEntity initiator, LivingEntity opponent, ContestContext ctx) {
+        return CombatEngine.resolveContest(
+                RollRuntime.roller(),
+                ctx.initiatorBonus(),
+                ctx.initiatorMode(),
+                ctx.opponentBonus(),
+                ctx.opponentMode());
+    }
+
     public static List<ConsequenceLine> fireOutcomes(
             LivingEntity attacker,
             LivingEntity target,
@@ -178,7 +189,8 @@ public final class RollService {
                 attacker,
                 target,
                 ctx,
-                new AttackPipeline.Params(attackBonus, targetEff.armorClass(), dice, critRange, ctx.mode(), false),
+                new AttackPipeline.Params(
+                        attackBonus, targetEff.armorClass(), dice, critRange, ctx.mode(), false, ctx.defenderAcBonus()),
                 RollRuntime.rules(),
                 RollRuntime.roller(),
                 ctx.weapon(),

@@ -14,7 +14,7 @@ The `api` subpackages:
 | Package | Types |
 |---------|-------|
 | `api.dice` | `DiceExpression`, `DiceRoller`, `RollResult`, `DieRoll`, `RollMode`, `DiceParseException` |
-| `api.combat` | `AttackResult`, `AttackOutcome`, `SaveResult` |
+| `api.combat` | `AttackResult`, `AttackOutcome`, `SaveResult`, `ContestResult`, `ContestSide` |
 | `api.feedback` | `RollFeedbackPayload`, `ConsequenceLine` |
 | `api.event` | the events below |
 
@@ -81,7 +81,11 @@ AttackResult applied = RollService.performAttack(attacker, target, ctx);
 ```
 
 `AttackResult` exposes `outcome()` (`MISS`/`FUMBLE`/`HIT`/`CRIT`), `natural()`, `attackTotal()`,
-`armorClass()`, `damage()`, and `isHit()`.
+`armorClass()`, `defenderAcBonus()`, `baseArmorClass()`, `damage()`, and `isHit()`. `armorClass()` is
+the **effective** AC the roll was made against; `defenderAcBonus()` is the situational modifier that
+was applied (see [Defender AC modifier](#defender-ac-modifier)), and `baseArmorClass()` is
+`armorClass() - defenderAcBonus()` — the defender's own AC before the modifier. With no modifier set
+they are equal and `defenderAcBonus()` is `0`.
 
 > **Armor note.** `performAttack` applies damage exactly like the automatic pipeline: the attack
 > roll's AC already stood in for armor, so vanilla armor reduction is bypassed on the resulting
@@ -125,11 +129,83 @@ Prefer this over inspecting the `DamageSource` or Critfall internals: it is the 
 is covered by the semver promise. `CombatInteractionEvent` does **not** fire for driven damage (see
 below), so a damage listener is the right place to distinguish it.
 
+### Contested checks
+
+`RollService.contest(initiator, opponent, ContestContext)` resolves a D&D 5e **opposed roll** — two
+entities rolling against each other (Stealth vs Perception, Athletics vs Athletics for a shove or
+grapple). Each side rolls a d20 under its own roll mode, adds its bonus, and the higher total wins.
+
+```java
+ContestContext ctx = ContestContext.of(stealthBonus, perceptionBonus)   // per-side bonuses
+        .withInitiatorMode(RollMode.ADVANTAGE);                          // per-side advantage/disadvantage
+ContestResult result = RollService.contest(hider, seeker, ctx);
+
+if (result.winner() == ContestSide.INITIATOR) {   // == result.initiatorWins()
+    // the hider stays hidden
+}
+```
+
+`ContestResult` carries both sides' data for presentation: `initiatorNatural()`, `initiatorTotal()`,
+`opponentNatural()`, `opponentTotal()`, plus `winner()` (`ContestSide.INITIATOR`/`OPPONENT`) and the
+convenience `initiatorWins()`.
+
+**Tie rule.** Ties go to the **opponent** — 5e's default: the initiator's check *fails* on a tie. This
+is exactly `initiatorTotal() > opponentTotal()` deciding `initiatorWins()`. A consumer that wants the
+opposite convention compares the two totals from the result itself; Critfall does not gate this behind
+a config flag.
+
+**Roll mode per side.** `initiatorMode`/`opponentMode` reuse the normal d20 mechanism
+(`NORMAL`/`ADVANTAGE`/`DISADVANTAGE`) independently for each side. The **initiator rolls first**, so a
+scripted roller (the [RNG seam](#deterministic-testing-the-rng-seam)) scripts the initiator's die
+faces before the opponent's.
+
+**Bonuses are caller-supplied.** `ContestContext` carries `initiatorBonus`/`opponentBonus`; the
+consumer decides what a "Stealth" or "Athletics" bonus means. Critfall stays a dice engine and does
+**not** model skills or ability scores — building a 5e skill system is out of scope (a design decision
+for a separate project). The `initiator`/`opponent` entities are part of the signature for identity and
+forward compatibility: a future data-driven per-entity named-modifier map (packs giving a mob a
+`"stealth"`/`"athletics"` bonus) could read them without a breaking signature change. That richer option
+is **future work**; today, supply the bonuses yourself.
+
+**Feedback.** Contests do not emit a Critfall feedback readout — the attack-shaped
+`RollFeedbackPayload` (outcome / AC / damage / dice) does not fit an opposed roll, and different
+contests (Stealth vs Perception, a shove) want different presentation. Consumers present the result
+themselves from the `ContestResult` fields (both naturals and totals are exposed for exactly this).
+
 ### `AttackContext` and `AttackDelivery`
 
 `AttackContext` bundles the delivery method, the damage source, the weapon stack, the roll mode, and
 optional overrides. Factories: `AttackContext.melee/projectile/thrown/spell(source, weapon)`.
-Wither methods return a copy: `withMode(RollMode)`, `withAttackBonus(int)`, `withDamageDice(...)`.
+Wither methods return a copy: `withMode(RollMode)`, `withAttackBonus(int)`, `withDamageDice(...)`,
+`withDefenderAcBonus(int)` (see below).
+
+#### Defender AC modifier
+
+`withDefenderAcBonus(int)` applies a situational modifier to the **defender's** AC for this one
+attack — cover, prone-at-range, magical protection, or a penalty like flanked/restrained. It is the
+honest way to express "this target is harder (or easier) to hit for this attack", rather than a
+negative attacker bonus: the two are numerically identical but a negative `withAttackBonus` misreports
+a defended target as a weakened attacker in events, feedback, and any consumer inspecting the result.
+
+```java
+AttackContext ctx = AttackContext.projectile(source, bow)
+        .withDefenderAcBonus(5);   // target is behind half cover
+AttackResult result = RollService.performAttack(archer, target, ctx);
+// result.baseArmorClass() == target's own AC, result.defenderAcBonus() == 5,
+// result.armorClass()     == the effective AC the d20 was compared against.  "AC 14 (+5)"
+```
+
+- **Per-attack and non-persistent.** It affects only this `attackRoll`/`performAttack` call; it never
+  mutates the entity's profile or carries over to the next attack.
+- **Effective AC** for the roll is `RollService.effectiveEntity(target).armorClass() + defenderAcBonus`.
+- **Negatives are allowed** (situational penalties); the value is not clamped.
+- **Defaults to `0`** — existing callers that never call it are unaffected, byte for byte.
+- **Interaction with the roll.** The modifier shifts the to-hit *threshold* only; it is independent of
+  advantage/disadvantage, which choose the kept d20 face. Crit and fumble are natural-based (a natural
+  20 still hits and crits, a natural 1 still misses and can fumble) and so are unaffected by it.
+- **Feedback.** Critfall's own S2C readout still shows the effective AC (`vs AC 17`) but does **not**
+  break it down as `17 (10+7)`: surfacing the split would need the same feedback payload/codec rework
+  declined in 0.2.4. The split is on `AttackResult` for consumers that render their own readout.
 
 `AttackDelivery` is `MELEE | PROJECTILE | THROWN | SPELL`. It disambiguates hybrid items (issue #9):
 the delivery is threaded through item-profile and flavor-pool resolution, so a profile/pool with a
