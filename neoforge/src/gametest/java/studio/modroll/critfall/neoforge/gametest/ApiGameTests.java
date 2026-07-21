@@ -30,6 +30,16 @@ public class ApiGameTests {
     }
 
     @GameTest(template = TEMPLATE)
+    public void defenderAcBonusTurnsHitIntoMiss(GameTestHelper helper) {
+        ApiScenarios.defenderAcBonusTurnsHitIntoMiss(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void negativeDefenderAcBonusTurnsMissIntoHit(GameTestHelper helper) {
+        ApiScenarios.negativeDefenderAcBonusTurnsMissIntoHit(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
     public void suppressedTargetIgnoredByAutoPipeline(GameTestHelper helper) {
         ApiScenarios.suppressedTargetIgnoredByAutoPipeline(helper);
     }

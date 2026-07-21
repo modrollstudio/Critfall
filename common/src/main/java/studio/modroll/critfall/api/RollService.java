@@ -189,7 +189,8 @@ public final class RollService {
                 attacker,
                 target,
                 ctx,
-                new AttackPipeline.Params(attackBonus, targetEff.armorClass(), dice, critRange, ctx.mode(), false),
+                new AttackPipeline.Params(
+                        attackBonus, targetEff.armorClass(), dice, critRange, ctx.mode(), false, ctx.defenderAcBonus()),
                 RollRuntime.rules(),
                 RollRuntime.roller(),
                 ctx.weapon(),

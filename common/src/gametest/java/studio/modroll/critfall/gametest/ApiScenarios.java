@@ -83,6 +83,62 @@ public final class ApiScenarios {
         helper.succeed();
     }
 
+    public static void defenderAcBonusTurnsHitIntoMiss(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        withRolls(
+                helper,
+                () -> {
+                    // 13 + 3 = 16 would beat the pig's base AC 10, but +7 cover lifts it to 17 -> miss.
+                    AttackContext ctx = AttackContext.melee(
+                                    helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem())
+                            .withDefenderAcBonus(7);
+                    AttackResult result = RollService.performAttack(husk, pig, ctx);
+                    if (result.outcome() != AttackOutcome.MISS) {
+                        helper.fail("expected MISS, got " + result.outcome());
+                    }
+                    if (result.armorClass() != 17 || result.defenderAcBonus() != 7 || result.baseArmorClass() != 10) {
+                        helper.fail("expected AC 10 (+7) = 17, got " + result.baseArmorClass() + " (+"
+                                + result.defenderAcBonus() + ") = " + result.armorClass());
+                    }
+                    expectHealth(helper, pig, pig.getMaxHealth());
+                },
+                13);
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    public static void negativeDefenderAcBonusTurnsMissIntoHit(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        withRolls(
+                helper,
+                () -> {
+                    // 5 + 3 = 8 would miss the pig's base AC 10, but -2 (flanked) drops it to 8 -> hit; 1d6+1 rolls 4
+                    // -> 5.
+                    AttackContext ctx = AttackContext.melee(
+                                    helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem())
+                            .withDefenderAcBonus(-2);
+                    AttackResult result = RollService.performAttack(husk, pig, ctx);
+                    if (result.outcome() != AttackOutcome.HIT) {
+                        helper.fail("expected HIT, got " + result.outcome());
+                    }
+                    if (result.armorClass() != 8 || result.defenderAcBonus() != -2 || result.baseArmorClass() != 10) {
+                        helper.fail("expected AC 10 (-2) = 8, got " + result.baseArmorClass() + " ("
+                                + result.defenderAcBonus() + ") = " + result.armorClass());
+                    }
+                    expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
+                },
+                5,
+                4);
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
     public static void suppressedTargetIgnoredByAutoPipeline(GameTestHelper helper) {
         Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
         Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);

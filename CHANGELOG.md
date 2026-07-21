@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-07-21
+
+A per-attack defender-side AC modifier, from Critfall: Initiative's M5b (cover) need for a situational
+"this target is harder to hit for this attack" that the attacker-side levers could not express.
+
+### Added
+
+- `AttackContext.withDefenderAcBonus(int)`: a situational modifier to the **defender's** AC for one
+  driven attack — cover, prone-at-range, magical protection, or a penalty (flanked, restrained).
+  Effective AC for the roll becomes `effectiveEntity(target).armorClass() + defenderAcBonus`, for both
+  `performAttack` and the resolve-only `attackRoll`. It is per-attack and non-persistent (it never
+  mutates the entity's profile), negatives are allowed (not clamped), and it defaults to `0` so
+  existing callers are unaffected byte for byte. It replaces the old workaround of a negative
+  `withAttackBonus`, which is numerically identical but misreports a defended target as a weakened
+  attacker. The modifier shifts the to-hit threshold only — it is independent of
+  advantage/disadvantage, and crit/fumble stay natural-based (a nat 20 still hits and crits, a nat 1
+  still misses and can fumble).
+- `AttackResult` now exposes the split so consumers and feedback can report honestly rather than infer:
+  `armorClass()` is the **effective** AC the roll faced, `defenderAcBonus()` is the applied modifier,
+  and `baseArmorClass()` (`= armorClass() - defenderAcBonus()`) is the defender's own AC — enough to
+  render "AC 14 (+5)". Documented in `docs/api.md`; unit tests plus GameTests on both loaders cover a
+  positive bonus turning a hit into a miss (and the control without it), a negative bonus turning a
+  miss into a hit, crit/fumble staying natural-based through an extreme modifier, and the result
+  exposure, all via the RNG seam.
+
+### Notes
+
+- Critfall's own S2C feedback readout shows the effective AC (`vs AC 17`) but does **not** break it
+  down as `17 (10+7)`: surfacing the split on the wire would need the same feedback payload/codec
+  rework declined in 0.2.4. The split lives on `AttackResult` for consumers that render their own
+  readout; the payload gap stays on record for a future release.
+
 ## [0.2.4] - 2026-07-19
 
 Contested rolls as a first-class primitive, from Critfall: Initiative's repeated need for opposed

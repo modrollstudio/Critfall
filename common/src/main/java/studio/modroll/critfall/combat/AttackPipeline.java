@@ -37,10 +37,12 @@ public final class AttackPipeline {
             DiceExpression damageDice,
             int critRange,
             RollMode mode,
-            boolean fumbleSuppressed) {
+            boolean fumbleSuppressed,
+            int defenderAcBonus) {
 
         CombatEngine.AttackInput toInput(int bonus, RollMode rollMode) {
-            return new CombatEngine.AttackInput(bonus, armorClass, rollMode, damageDice, critRange, fumbleSuppressed);
+            return new CombatEngine.AttackInput(
+                    bonus, armorClass, rollMode, damageDice, critRange, fumbleSuppressed, defenderAcBonus);
         }
     }
 
@@ -65,7 +67,13 @@ public final class AttackPipeline {
         PreAttackRollEvent pre =
                 CritfallEvents.firePreAttackRoll(attacker, target, ctx, params.attackBonus(), params.mode());
         if (pre.isCanceled()) {
-            AttackResult canceled = new AttackResult(AttackOutcome.MISS, 0, 0, params.armorClass(), 0);
+            AttackResult canceled = new AttackResult(
+                    AttackOutcome.MISS,
+                    0,
+                    0,
+                    params.armorClass() + params.defenderAcBonus(),
+                    params.defenderAcBonus(),
+                    0);
             return new Bundle(canceled, List.of(), false);
         }
 

@@ -22,6 +22,16 @@ public class ApiGameTests implements FabricGameTest {
     }
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void defenderAcBonusTurnsHitIntoMiss(GameTestHelper helper) {
+        ApiScenarios.defenderAcBonusTurnsHitIntoMiss(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void negativeDefenderAcBonusTurnsMissIntoHit(GameTestHelper helper) {
+        ApiScenarios.negativeDefenderAcBonusTurnsMissIntoHit(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void suppressedTargetIgnoredByAutoPipeline(GameTestHelper helper) {
         ApiScenarios.suppressedTargetIgnoredByAutoPipeline(helper);
     }
