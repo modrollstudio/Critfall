@@ -109,6 +109,36 @@ public class ApiGameTests {
         ApiScenarios.contestAppliesRollModePerSide(helper);
     }
 
+    @GameTest(template = TEMPLATE)
+    public void drivenAdvantageResultReportsBothDice(GameTestHelper helper) {
+        ApiScenarios.drivenAdvantageResultReportsBothDice(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void drivenDisadvantageResultReportsBothDice(GameTestHelper helper) {
+        ApiScenarios.drivenDisadvantageResultReportsBothDice(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void rollDetailAndAcSplitReachTheFeedbackPayload(GameTestHelper helper) {
+        ApiScenarios.rollDetailAndAcSplitReachTheFeedbackPayload(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void plainDrivenAttackPayloadCarriesNoRollDetail(GameTestHelper helper) {
+        ApiScenarios.plainDrivenAttackPayloadCarriesNoRollDetail(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void savingThrowWithAdvantageReportsBothDice(GameTestHelper helper) {
+        ApiScenarios.savingThrowWithAdvantageReportsBothDice(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void contestCarriesPerSideRollDetail(GameTestHelper helper) {
+        ApiScenarios.contestCarriesPerSideRollDetail(helper);
+    }
+
     /** Bridges a shared-scenario observer to NeoForge's {@code LivingIncomingDamageEvent}. */
     private static final class DamageObserver implements AutoCloseable {
 

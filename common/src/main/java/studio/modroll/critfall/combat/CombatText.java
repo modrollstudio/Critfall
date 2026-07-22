@@ -2,6 +2,8 @@ package studio.modroll.critfall.combat;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import studio.modroll.critfall.api.dice.RollDetail;
+import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
@@ -18,8 +20,7 @@ public final class CombatText {
     /** Renders a resolved attack roll's feedback payload into a single action-bar {@link Component}. */
     public static Component actionBar(RollFeedbackPayload p) {
         int bonus = p.attackTotal() - p.natural();
-        String roll = "d20 " + p.natural() + (bonus >= 0 ? "+" + bonus : String.valueOf(bonus)) + "=" + p.attackTotal()
-                + " vs AC " + p.armorClass();
+        String roll = d20(p.roll()) + signed(bonus) + "=" + p.attackTotal() + " " + versusArmorClass(p);
         MutableComponent line = Component.literal(roll + " — ");
         switch (p.outcome()) {
             case MISS ->
@@ -47,8 +48,7 @@ public final class CombatText {
     /** Renders a resolved saving throw's feedback payload into a single action-bar {@link Component}. */
     public static Component actionBar(SaveFeedbackPayload p) {
         int bonus = p.saveTotal() - p.natural();
-        String roll = "save d20 " + p.natural() + (bonus >= 0 ? "+" + bonus : String.valueOf(bonus)) + "="
-                + p.saveTotal() + " vs DC " + p.dc();
+        String roll = "save " + d20(p.roll()) + signed(bonus) + "=" + p.saveTotal() + " vs DC " + p.dc();
         MutableComponent line = Component.literal(roll + " — ");
         if (!p.saved()) {
             line.append(Component.translatableWithFallback("critfall.feedback.save_failed", "FAILED"));
@@ -66,6 +66,31 @@ public final class CombatText {
             }
         }
         return withDryRun(p.dryRun(), line);
+    }
+
+    /**
+     * The d20 part of a readout. A normal roll stays the terse {@code d20 13}; advantage and
+     * disadvantage spend the extra characters to show both faces and which one was kept, e.g.
+     * {@code d20 adv 7/18 → 18}.
+     */
+    private static String d20(RollDetail roll) {
+        if (!roll.hasTwoDice()) {
+            return "d20 " + roll.kept();
+        }
+        String mode = roll.mode() == RollMode.ADVANTAGE ? "adv" : "dis";
+        return "d20 " + mode + " " + roll.dropped().getAsInt() + "/" + roll.kept() + " → " + roll.kept();
+    }
+
+    /** Splits the AC into the defender's own value plus the situational modifier when one applied. */
+    private static String versusArmorClass(RollFeedbackPayload p) {
+        if (p.defenderAcBonus() == 0) {
+            return "vs AC " + p.armorClass();
+        }
+        return "vs AC " + p.armorClass() + " (" + p.baseArmorClass() + signed(p.defenderAcBonus()) + ")";
+    }
+
+    private static String signed(int value) {
+        return value >= 0 ? "+" + value : String.valueOf(value);
     }
 
     /** Prepends the dry-run marker so a calibrating dev never mistakes a shown roll for a real hit. */

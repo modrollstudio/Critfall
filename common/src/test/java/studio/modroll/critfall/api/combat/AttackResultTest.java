@@ -3,7 +3,10 @@ package studio.modroll.critfall.api.combat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
+import studio.modroll.critfall.api.dice.RollDetail;
+import studio.modroll.critfall.api.dice.RollMode;
 
 class AttackResultTest {
 
@@ -42,5 +45,18 @@ class AttackResultTest {
         assertEquals(19, adjusted.armorClass());
         assertEquals(5, adjusted.defenderAcBonus());
         assertEquals(14, adjusted.baseArmorClass());
+    }
+
+    @Test
+    void convenienceConstructorsDescribeANormalOneDieRoll() {
+        AttackResult result = new AttackResult(AttackOutcome.HIT, 15, 18, 12, 6);
+        assertEquals(RollDetail.normal(15), result.roll());
+    }
+
+    @Test
+    void withDamagePreservesTheRollDetail() {
+        RollDetail roll = new RollDetail(RollMode.ADVANTAGE, 18, OptionalInt.of(7));
+        AttackResult base = new AttackResult(AttackOutcome.HIT, 18, 22, 14, 0, 6, roll);
+        assertEquals(roll, base.withDamage(10).roll());
     }
 }

@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.6] - 2026-07-22
+
+Roll detail on results and the feedback payload. Closes the gap logged in 0.2.4 and again in 0.2.5:
+results and payloads carried only the resolved d20 face, so neither a consumer nor Critfall's own
+readout could show **how** a roll was made — only what it landed on.
+
+### Added
+
+- `RollDetail(RollMode mode, int kept, OptionalInt dropped)` in `studio.modroll.critfall.api.dice`:
+  how one d20 check was rolled. `kept` is the face the check resolved on (the same value as the
+  result's `natural`); `dropped` carries the other face when advantage/disadvantage rolled two and is
+  empty under `NORMAL`, so a normal roll never reports a phantom second die. `hasTwoDice()` is the
+  render-both-faces test; `RollDetail.normal(int)` builds the plain case.
+- Roll detail on every d20 result: `AttackResult.roll()`, `SaveResult.roll()`, and — because a contest
+  has two sides with independent modes — `ContestResult.initiatorRoll()` / `opponentRoll()`.
+  `AttackResult.withDamage` preserves it. The pre-existing constructors are unchanged and default to
+  `RollDetail.normal(natural)`, so existing callers compile and behave exactly as before.
+- `RollService.savingThrow(target, saveBonus, dc, RollMode)`: a saving throw rolled with
+  advantage/disadvantage, so a save's roll detail can carry two dice. The three-argument overload is
+  unchanged and rolls `NORMAL`.
+- `RollFeedbackPayload` now carries `rollMode`, `droppedNatural`, and `defenderAcBonus` (with
+  `roll()` and `baseArmorClass()` derived from them); `SaveFeedbackPayload` carries `rollMode` and
+  `droppedNatural` with the same `roll()`. All are additive, appended after the existing fields in
+  both the record and the stream codec, and default to the plain case (normal roll, no dropped die,
+  no AC modifier) — the previous constructors still exist and produce byte-identical payloads to
+  0.2.5 for a plain attack. The 0.2.5 note that surfacing the AC split on the wire needed a payload
+  rework is now resolved.
+- Richer Critfall readout. A roll made with advantage or disadvantage shows both dice and which was
+  kept (`d20 adv 7/18 → 18+4=22 vs AC 14`), and a situational defender-AC modifier shows the split
+  (`vs AC 16 (14+2)`, `vs AC 8 (10-2)`). Saving throws get the same treatment
+  (`save d20 adv 6/17 → 17+2=19 vs DC 13`). A plain normal roll against an unmodified AC renders
+  exactly as before (`d20 13+3=16 vs AC 10`) — the extra detail costs characters only when there is
+  something to say. It rides the existing `rolls` client toggle and the modless action-bar fallback
+  with no new switch.
+- Documented in `docs/api.md` (reading both dice off an advantage roll) and `docs/client-feedback.md`.
+  Unit tests cover the detail type, advantage/disadvantage/normal on attacks, saves and both contest
+  sides, the readout in every form, and codec round-trips including the no-advantage and negative-AC
+  cases; GameTests on both loaders cover an api-only caller reading roll detail off a driven attack
+  result, the detail and AC split reaching the dispatched payload, and a plain attack still carrying
+  neither.
+
 ## [0.2.5] - 2026-07-21
 
 A per-attack defender-side AC modifier, from Critfall: Initiative's M5b (cover) need for a situational

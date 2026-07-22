@@ -101,6 +101,36 @@ public class ApiGameTests implements FabricGameTest {
         ApiScenarios.contestAppliesRollModePerSide(helper);
     }
 
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void drivenAdvantageResultReportsBothDice(GameTestHelper helper) {
+        ApiScenarios.drivenAdvantageResultReportsBothDice(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void drivenDisadvantageResultReportsBothDice(GameTestHelper helper) {
+        ApiScenarios.drivenDisadvantageResultReportsBothDice(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void rollDetailAndAcSplitReachTheFeedbackPayload(GameTestHelper helper) {
+        ApiScenarios.rollDetailAndAcSplitReachTheFeedbackPayload(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void plainDrivenAttackPayloadCarriesNoRollDetail(GameTestHelper helper) {
+        ApiScenarios.plainDrivenAttackPayloadCarriesNoRollDetail(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void savingThrowWithAdvantageReportsBothDice(GameTestHelper helper) {
+        ApiScenarios.savingThrowWithAdvantageReportsBothDice(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void contestCarriesPerSideRollDetail(GameTestHelper helper) {
+        ApiScenarios.contestCarriesPerSideRollDetail(helper);
+    }
+
     /** Bridges a shared-scenario observer to Fabric's {@code ALLOW_DAMAGE}, registered once. */
     private static final class DamageObserver {
 

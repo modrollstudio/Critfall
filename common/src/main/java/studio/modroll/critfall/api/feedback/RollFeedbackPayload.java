@@ -4,12 +4,15 @@ import io.netty.handler.codec.DecoderException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.dice.RollDetail;
+import studio.modroll.critfall.api.dice.RollMode;
 
 /**
  * S2C feedback for one resolved attack roll (M6). Flat primitives only — the client rebuilds every
@@ -17,6 +20,11 @@ import studio.modroll.critfall.api.combat.AttackOutcome;
  * the same data server-side via {@link studio.modroll.critfall.combat.CombatText}. {@code flavorKey} is
  * present only when the server's anti-spam gate let a flavor line through; {@code consequences} lists
  * the outcome-table consequences that actually fired.
+ *
+ * <p>{@code natural} is the kept d20 face; {@code rollMode} and {@code droppedNatural} complete it
+ * into the {@link #roll()} detail, and {@code defenderAcBonus} splits {@code armorClass} into the
+ * defender's own AC plus the situational modifier. All four newer fields default to the plain case
+ * (normal roll, no dropped die, no modifier), so the shorter constructors stay accurate.
  */
 public record RollFeedbackPayload(
         AttackOutcome outcome,
@@ -28,8 +36,39 @@ public record RollFeedbackPayload(
         boolean showDamage,
         Optional<String> flavorKey,
         List<ConsequenceLine> consequences,
-        boolean dryRun)
+        boolean dryRun,
+        RollMode rollMode,
+        OptionalInt droppedNatural,
+        int defenderAcBonus)
         implements CustomPacketPayload {
+
+    /** Convenience for a plain normal roll against an unmodified AC. */
+    public RollFeedbackPayload(
+            AttackOutcome outcome,
+            int natural,
+            int attackTotal,
+            int armorClass,
+            int damage,
+            String diceNotation,
+            boolean showDamage,
+            Optional<String> flavorKey,
+            List<ConsequenceLine> consequences,
+            boolean dryRun) {
+        this(
+                outcome,
+                natural,
+                attackTotal,
+                armorClass,
+                damage,
+                diceNotation,
+                showDamage,
+                flavorKey,
+                consequences,
+                dryRun,
+                RollMode.NORMAL,
+                OptionalInt.empty(),
+                0);
+    }
 
     /** Convenience for the common non-dry-run case (and the M6 tests that predate the flag). */
     public RollFeedbackPayload(
@@ -53,6 +92,16 @@ public record RollFeedbackPayload(
                 flavorKey,
                 consequences,
                 false);
+    }
+
+    /** How the d20 was rolled: the mode, the kept face ({@link #natural()}), and any dropped face. */
+    public RollDetail roll() {
+        return new RollDetail(rollMode, natural, droppedNatural);
+    }
+
+    /** The defender's own AC, before {@link #defenderAcBonus()} was applied. */
+    public int baseArmorClass() {
+        return armorClass - defenderAcBonus;
     }
 
     /**
@@ -85,6 +134,12 @@ public record RollFeedbackPayload(
         buf.writeOptional(p.flavorKey, FriendlyByteBuf::writeUtf);
         buf.writeCollection(p.consequences, RollFeedbackPayload::writeLine);
         buf.writeBoolean(p.dryRun);
+        buf.writeEnum(p.rollMode);
+        buf.writeBoolean(p.droppedNatural.isPresent());
+        if (p.droppedNatural.isPresent()) {
+            buf.writeVarInt(p.droppedNatural.getAsInt());
+        }
+        buf.writeInt(p.defenderAcBonus);
     }
 
     private static RollFeedbackPayload decode(FriendlyByteBuf buf) {
@@ -106,6 +161,9 @@ public record RollFeedbackPayload(
                 },
                 RollFeedbackPayload::readLine);
         boolean dryRun = buf.readBoolean();
+        RollMode rollMode = buf.readEnum(RollMode.class);
+        OptionalInt dropped = buf.readBoolean() ? OptionalInt.of(buf.readVarInt()) : OptionalInt.empty();
+        int defenderAcBonus = buf.readInt();
         return new RollFeedbackPayload(
                 outcome,
                 natural,
@@ -116,7 +174,10 @@ public record RollFeedbackPayload(
                 showDamage,
                 flavor,
                 List.copyOf(lines),
-                dryRun);
+                dryRun,
+                rollMode,
+                dropped,
+                defenderAcBonus);
     }
 
     static void writeLine(FriendlyByteBuf buf, ConsequenceLine line) {
