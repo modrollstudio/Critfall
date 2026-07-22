@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
@@ -355,6 +356,79 @@ class CombatEngineTest {
         assertEquals(4, result.opponentNatural(), "disadvantage keeps the lower of the opponent's two d20s");
         assertEquals(ContestSide.INITIATOR, result.winner());
         assertTrue(rng.isExhausted());
+    }
+
+    @Test
+    void advantageAttackReportsBothNaturalsAndTheKeptOne() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(7, 18, 4);
+        AttackResult result = resolve(rng, Rules.DEFAULTS, 4, 14, RollMode.ADVANTAGE, D6);
+        assertEquals(RollMode.ADVANTAGE, result.roll().mode());
+        assertEquals(18, result.roll().kept());
+        assertEquals(OptionalInt.of(7), result.roll().dropped());
+        assertEquals(18, result.natural(), "the kept face is the result's natural");
+    }
+
+    @Test
+    void disadvantageAttackReportsBothNaturalsAndTheKeptOne() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(19, 3);
+        AttackResult result = resolve(rng, Rules.DEFAULTS, 0, 14, RollMode.DISADVANTAGE, D6);
+        assertEquals(RollMode.DISADVANTAGE, result.roll().mode());
+        assertEquals(3, result.roll().kept());
+        assertEquals(OptionalInt.of(19), result.roll().dropped());
+    }
+
+    @Test
+    void normalAttackReportsNoDroppedDie() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(13, 4);
+        AttackResult result = resolve(rng, Rules.DEFAULTS, 1, 10, RollMode.NORMAL, D6);
+        assertEquals(RollMode.NORMAL, result.roll().mode());
+        assertEquals(OptionalInt.empty(), result.roll().dropped());
+    }
+
+    @Test
+    void attackRollDetailSurvivesADamageAdjustment() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(7, 18, 4);
+        AttackResult result = resolve(rng, Rules.DEFAULTS, 4, 14, RollMode.ADVANTAGE, D6);
+        assertEquals(result.roll(), result.withDamage(99).roll());
+    }
+
+    @Test
+    void saveCarriesItsModeAndBothDice() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(6, 17);
+        SaveResult result = CombatEngine.resolveSave(new DiceRoller(rng), 2, 13, RollMode.ADVANTAGE);
+        assertEquals(RollMode.ADVANTAGE, result.roll().mode());
+        assertEquals(17, result.roll().kept());
+        assertEquals(OptionalInt.of(6), result.roll().dropped());
+        assertEquals(19, result.saveTotal());
+        assertTrue(rng.isExhausted());
+    }
+
+    @Test
+    void plainSaveIsANormalOneDieRoll() {
+        SaveResult result = CombatEngine.resolveSave(new DiceRoller(SequenceRandom.ofDieFaces(11)), 2, 13);
+        assertEquals(RollMode.NORMAL, result.roll().mode());
+        assertEquals(OptionalInt.empty(), result.roll().dropped());
+    }
+
+    @Test
+    void contestCarriesPerSideModeAndDice() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(3, 18, 12, 4);
+        ContestResult result =
+                CombatEngine.resolveContest(new DiceRoller(rng), 0, RollMode.ADVANTAGE, 0, RollMode.DISADVANTAGE);
+        assertEquals(RollMode.ADVANTAGE, result.initiatorRoll().mode());
+        assertEquals(18, result.initiatorRoll().kept());
+        assertEquals(OptionalInt.of(3), result.initiatorRoll().dropped());
+        assertEquals(RollMode.DISADVANTAGE, result.opponentRoll().mode());
+        assertEquals(4, result.opponentRoll().kept());
+        assertEquals(OptionalInt.of(12), result.opponentRoll().dropped());
+    }
+
+    @Test
+    void normalContestSideReportsNoDroppedDie() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(15, 10);
+        ContestResult result = CombatEngine.resolveContest(new DiceRoller(rng), 2, RollMode.NORMAL, 0, RollMode.NORMAL);
+        assertEquals(OptionalInt.empty(), result.initiatorRoll().dropped());
+        assertEquals(OptionalInt.empty(), result.opponentRoll().dropped());
     }
 
     @Test

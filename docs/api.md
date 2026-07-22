@@ -13,7 +13,7 @@ The `api` subpackages:
 
 | Package | Types |
 |---------|-------|
-| `api.dice` | `DiceExpression`, `DiceRoller`, `RollResult`, `DieRoll`, `RollMode`, `DiceParseException` |
+| `api.dice` | `DiceExpression`, `DiceRoller`, `RollResult`, `DieRoll`, `RollMode`, `RollDetail`, `DiceParseException` |
 | `api.combat` | `AttackResult`, `AttackOutcome`, `SaveResult`, `ContestResult`, `ContestSide` |
 | `api.feedback` | `RollFeedbackPayload`, `ConsequenceLine` |
 | `api.event` | the events below |
@@ -105,9 +105,52 @@ they are equal and `defenderAcBonus()` is `0`.
 > the cooldown just as a normal successful hit would, so vanilla i-frame behaviour for ordinary
 > real-time damage is unchanged.
 
-Fine-grained helpers are also available: `savingThrow(target, saveBonus, dc)`,
+Fine-grained helpers are also available: `savingThrow(target, saveBonus, dc)` (and
+`savingThrow(target, saveBonus, dc, RollMode)` to roll the save with advantage/disadvantage),
 `fireOutcomes(attacker, target, result, damageDice, weapon)`, and
 `sendRollFeedback(attacker, target, payload)`.
+
+### Roll detail (how a roll was made)
+
+Every d20 result carries a `RollDetail` describing **how** it was rolled, not just what it landed on:
+
+```java
+public record RollDetail(RollMode mode, int kept, OptionalInt dropped)
+```
+
+- `mode` — `NORMAL` / `ADVANTAGE` / `DISADVANTAGE`.
+- `kept` — the face the check resolved on. Always equal to the result's `natural`.
+- `dropped` — the other face when two dice were rolled; **empty** under `NORMAL`, which rolls one
+  die and drops nothing. `hasTwoDice()` is the convenience test.
+
+It is on every result, and on both sides of a contest (each side rolls under its own mode):
+
+| Result | Accessor |
+|--------|----------|
+| `AttackResult` | `roll()` |
+| `SaveResult` | `roll()` |
+| `ContestResult` | `initiatorRoll()`, `opponentRoll()` |
+| `RollFeedbackPayload` | `roll()` (from `rollMode()` + `natural()` + `droppedNatural()`) |
+| `SaveFeedbackPayload` | `roll()` |
+
+Reading both dice off an advantage attack to render your own presentation:
+
+```java
+AttackContext ctx = AttackContext.melee(source, weapon).withMode(RollMode.ADVANTAGE);
+AttackResult result = RollService.performAttack(attacker, target, ctx);
+
+RollDetail roll = result.roll();
+if (roll.hasTwoDice()) {
+    // e.g. "advantage: 7 / 18, kept 18"
+    animateTwoDice(roll.dropped().getAsInt(), roll.kept(), roll.mode());
+} else {
+    animateOneDie(roll.kept());
+}
+```
+
+`RollDetail.normal(face)` builds the plain one-die case, which is also what the pre-0.2.6
+constructors of `AttackResult`/`SaveResult`/`ContestResult` default to — existing callers are
+unaffected.
 
 ### Detecting driven damage
 
@@ -170,7 +213,8 @@ is **future work**; today, supply the bonuses yourself.
 **Feedback.** Contests do not emit a Critfall feedback readout — the attack-shaped
 `RollFeedbackPayload` (outcome / AC / damage / dice) does not fit an opposed roll, and different
 contests (Stealth vs Perception, a shove) want different presentation. Consumers present the result
-themselves from the `ContestResult` fields (both naturals and totals are exposed for exactly this).
+themselves from the `ContestResult` fields (both naturals, both totals, and each side's
+[roll detail](#roll-detail-how-a-roll-was-made) are exposed for exactly this).
 
 ### `AttackContext` and `AttackDelivery`
 
@@ -203,9 +247,9 @@ AttackResult result = RollService.performAttack(archer, target, ctx);
 - **Interaction with the roll.** The modifier shifts the to-hit *threshold* only; it is independent of
   advantage/disadvantage, which choose the kept d20 face. Crit and fumble are natural-based (a natural
   20 still hits and crits, a natural 1 still misses and can fumble) and so are unaffected by it.
-- **Feedback.** Critfall's own S2C readout still shows the effective AC (`vs AC 17`) but does **not**
-  break it down as `17 (10+7)`: surfacing the split would need the same feedback payload/codec rework
-  declined in 0.2.4. The split is on `AttackResult` for consumers that render their own readout.
+- **Feedback.** Since 0.2.6 the split reaches the wire: `RollFeedbackPayload.defenderAcBonus()` and
+  `baseArmorClass()` mirror the result, and Critfall's own readout renders `vs AC 17 (10+7)` when a
+  modifier applied (and the plain `vs AC 17` when none did).
 
 `AttackDelivery` is `MELEE | PROJECTILE | THROWN | SPELL`. It disambiguates hybrid items (issue #9):
 the delivery is threaded through item-profile and flavor-pool resolution, so a profile/pool with a

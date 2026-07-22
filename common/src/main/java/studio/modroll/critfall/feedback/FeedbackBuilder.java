@@ -45,7 +45,10 @@ public final class FeedbackBuilder {
                 showDamage,
                 flavor,
                 List.copyOf(consequences),
-                rules.dryRun().enabled());
+                rules.dryRun().enabled(),
+                result.roll().mode(),
+                result.roll().dropped(),
+                result.defenderAcBonus());
     }
 
     public static SaveFeedbackPayload buildSave(
@@ -81,7 +84,9 @@ public final class FeedbackBuilder {
                 damage,
                 showDamage,
                 flavor,
-                rules.dryRun().enabled());
+                rules.dryRun().enabled(),
+                save.roll().mode(),
+                save.roll().dropped());
     }
 
     private static Optional<String> pickFlavor(

@@ -10,11 +10,28 @@ Two server→client packets, both registered `optional()` so a client that doesn
 never disconnected:
 
 - `critfall:roll_feedback` — one resolved attack roll: outcome, natural d20, attack total, AC,
-  damage, dice notation, an optional flavor-line key, and the list of consequences that fired.
+  damage, dice notation, an optional flavor-line key, and the list of consequences that fired. Since
+  0.2.6 it also carries the roll mode, the dropped d20 face under advantage/disadvantage, and the
+  situational defender-AC modifier (`roll()` and `baseArmorClass()` derive from them).
 - `critfall:save_feedback` — one resolved saving throw: natural, total, DC, saved/failed, half/negate,
-  dice, damage, optional flavor key.
+  dice, damage, optional flavor key, and (0.2.6) the same roll mode and dropped face.
 
 The payloads carry only flat primitives + translation keys; the client builds all text from them.
+
+## What the roll readout shows
+
+The line stays terse when there is nothing extra to say, and spends characters only when there is:
+
+| Situation | Readout |
+|-----------|---------|
+| Plain roll | `d20 13+3=16 vs AC 10 — HIT 1d6+1 = 5` |
+| Advantage / disadvantage | `d20 adv 7/18 → 18+4=22 vs AC 14 — HIT 1d8 = 6` |
+| Situational defender-AC modifier | `d20 13+3=16 vs AC 17 (10+7) — MISS` |
+| Saving throw with advantage | `save d20 adv 6/17 → 17+2=19 vs DC 13 — SAVED, no damage` |
+
+Both dice appear only when two were rolled, and the AC split only when the modifier is non-zero, so a
+plain attack renders exactly as it did before 0.2.6. There is no separate switch: the detail rides
+the `rolls` toggle below, and the modless action-bar fallback renders it identically.
 
 ## Modless / vanilla clients
 

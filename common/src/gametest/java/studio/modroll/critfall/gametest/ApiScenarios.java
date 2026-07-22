@@ -21,12 +21,18 @@ import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.critfall.api.combat.ContestSide;
+import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.event.CombatInteractionEvent;
 import studio.modroll.critfall.api.event.CritfallEvents;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
+import studio.modroll.critfall.feedback.CapturingFeedbackSink;
+import studio.modroll.critfall.feedback.FeedbackSink;
 
 /**
  * Drives combat purely through the public API (PLAN §12): the automatic damage interception is
@@ -510,6 +516,182 @@ public final class ApiScenarios {
                 4);
         cleanup(husk, pig);
         helper.succeed();
+    }
+
+    public static void drivenAdvantageResultReportsBothDice(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        withRolls(
+                helper,
+                () -> {
+                    // Advantage keeps 18 (of 7/18); 18 + 3 = 21 vs AC 10 -> hit, 1d6+1 rolls 4 -> 5.
+                    AttackContext ctx = AttackContext.melee(
+                                    helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem())
+                            .withMode(RollMode.ADVANTAGE);
+                    AttackResult result = RollService.performAttack(husk, pig, ctx);
+                    expectRollDetail(helper, result.roll(), RollMode.ADVANTAGE, 18, 7);
+                    if (result.natural() != 18) {
+                        helper.fail("the kept face must be the result's natural, got " + result.natural());
+                    }
+                },
+                7,
+                18,
+                4);
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    public static void drivenDisadvantageResultReportsBothDice(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        withRolls(
+                helper,
+                () -> {
+                    // Disadvantage keeps 3 (of 19/3); 3 + 3 = 6 vs AC 10 -> miss, no damage dice drawn.
+                    AttackContext ctx = AttackContext.melee(
+                                    helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem())
+                            .withMode(RollMode.DISADVANTAGE);
+                    AttackResult result = RollService.performAttack(husk, pig, ctx);
+                    expectRollDetail(helper, result.roll(), RollMode.DISADVANTAGE, 3, 19);
+                    if (result.outcome() != AttackOutcome.MISS) {
+                        helper.fail("expected MISS, got " + result.outcome());
+                    }
+                },
+                19,
+                3);
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    public static void rollDetailAndAcSplitReachTheFeedbackPayload(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        try {
+            withRolls(
+                    helper,
+                    () -> {
+                        // Advantage keeps 18; 18 + 3 = 21 vs AC 10 (+4) = 14 -> hit, 1d6+1 rolls 4 -> 5.
+                        AttackContext ctx = AttackContext.melee(
+                                        helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem())
+                                .withMode(RollMode.ADVANTAGE)
+                                .withDefenderAcBonus(4);
+                        RollService.performAttack(husk, pig, ctx);
+                        RollFeedbackPayload payload = sink.lastRoll();
+                        if (payload == null) {
+                            helper.fail("the driven attack dispatched no feedback payload");
+                            return;
+                        }
+                        expectRollDetail(helper, payload.roll(), RollMode.ADVANTAGE, 18, 7);
+                        if (payload.defenderAcBonus() != 4 || payload.armorClass() != 14) {
+                            helper.fail("expected AC 10 (+4) = 14 on the payload, got " + payload.baseArmorClass()
+                                    + " (+" + payload.defenderAcBonus() + ") = " + payload.armorClass());
+                        }
+                        String readout = CombatText.actionBar(payload).getString();
+                        if (!readout.contains("7/18") || !readout.contains("vs AC 14 (10+4)")) {
+                            helper.fail("the readout must show both dice and the AC split, was: " + readout);
+                        }
+                    },
+                    7,
+                    18,
+                    4);
+        } finally {
+            FeedbackSink.set(previous);
+        }
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    public static void plainDrivenAttackPayloadCarriesNoRollDetail(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        try {
+            withRolls(
+                    helper,
+                    () -> {
+                        AttackContext ctx = AttackContext.melee(
+                                helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem());
+                        RollService.performAttack(husk, pig, ctx);
+                        RollFeedbackPayload payload = sink.lastRoll();
+                        if (payload == null) {
+                            helper.fail("the driven attack dispatched no feedback payload");
+                            return;
+                        }
+                        if (payload.rollMode() != RollMode.NORMAL
+                                || payload.droppedNatural().isPresent()
+                                || payload.defenderAcBonus() != 0) {
+                            helper.fail("a plain attack must report a normal one-die roll and no AC modifier, was "
+                                    + payload.roll() + " / " + payload.defenderAcBonus());
+                        }
+                        String readout = CombatText.actionBar(payload).getString();
+                        if (readout.contains("(")) {
+                            helper.fail("no modifier, no AC split, was: " + readout);
+                        }
+                    },
+                    13,
+                    4);
+        } finally {
+            FeedbackSink.set(previous);
+        }
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    public static void savingThrowWithAdvantageReportsBothDice(GameTestHelper helper) {
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        withRolls(
+                helper,
+                () -> {
+                    SaveResult save = RollService.savingThrow(pig, 2, 13, RollMode.ADVANTAGE);
+                    expectRollDetail(helper, save.roll(), RollMode.ADVANTAGE, 17, 6);
+                    if (!save.saved() || save.saveTotal() != 19) {
+                        helper.fail("expected 17 + 2 = 19 vs DC 13 to save, got " + save.saveTotal());
+                    }
+                },
+                6,
+                17);
+        helper.succeed();
+    }
+
+    public static void contestCarriesPerSideRollDetail(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        withRolls(
+                helper,
+                () -> {
+                    ContestContext ctx = ContestContext.of(0, 0)
+                            .withInitiatorMode(RollMode.ADVANTAGE)
+                            .withOpponentMode(RollMode.DISADVANTAGE);
+                    ContestResult result = RollService.contest(husk, pig, ctx);
+                    expectRollDetail(helper, result.initiatorRoll(), RollMode.ADVANTAGE, 18, 3);
+                    expectRollDetail(helper, result.opponentRoll(), RollMode.DISADVANTAGE, 4, 12);
+                },
+                3,
+                18,
+                12,
+                4);
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    private static void expectRollDetail(
+            GameTestHelper helper, RollDetail detail, RollMode mode, int kept, int dropped) {
+        if (detail.mode() != mode || detail.kept() != kept || detail.dropped().orElse(-1) != dropped) {
+            helper.fail("expected " + mode + " keeping " + kept + " over " + dropped + ", got " + detail);
+        }
     }
 
     private static void close(AutoCloseable closeable) {

@@ -13,6 +13,7 @@ import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.dice.RollResult;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
@@ -104,7 +105,11 @@ public final class RollService {
     }
 
     public static SaveResult savingThrow(LivingEntity target, int saveBonus, int dc) {
-        return CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc);
+        return savingThrow(target, saveBonus, dc, RollMode.NORMAL);
+    }
+
+    public static SaveResult savingThrow(LivingEntity target, int saveBonus, int dc, RollMode mode) {
+        return CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc, mode);
     }
 
     /** Resolves a contested check between two entities via {@link ContestContext}; see {@link ContestResult} for the tie rule. */
