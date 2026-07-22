@@ -108,7 +108,6 @@ public final class RollService {
         return savingThrow(target, saveBonus, dc, RollMode.NORMAL);
     }
 
-    /** A saving throw rolled with advantage/disadvantage; {@link SaveResult#roll()} reports both dice. */
     public static SaveResult savingThrow(LivingEntity target, int saveBonus, int dc, RollMode mode) {
         return CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc, mode);
     }

@@ -19,12 +19,8 @@ import studio.modroll.critfall.api.dice.RollMode;
  * {@link net.minecraft.network.chat.Component} from these fields, and the modless fallback renders
  * the same data server-side via {@link studio.modroll.critfall.combat.CombatText}. {@code flavorKey} is
  * present only when the server's anti-spam gate let a flavor line through; {@code consequences} lists
- * the outcome-table consequences that actually fired.
- *
- * <p>{@code natural} is the kept d20 face; {@code rollMode} and {@code droppedNatural} complete it
- * into the {@link #roll()} detail, and {@code defenderAcBonus} splits {@code armorClass} into the
- * defender's own AC plus the situational modifier. All four newer fields default to the plain case
- * (normal roll, no dropped die, no modifier), so the shorter constructors stay accurate.
+ * the outcome-table consequences that actually fired. {@code natural} is the kept d20 face, which
+ * {@code rollMode} and {@code droppedNatural} complete into the {@link #roll()} detail.
  */
 public record RollFeedbackPayload(
         AttackOutcome outcome,
@@ -42,7 +38,7 @@ public record RollFeedbackPayload(
         int defenderAcBonus)
         implements CustomPacketPayload {
 
-    /** Convenience for a plain normal roll against an unmodified AC. */
+    /** Convenience for a plain normal roll against an unmodified AC (pre-0.2.6 callers). */
     public RollFeedbackPayload(
             AttackOutcome outcome,
             int natural,
@@ -94,7 +90,6 @@ public record RollFeedbackPayload(
                 false);
     }
 
-    /** How the d20 was rolled: the mode, the kept face ({@link #natural()}), and any dropped face. */
     public RollDetail roll() {
         return new RollDetail(rollMode, natural, droppedNatural);
     }

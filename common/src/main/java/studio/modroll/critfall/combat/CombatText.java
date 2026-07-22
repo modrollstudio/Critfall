@@ -68,11 +68,6 @@ public final class CombatText {
         return withDryRun(p.dryRun(), line);
     }
 
-    /**
-     * The d20 part of a readout. A normal roll stays the terse {@code d20 13}; advantage and
-     * disadvantage spend the extra characters to show both faces and which one was kept, e.g.
-     * {@code d20 adv 7/18 → 18}.
-     */
     private static String d20(RollDetail roll) {
         if (!roll.hasTwoDice()) {
             return "d20 " + roll.kept();
@@ -81,7 +76,6 @@ public final class CombatText {
         return "d20 " + mode + " " + roll.dropped().getAsInt() + "/" + roll.kept() + " → " + roll.kept();
     }
 
-    /** Splits the AC into the defender's own value plus the situational modifier when one applied. */
     private static String versusArmorClass(RollFeedbackPayload p) {
         if (p.defenderAcBonus() == 0) {
             return "vs AC " + p.armorClass();

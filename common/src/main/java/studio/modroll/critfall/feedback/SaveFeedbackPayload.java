@@ -28,7 +28,7 @@ public record SaveFeedbackPayload(
         OptionalInt droppedNatural)
         implements CustomPacketPayload {
 
-    /** Convenience for a plain normal roll. */
+    /** Convenience for a plain normal roll (pre-0.2.6 callers). */
     public SaveFeedbackPayload(
             int natural,
             int saveTotal,
@@ -69,7 +69,6 @@ public record SaveFeedbackPayload(
         this(natural, saveTotal, dc, saved, onSuccess, diceNotation, damage, showDamage, flavorKey, false);
     }
 
-    /** How the d20 was rolled: the mode, the kept face ({@link #natural()}), and any dropped face. */
     public RollDetail roll() {
         return new RollDetail(rollMode, natural, droppedNatural);
     }
