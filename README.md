@@ -4,6 +4,12 @@ Tabletop-style d20 combat for Minecraft. Every hit rolls to attack against the t
 
 > **0.2.0** — latest release, for NeoForge and Fabric on Minecraft 1.21.1. See the [changelog](CHANGELOG.md).
 
+## Screenshots
+
+Screenshots showcasing the mod are wanted for CurseForge, Modrinth, and the website — contributions welcome (see [#12](../../issues/12)).
+
+<!-- Add screenshots to docs/images/ and embed them here, e.g. ![Attack roll HUD](docs/images/attack-roll.png) -->
+
 ## For players
 - Attacks roll `d20 + bonus` vs the target's AC. Miss = no damage.
 - Damage is rolled from dice (e.g. `2d6+3`) instead of flat values.
