@@ -23,6 +23,7 @@ import studio.modroll.critfall.combat.AttackPipeline;
 import studio.modroll.critfall.combat.CombatEngine;
 import studio.modroll.critfall.combat.DamageInterception;
 import studio.modroll.critfall.combat.Derivation;
+import studio.modroll.critfall.combat.EnchantmentDamage;
 import studio.modroll.critfall.combat.Modifiers;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.EntityProfile;
@@ -170,7 +171,7 @@ public final class RollService {
 
     /** Resolves an attack (fires the pre/post/crit/fumble events) WITHOUT applying damage or feedback. */
     public static AttackResult attackRoll(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
-        return resolve(attacker, target, ctx, damageDice(attacker, ctx)).result();
+        return resolve(attacker, target, ctx, damageDice(attacker, target, ctx)).result();
     }
 
     /**
@@ -182,7 +183,7 @@ public final class RollService {
      * stands down. Returns the resolved {@link AttackResult}.
      */
     public static AttackResult performAttack(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
-        DiceExpression dice = damageDice(attacker, ctx);
+        DiceExpression dice = damageDice(attacker, target, ctx);
         AttackPipeline.Bundle bundle = resolve(attacker, target, ctx, dice);
         AttackResult result = bundle.result();
         if (!bundle.apply()) {
@@ -233,26 +234,31 @@ public final class RollService {
     }
 
     /** Explicit override as given, else Critfall's own dice with the provider's modifier. */
-    private static DiceExpression damageDice(LivingEntity attacker, AttackContext ctx) {
+    private static DiceExpression damageDice(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
         if (ctx.damageDiceOverride().isPresent()) {
             return ctx.damageDiceOverride().get();
         }
-        return Modifiers.damageDice(RollRuntime.rules(), attacker, ctx.delivery(), ownDamageDice(attacker, ctx));
+        return Modifiers.damageDice(
+                RollRuntime.rules(), attacker, ctx.delivery(), ownDamageDice(attacker, target, ctx));
     }
 
     /** Item profile, else entity profile (by delivery), else derived. */
-    private static DiceExpression ownDamageDice(LivingEntity attacker, AttackContext ctx) {
+    private static DiceExpression ownDamageDice(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
         Optional<ItemProfile> item = ProfileLookup.forItem(ctx.weapon(), ctx.delivery());
         double attackDamage = attacker.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE)
                 ? attacker.getAttributeValue(Attributes.ATTACK_DAMAGE)
                 : 0.0;
+        // A melee swing adds the weapon's enchantment damage, as the automatic melee path does.
+        double weaponDamage = ctx.isRanged()
+                ? attackDamage
+                : attackDamage + EnchantmentDamage.bonus(ctx.weapon(), target, ctx.source(), attackDamage);
         // Empty entity so the resolver yields the ITEM dice only — we then apply the correct entity
         // dice by delivery (melee vs. ranged), which AttackDice.resolve does not distinguish.
-        Optional<DiceExpression> itemDice = AttackDice.resolve(item, Optional.<EntityProfile>empty(), attackDamage)
+        Optional<DiceExpression> itemDice = AttackDice.resolve(item, Optional.<EntityProfile>empty(), weaponDamage)
                 .map(AttackDice.Resolved::dice);
         EffectiveEntityProfile eff = effectiveEntity(attacker);
         Optional<DiceExpression> entityDice = ctx.isRanged() ? eff.rangedDamage() : eff.meleeDamage();
-        return itemDice.or(() -> entityDice).orElseGet(() -> Derivation.damageDice(Math.max(1.0, attackDamage)));
+        return itemDice.or(() -> entityDice).orElseGet(() -> Derivation.damageDice(Math.max(1.0, weaponDamage)));
     }
 
     private static int critRange(LivingEntity attacker, AttackContext ctx) {

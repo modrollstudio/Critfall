@@ -156,15 +156,18 @@ public final class DamageInterception {
         Optional<EntityProfile> attackerProfile = ProfileLookup.forEntity(attacker);
         Optional<ItemProfile> weaponProfile = ProfileLookup.forItem(attacker.getMainHandItem(), AttackDelivery.MELEE);
 
-        double attackAttribute = attacker.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE)
-                ? attacker.getAttributeValue(Attributes.ATTACK_DAMAGE)
-                : dmg.amount();
+        boolean hasAttribute = attacker.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE);
+        double attackAttribute = hasAttribute ? attacker.getAttributeValue(Attributes.ATTACK_DAMAGE) : dmg.amount();
         int attackBonus =
                 intStat(attackerProfile.map(EntityProfile::attackBonus), () -> Derivation.attackBonus(attackAttribute));
+        // The vanilla amount already carries enchantment damage; the attribute does not.
+        double weaponDamage = hasAttribute
+                ? attackAttribute + EnchantmentDamage.bonus(attacker.getMainHandItem(), target, source, attackAttribute)
+                : attackAttribute;
 
         DiceExpression damageDice;
         int critRange;
-        Optional<AttackDice.Resolved> resolved = AttackDice.resolve(weaponProfile, attackerProfile, attackAttribute);
+        Optional<AttackDice.Resolved> resolved = AttackDice.resolve(weaponProfile, attackerProfile, weaponDamage);
         if (resolved.isPresent()) {
             damageDice = resolved.get().dice();
             critRange = resolved.get().critRange();
