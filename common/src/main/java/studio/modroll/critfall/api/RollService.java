@@ -7,6 +7,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
+import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
@@ -22,6 +23,7 @@ import studio.modroll.critfall.combat.AttackPipeline;
 import studio.modroll.critfall.combat.CombatEngine;
 import studio.modroll.critfall.combat.DamageInterception;
 import studio.modroll.critfall.combat.Derivation;
+import studio.modroll.critfall.combat.Modifiers;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.EntityProfile;
 import studio.modroll.critfall.data.ItemProfile;
@@ -90,6 +92,27 @@ public final class RollService {
         return DamageInterception.isDrivenApply(target);
     }
 
+    /** Fills the single {@link ModifierProvider} slot; a second, different provider replaces the first with a warning. */
+    public static void registerModifierProvider(ModifierProvider provider) {
+        Objects.requireNonNull(provider, "provider");
+        ModifierProvider previous = RollRuntime.setModifierProvider(provider);
+        if (previous != null && previous != provider) {
+            Critfall.LOG.warn(
+                    "Modifier provider {} replaces {}",
+                    provider.getClass().getName(),
+                    previous.getClass().getName());
+        }
+    }
+
+    /** Empties the provider slot. */
+    public static void clearModifierProvider() {
+        RollRuntime.setModifierProvider(null);
+    }
+
+    public static Optional<ModifierProvider> modifierProvider() {
+        return RollRuntime.modifierProvider();
+    }
+
     public static EffectiveEntityProfile effectiveEntity(LivingEntity entity) {
         return EffectiveEntityProfile.of(
                 ProfileLookup.forEntity(entity),
@@ -147,7 +170,7 @@ public final class RollService {
 
     /** Resolves an attack (fires the pre/post/crit/fumble events) WITHOUT applying damage or feedback. */
     public static AttackResult attackRoll(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
-        return resolve(attacker, target, ctx).result();
+        return resolve(attacker, target, ctx, damageDice(attacker, ctx)).result();
     }
 
     /**
@@ -159,7 +182,8 @@ public final class RollService {
      * stands down. Returns the resolved {@link AttackResult}.
      */
     public static AttackResult performAttack(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
-        AttackPipeline.Bundle bundle = resolve(attacker, target, ctx);
+        DiceExpression dice = damageDice(attacker, ctx);
+        AttackPipeline.Bundle bundle = resolve(attacker, target, ctx, dice);
         AttackResult result = bundle.result();
         if (!bundle.apply()) {
             return result; // canceled/vetoed by a listener
@@ -172,7 +196,7 @@ public final class RollService {
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
                 result,
                 isKill,
-                damageDice(attacker, ctx).toString(),
+                dice.toString(),
                 rules.damageDice(),
                 bundle.consequences(),
                 ProfileLookup.forFlavor(ctx.weapon(), ctx.delivery()),
@@ -184,11 +208,16 @@ public final class RollService {
         return result;
     }
 
-    private static AttackPipeline.Bundle resolve(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
+    private static AttackPipeline.Bundle resolve(
+            LivingEntity attacker, LivingEntity target, AttackContext ctx, DiceExpression dice) {
         EffectiveEntityProfile targetEff = effectiveEntity(target);
-        EffectiveEntityProfile attackerEff = effectiveEntity(attacker);
-        int attackBonus = ctx.attackBonusOverride().orElse(attackerEff.attackBonus());
-        DiceExpression dice = damageDice(attacker, ctx);
+        int attackBonus = ctx.attackBonusOverride()
+                .orElseGet(() -> Modifiers.attackBonus(
+                        RollRuntime.rules(),
+                        attacker,
+                        target,
+                        ctx.delivery(),
+                        effectiveEntity(attacker).attackBonus()));
         int critRange = critRange(attacker, ctx);
         return AttackPipeline.resolve(
                 attacker,
@@ -203,11 +232,16 @@ public final class RollService {
                 ProfileLookup.forEntity(attacker));
     }
 
-    /** The damage dice: explicit override, else item profile, else entity profile (by delivery), else derived. */
+    /** Explicit override as given, else Critfall's own dice with the provider's modifier. */
     private static DiceExpression damageDice(LivingEntity attacker, AttackContext ctx) {
         if (ctx.damageDiceOverride().isPresent()) {
             return ctx.damageDiceOverride().get();
         }
+        return Modifiers.damageDice(RollRuntime.rules(), attacker, ctx.delivery(), ownDamageDice(attacker, ctx));
+    }
+
+    /** Item profile, else entity profile (by delivery), else derived. */
+    private static DiceExpression ownDamageDice(LivingEntity attacker, AttackContext ctx) {
         Optional<ItemProfile> item = ProfileLookup.forItem(ctx.weapon(), ctx.delivery());
         double attackDamage = attacker.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE)
                 ? attacker.getAttributeValue(Attributes.ATTACK_DAMAGE)

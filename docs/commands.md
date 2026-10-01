@@ -40,6 +40,9 @@ Shows the effective combat stats for a living entity and **which profile file wo
 are derived). With no argument it inspects whatever your crosshair points at (32-block raycast,
 blocks occlude). Essential for debugging tag-priority collisions.
 
+The bonuses shown are **Critfall's own**, not a [modifier provider](api.md#modifier-provider)'s,
+which answers per attacker and target. The roll readout shows the modifier a roll actually used.
+
 ## `/critfall check [item]`
 
 Same idea for an item: the matched item profile, its dice, `modifier_from`, crit range, and any

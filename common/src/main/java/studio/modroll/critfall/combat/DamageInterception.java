@@ -15,6 +15,7 @@ import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.CombatSuppression;
+import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
@@ -389,14 +390,22 @@ public final class DamageInterception {
         Rules.SpellSaves saves = rules.spells().saves();
         int dc = profile.saveDc().orElse(saves.defaultDc());
         Rules.SaveOutcome onSuccess = profile.onSuccess().orElse(saves.onSuccess());
-        int saveBonus = intStat(targetProfile.map(EntityProfile::saveBonus), () -> 0);
+        int saveBonus = Modifiers.saveBonus(
+                rules,
+                target,
+                ModifierProvider.SPELL_SAVE,
+                intStat(targetProfile.map(EntityProfile::saveBonus), () -> 0));
         SaveResult save = CombatEngine.resolveSave(RollRuntime.roller(), saveBonus, dc);
 
-        boolean useDice = rules.damageDice() && profile.damage().isPresent();
+        Optional<DiceExpression> saveDice = profile.damage()
+                .filter(dice -> rules.damageDice())
+                .map(dice -> Modifiers.damageDice(rules, attacker, AttackDelivery.SPELL, dice));
+        boolean useDice = saveDice.isPresent();
         float damage;
         if (useDice) {
             damage = Math.max(
-                    0, RollRuntime.roller().roll(profile.damage().get()).total());
+                    CombatEngine.MIN_HIT_DAMAGE,
+                    RollRuntime.roller().roll(saveDice.get()).total());
             damage *= targetProfile
                     .map(p -> ProfileLookup.damageMultiplier(p, source))
                     .orElse(1.0f);
@@ -420,7 +429,7 @@ public final class DamageInterception {
         }
 
         boolean isKill = damage > 0 && target.getHealth() <= damage;
-        String notation = useDice ? profile.damage().get().toString() : "vanilla";
+        String notation = saveDice.map(DiceExpression::toString).orElse("vanilla");
         SaveFeedbackPayload payload = FeedbackBuilder.buildSave(
                 save,
                 isKill,
@@ -453,9 +462,11 @@ public final class DamageInterception {
             ItemStack weaponStack,
             ItemStack heldStack,
             AttackDelivery delivery,
-            int attackBonus,
-            DiceExpression damageDice,
+            int ownAttackBonus,
+            DiceExpression ownDamageDice,
             int critRange) {
+        int attackBonus = Modifiers.attackBonus(rules, attacker, target, delivery, ownAttackBonus);
+        DiceExpression damageDice = Modifiers.damageDice(rules, attacker, delivery, ownDamageDice);
         int armorClass = intStat(
                 targetProfile.map(EntityProfile::armorClass),
                 () -> Derivation.armorClass(
