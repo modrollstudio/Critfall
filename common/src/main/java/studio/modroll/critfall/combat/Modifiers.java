@@ -16,8 +16,9 @@ import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceParseException;
 
 /**
- * Swaps Critfall's own bonus for the registered {@link ModifierProvider}'s answer when it gives one.
- * Bad answers are logged once per provider and roll type, since real-time combat asks on every hit.
+ * Applies the registered {@link ModifierProvider}'s answer when it gives one: it replaces Critfall's own
+ * attack and save bonus, and adds to Critfall's own damage dice. Bad answers are logged once per provider
+ * and roll type, since real-time combat asks on every hit.
  */
 public final class Modifiers {
 
@@ -53,7 +54,7 @@ public final class Modifiers {
             return own;
         }
         try {
-            return own.withModifier(modifier.getAsInt());
+            return own.plusModifier(modifier.getAsInt());
         } catch (DiceParseException e) {
             reportOnce(p, Roll.DAMAGE, e);
             return own;

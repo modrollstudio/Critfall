@@ -131,6 +131,23 @@ public final class DiceExpression {
         return new DiceExpression(List.copyOf(replaced), buildCanonical(replaced));
     }
 
+    /**
+     * The same dice with {@code extra} added to the constants: {@code 1d8+2} plus {@code 3} is {@code 1d8+5},
+     * {@code 1d8+2+1d4} plus {@code 3} is {@code 1d8+1d4+5}. An expression with no dice, or an {@code extra}
+     * of {@code 0}, is returned unchanged. Throws {@link DiceParseException} when the new constant is beyond
+     * ±1,000,000.
+     */
+    public DiceExpression plusModifier(int extra) {
+        if (!hasDice() || extra == 0) {
+            return this;
+        }
+        long total = (long) modifier() + extra;
+        if (Math.abs(total) > MAX_CONSTANT) {
+            throw new DiceParseException("modifier " + total + " is larger than " + MAX_CONSTANT);
+        }
+        return withModifier((int) total);
+    }
+
     /** False for a flat amount such as {@code 1}. */
     public boolean hasDice() {
         return terms.stream().anyMatch(DiceTerm.class::isInstance);

@@ -124,7 +124,7 @@ public final class ModifierProviderScenarios {
         helper.succeed();
     }
 
-    public static void providerReplacesDamageModifier(GameTestHelper helper) {
+    public static void providerAddsToDamageModifier(GameTestHelper helper) {
         Husk husk = spawnHusk(helper);
         Pig pig = spawnPig(helper);
         run(
@@ -132,30 +132,30 @@ public final class ModifierProviderScenarios {
                 new FixedProvider(null, 4, null),
                 Rules.DEFAULTS,
                 sink -> {
-                    // 1d6+1 becomes 1d6+4, rolls 4 -> 8
+                    // 1d6+1 plus 4 is 1d6+5, rolls 4 -> 9
                     meleeHit(helper, husk, pig);
-                    expectHealth(helper, pig, pig.getMaxHealth() - 8.0F);
-                    expectReadout(helper, sink.lastRoll(), "d20 13+3=16 vs AC 10", "1d6+4 = 8");
+                    expectHealth(helper, pig, pig.getMaxHealth() - 9.0F);
+                    expectReadout(helper, sink.lastRoll(), "d20 13+3=16 vs AC 10", "1d6+5 = 9");
                 },
                 13,
                 4);
         helper.succeed();
     }
 
-    public static void providerReplacesRangedAttackAndDamage(GameTestHelper helper) {
+    public static void providerReplacesRangedAttackAndAddsToDamage(GameTestHelper helper) {
         Skeleton skeleton = CombatScenarios.spawnCalm(helper, EntityType.SKELETON, 1, 1);
         skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
         Pig pig = spawnPig(helper);
         Arrow arrow = ProjectileScenarios.shotArrow(helper, skeleton);
-        FixedProvider provider = new FixedProvider(-3, 0, null);
+        FixedProvider provider = new FixedProvider(-3, -1, null);
         run(
                 helper,
                 provider,
                 Rules.DEFAULTS,
                 sink -> {
-                    // 13 - 3 = 10 vs AC 10 -> hit; the bow's 1d8+2 becomes 1d8, rolls 4 -> 4
+                    // 13 - 3 = 10 vs AC 10 -> hit; the bow's 1d8+2 minus 1 is 1d8+1, rolls 4 -> 5
                     pig.hurt(helper.getLevel().damageSources().arrow(arrow, skeleton), ARROW_DAMAGE);
-                    expectHealth(helper, pig, pig.getMaxHealth() - 4.0F);
+                    expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
                 },
                 13,
                 4);
@@ -233,16 +233,16 @@ public final class ModifierProviderScenarios {
         try {
             run(
                     helper,
-                    new FixedProvider(8, 0, null),
+                    new FixedProvider(8, 1, null),
                     Rules.DEFAULTS,
                     sink -> {
-                        // 2 + 8 = 10 -> hit, where the husk's own +3 would miss; 1d6 rolls 4
+                        // 2 + 8 = 10 -> hit, where the husk's own +3 would miss; 1d6+1 plus 1 rolls 4 -> 6
                         AttackResult result = RollService.performAttack(husk, pig, melee(helper, husk));
                         if (result.outcome() != AttackOutcome.HIT || result.attackBonus() != 8) {
                             helper.fail(
                                     "expected a HIT on +8, got " + result.outcome() + " on " + result.attackBonus());
                         }
-                        expectHealth(helper, pig, pig.getMaxHealth() - 4.0F);
+                        expectHealth(helper, pig, pig.getMaxHealth() - 6.0F);
                     },
                     2,
                     4);
@@ -290,10 +290,10 @@ public final class ModifierProviderScenarios {
                 new FixedProvider(null, -10, null),
                 Rules.DEFAULTS,
                 sink -> {
-                    // 1d6-10 rolls 4 -> -6, floored to 1
+                    // 1d6+1 minus 10 is 1d6-9, rolls 4 -> -5, floored to 1
                     meleeHit(helper, husk, pig);
                     expectHealth(helper, pig, pig.getMaxHealth() - 1.0F);
-                    expectReadout(helper, sink.lastRoll(), "1d6-10 = 1");
+                    expectReadout(helper, sink.lastRoll(), "1d6-9 = 1");
                 },
                 13,
                 4);
@@ -308,7 +308,7 @@ public final class ModifierProviderScenarios {
                 new FixedProvider(null, 5, null),
                 Rules.DEFAULTS,
                 sink -> {
-                    // a 1-damage spell derives the flat "1", which has no modifier to replace
+                    // a 1-damage spell derives the flat "1", which has no dice to add to
                     pig.hurt(SpellScenarios.spellSource(helper, husk), 1.0F);
                     expectHealth(helper, pig, pig.getMaxHealth() - 1.0F);
                     expectReadout(helper, sink.lastRoll(), "d20 13+3=16 vs AC 10", " 1 = 1");

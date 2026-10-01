@@ -5,8 +5,9 @@ import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Supplies the modifiers Critfall adds to its rolls; register one with {@link
- * RollService#registerModifierProvider}. A present value replaces Critfall's own bonus for that roll,
- * an empty one keeps it.
+ * RollService#registerModifierProvider}. A present attack or save value replaces Critfall's own bonus for
+ * that roll; a present damage value is added to Critfall's own damage dice. An empty one keeps Critfall's
+ * own.
  *
  * <p>Explicit API values ({@link AttackContext#withAttackBonus}, {@link AttackContext#withDamageDice},
  * the {@code saveBonus} of {@link RollService#savingThrow}) are never sent here. A provider that throws
@@ -22,7 +23,12 @@ public interface ModifierProvider {
         return OptionalInt.empty();
     }
 
-    /** Replaces the flat part of the damage dice: {@code 1d8+2} with {@code 5} rolls {@code 1d8+5}. */
+    /**
+     * Added to Critfall's own damage dice, which keep everything Critfall already counts (weapon material,
+     * damage enchantments, draw strength, Power, the Strength and Weakness effects): {@code 1d8+2} with {@code 5} rolls {@code
+     * 1d8+7}. A dice-less amount (the derived flat {@code 1}) ignores it. Before 0.2.8 this replaced the
+     * flat part.
+     */
     default OptionalInt damageModifier(LivingEntity attacker, AttackDelivery delivery) {
         return OptionalInt.empty();
     }

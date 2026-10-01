@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8] - 2026-10-02
+
+The provided damage modifier stacks on Critfall's own damage dice instead of replacing their flat part,
+and melee damage enchantments count toward a profiled weapon's dice.
+
+### Changed
+
+- **Semantic change:** `ModifierProvider.damageModifier` is now **added** to Critfall's damage dice
+  (`1d8+2` with `5` rolls `1d8+7`; 0.2.7 rolled `1d8+5`). The flat part it used to replace carries
+  the weapon and the attacker's buffs, so with a provider registered weapon material (wooden vs stone
+  sword), bow draw strength, Power and the Strength/Weakness effects stopped affecting damage. A
+  provider written for 0.2.7 that returned a full damage bonus should now return only its own bonus.
+  `attackModifier` and `saveModifier` still replace.
+- A provided `0` now leaves the damage dice unchanged (0.2.7 dropped their flat part).
+
+### Fixed
+
+- Damage enchantments (Sharpness, Smite, Bane of Arthropods, Impaling, modded ones) were ignored on
+  melee hits with a weapon that has an item profile: the `modifier_from: attack_damage_attribute`
+  bonus was built from the attack-damage attribute, and vanilla adds enchantment damage separately.
+  The bonus is now built from the attribute plus the enchantment damage vanilla computes against the
+  actual target, so target-specific enchantments only count where vanilla applies them (Smite on
+  undead, Bane on arthropods). An iron sword with Sharpness V on a player now rolls `1d8+5` instead of
+  `1d8+2`. Applies to the automatic melee pipeline and to melee `RollService.performAttack`/`attackRoll`
+  (including their derived fallback for weapons without a profile). Projectile and thrown hits already
+  counted Power and Impaling through the vanilla projectile damage. The to-hit bonus is unchanged.
+
+### Added
+
+- `DiceExpression.plusModifier(int)`: the same dice with a value added to the constants (`1d8+2+1d4`
+  plus `3` is `1d8+1d4+5`); dice-less expressions and `0` come back unchanged.
+- GameTests on both loaders drive real vanilla hits (`Mob.doHurtTarget`, an arrow's own tick) and
+  check, with and without a provider, that sword material, Strength II and Weakness, bow draw strength,
+  Power and Sharpness each change the damage; that Smite counts against a zombie but not a pig, and
+  Bane of Arthropods against a spider but not a zombie; and that a driven melee attack counts
+  Sharpness.
+
+### Notes
+
+- Unchanged: the minimum-1 damage floor, dice-less amounts ignoring the provider, and, with no provider
+  registered, every roll with an unenchanted weapon (the new GameTests pin the 0.2.7 numbers).
+
 ## [0.2.7] - 2026-10-01
 
 A modifier provider hook: another mod can supply the modifiers on Critfall's attack, damage and save

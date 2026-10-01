@@ -266,7 +266,8 @@ modded throwing weapons that record themselves as the firing weapon) as `THROWN`
 ### Modifier provider
 
 Since 0.2.7 another mod can supply the modifiers on Critfall's attack, damage and save rolls without
-Critfall depending on it. Register one `ModifierProvider`, server-side, e.g. at mod construction:
+Critfall depending on it. Since 0.2.8 the damage modifier is added to Critfall's damage dice; in 0.2.7 it
+replaced their flat part. Register one `ModifierProvider`, server-side, e.g. at mod construction:
 
 ```java
 RollService.registerModifierProvider(new ModifierProvider() {
@@ -277,15 +278,21 @@ RollService.registerModifierProvider(new ModifierProvider() {
 });
 ```
 
-| Method | Asked for | Replaces |
-|--------|-----------|----------|
-| `attackModifier(attacker, target, delivery)` | every attack roll (melee, projectile, thrown, spell) | the to-hit bonus (spell/entity profile `attack_bonus`, else derived) |
-| `damageModifier(attacker, delivery)` | every damage roll, including a save spell's | the flat part of the dice (`DiceExpression.modifier()`): `1d8+2` with `5` rolls `1d8+5`, with `0` rolls `1d8`. A dice-less amount (the derived flat `1`) is left as is |
-| `saveModifier(entity, saveKey)` | every saving throw | the target's `save_bonus` (else `0`) |
+| Method | Asked for | Effect |
+|--------|-----------|--------|
+| `attackModifier(attacker, target, delivery)` | every attack roll (melee, projectile, thrown, spell) | **replaces** the to-hit bonus (spell/entity profile `attack_bonus`, else derived) |
+| `damageModifier(attacker, delivery)` | every damage roll, including a save spell's | **adds** to Critfall's own damage dice (`DiceExpression.plusModifier`): `1d8+2` with `5` rolls `1d8+7`, with `0` rolls `1d8+2`. A dice-less amount (the derived flat `1`) is left as is |
+| `saveModifier(entity, saveKey)` | every saving throw | **replaces** the target's `save_bonus` (else `0`) |
 
-- **Present replaces, empty keeps.** Every method defaults to empty, so implement only what you need.
-- **Bad answers fall back.** A throw, `null`, or a damage modifier beyond ±1,000,000 uses Critfall's own
-  bonus and is logged once per provider and roll type.
+- **Present applies, empty keeps.** Every method defaults to empty, so implement only what you need.
+- **Damage is additive.** Critfall's own dice already carry the weapon and the attacker's buffs: an
+  item profile with `modifier_from: attack_damage_attribute` adds a flat bonus from the attack-damage
+  attribute plus the weapon's enchantment damage against the target (weapon material, the Strength and
+  Weakness effects, Sharpness, Smite, Bane of Arthropods) or, for a launcher, from the vanilla
+  projectile damage (draw strength, Power). The provided value stacks on top, so those keep counting.
+  Return your mod's own bonus, not a total.
+- **Bad answers fall back.** A throw, `null`, or a damage modifier that takes the dice's constant beyond
+  ±1,000,000 uses Critfall's own bonus and is logged once per provider and roll type.
 - **A hit always hurts.** A hit's or crit's rolled damage, and a failed save's, is at least 1, with or
   without a provider. The floor comes before `PostAttackRollEvent`, multipliers and resistances, so a
   listener's `finalDamage(0)` or an immunity still stands.
@@ -301,7 +308,7 @@ RollService.registerModifierProvider(new ModifierProvider() {
   the slot; `modifierProvider()` reads it.
 - **Server toggle.** `modifier_providers.enabled: false` in `rules.json` ignores any provider (see
   [rules-config.md](rules-config.md#modifier_providers)).
-- **Readouts** show the modifier actually used: `d20 13-5=8 vs AC 10`, `HIT 1d6+4 = 8`,
+- **Readouts** show the modifier actually used: `d20 13-5=8 vs AC 10`, `HIT 1d6+5 = 9` (`1d6+1` plus 4),
   `save d20 8+5=13 vs DC 13`.
 
 ## Suppression (`CombatSuppression`)

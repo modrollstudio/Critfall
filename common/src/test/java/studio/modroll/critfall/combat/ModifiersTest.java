@@ -118,21 +118,27 @@ class ModifiersTest {
     }
 
     @Test
-    void presentValueReplacesEachRollType() {
+    void presentValueReplacesAttackAndSaveAndAddsToDamage() {
         FixedProvider provider = new FixedProvider(OptionalInt.of(7));
         RollService.registerModifierProvider(provider);
         assertEquals(7, Modifiers.attackBonus(Rules.DEFAULTS, null, null, AttackDelivery.PROJECTILE, 3));
-        assertEquals(DiceExpression.parse("1d6+7"), damage(Rules.DEFAULTS));
+        assertEquals(DiceExpression.parse("1d6+8"), damage(Rules.DEFAULTS));
         assertEquals(7, save(Rules.DEFAULTS));
         assertEquals(List.of(AttackDelivery.PROJECTILE, AttackDelivery.MELEE), provider.deliveries);
         assertEquals(List.of(ModifierProvider.SPELL_SAVE), provider.saveKeys);
     }
 
     @Test
-    void presentZeroStillReplaces() {
+    void presentZeroReplacesAttackButLeavesDamage() {
         RollService.registerModifierProvider(new FixedProvider(OptionalInt.of(0)));
         assertEquals(0, attack(Rules.DEFAULTS));
-        assertEquals(DiceExpression.parse("1d6"), damage(Rules.DEFAULTS));
+        assertSame(OWN_DICE, damage(Rules.DEFAULTS));
+    }
+
+    @Test
+    void negativeDamageModifierSubtractsFromOwn() {
+        RollService.registerModifierProvider(new FixedProvider(OptionalInt.of(-3)));
+        assertEquals(DiceExpression.parse("1d6-2"), damage(Rules.DEFAULTS));
     }
 
     @Test

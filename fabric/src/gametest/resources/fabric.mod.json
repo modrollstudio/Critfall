@@ -11,6 +11,7 @@
       "studio.modroll.critfall.fabric.gametest.ApiGameTests",
       "studio.modroll.critfall.fabric.gametest.CombatGameTests",
       "studio.modroll.critfall.fabric.gametest.CommandGameTests",
+      "studio.modroll.critfall.fabric.gametest.DamageFactorGameTests",
       "studio.modroll.critfall.fabric.gametest.FeedbackGameTests",
       "studio.modroll.critfall.fabric.gametest.ModifierProviderGameTests",
       "studio.modroll.critfall.fabric.gametest.OutcomeGameTests",
