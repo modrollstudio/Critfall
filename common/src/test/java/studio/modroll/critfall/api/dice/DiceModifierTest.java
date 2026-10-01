@@ -39,6 +39,32 @@ class DiceModifierTest {
     }
 
     @Test
+    void plusModifierAddsToTheConstantsAndKeepsTheDice() {
+        assertEquals("1d8+5", dice("1d8+2").plusModifier(3).toString());
+        assertEquals("1d8+1d4+5", dice("1d8+2+1d4").plusModifier(3).toString());
+        assertEquals("1d6-1", dice("1d6+1").plusModifier(-2).toString());
+        assertEquals("2d6+3", dice("2d6").plusModifier(3).toString());
+        assertEquals("1d8", dice("1d8+2").plusModifier(-2).toString());
+    }
+
+    @Test
+    void plusZeroOrNoDiceIsLeftUnchanged() {
+        DiceExpression mixed = dice("1d8+2+1d4");
+        assertSame(mixed, mixed.plusModifier(0));
+        DiceExpression flat = dice("1");
+        assertSame(flat, flat.plusModifier(4));
+        assertSame(flat, flat.plusModifier(Integer.MIN_VALUE), "no dice to add to, so nothing to reject");
+    }
+
+    @Test
+    void plusModifierEnforcesTheConstantLimitOnTheSum() {
+        assertEquals("1d6+1000000", dice("1d6+1").plusModifier(999_999).toString());
+        assertThrows(DiceParseException.class, () -> dice("1d6+1").plusModifier(1_000_000));
+        assertThrows(DiceParseException.class, () -> dice("1d6").plusModifier(Integer.MIN_VALUE));
+        assertThrows(DiceParseException.class, () -> dice("1d6+1000000").plusModifier(Integer.MAX_VALUE));
+    }
+
+    @Test
     void hasDiceTellsRollsFromFlatAmounts() {
         assertTrue(dice("1d6").hasDice());
         assertTrue(dice("2+1d4").hasDice());

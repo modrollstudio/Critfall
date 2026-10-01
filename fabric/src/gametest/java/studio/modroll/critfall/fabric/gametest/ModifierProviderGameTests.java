@@ -19,13 +19,13 @@ public class ModifierProviderGameTests implements FabricGameTest {
     }
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
-    public void providerReplacesDamageModifier(GameTestHelper helper) {
-        ModifierProviderScenarios.providerReplacesDamageModifier(helper);
+    public void providerAddsToDamageModifier(GameTestHelper helper) {
+        ModifierProviderScenarios.providerAddsToDamageModifier(helper);
     }
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
-    public void providerReplacesRangedAttackAndDamage(GameTestHelper helper) {
-        ModifierProviderScenarios.providerReplacesRangedAttackAndDamage(helper);
+    public void providerReplacesRangedAttackAndAddsToDamage(GameTestHelper helper) {
+        ModifierProviderScenarios.providerReplacesRangedAttackAndAddsToDamage(helper);
     }
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)

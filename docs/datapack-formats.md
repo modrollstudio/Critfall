@@ -116,7 +116,10 @@ precedence as damage dice.
 - `modifier_from` — `"attack_damage_attribute"` (default) adds a flat bonus of
   `round(attacker's attack damage − dice average)`, clamped to 0…12, so the expected rolled damage
   tracks the item's real (post-modifier) vanilla power: an iron sword (6 damage) rolls `1d8+2`, an
-  Apotheosis-boosted one keeps its edge. `"none"` uses the dice verbatim. **For projectile
+  Apotheosis-boosted one keeps its edge. On a melee hit the attack damage includes the weapon's
+  enchantment damage against that target, as vanilla computes it (Sharpness always, Smite only on
+  undead, Bane of Arthropods only on arthropods, modded damage enchantments too).
+  `"none"` uses the dice verbatim. **For projectile
   impacts** the reference stat is the vanilla projectile damage instead (launchers have no
   attack-damage attribute) — which is exactly what carries Power levels and draw strength, so an
   enchanted bow still out-damages a plain one.
