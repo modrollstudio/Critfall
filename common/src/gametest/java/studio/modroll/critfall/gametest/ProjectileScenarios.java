@@ -211,7 +211,7 @@ public final class ProjectileScenarios {
     }
 
     /** An arrow carrying the firing-weapon stack, the way bow/crossbow shots record it. */
-    private static Arrow shotArrow(GameTestHelper helper, LivingEntity shooter) {
+    static Arrow shotArrow(GameTestHelper helper, LivingEntity shooter) {
         Arrow arrow = new Arrow(helper.getLevel(), shooter, new ItemStack(Items.ARROW), new ItemStack(Items.BOW));
         helper.getLevel().addFreshEntity(arrow);
         return arrow;

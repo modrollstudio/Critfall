@@ -37,7 +37,8 @@ Default file:
   },
   "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
   "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20 } },
-  "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true }
+  "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true },
+  "modifier_providers": { "enabled": true }
 }
 ```
 
@@ -53,6 +54,9 @@ for that category only.
 
 `enabled: false` keeps the to-hit roll but applies the vanilla damage amount on hit — no damage
 dice are drawn from the RNG at all.
+
+With dice on, a hit's rolled damage (and a failed save's) is at least 1, however negative the
+modifier. Immunities, `global_damage_multiplier` and resistances apply after that floor.
 
 ## crits
 
@@ -142,3 +146,9 @@ is client-side). If present in an old `rules.json` they are ignored with a one-l
 - `disable_vanilla_armor_reduction` — AC already represents armor, so vanilla armor reduction is
   zeroed for rolled damage by default to avoid double-dipping (enchantments, Resistance and
   absorption still apply — see docs/design-decisions.md). Set `false` to let armor double-dip.
+
+## modifier_providers
+
+- `enabled` (default `true`): whether a [modifier provider](api.md#modifier-provider) registered by
+  another mod is asked for attack, damage and save modifiers. `false` ignores it, so every roll uses
+  Critfall's own bonus. Without a provider this flag changes nothing.

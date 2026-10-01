@@ -74,6 +74,6 @@ public record AttackContext(
 
     /** A ranged delivery (projectile or thrown) uses the entity profile's ranged dice, not melee. */
     public boolean isRanged() {
-        return delivery == AttackDelivery.PROJECTILE || delivery == AttackDelivery.THROWN;
+        return delivery.isRanged();
     }
 }

@@ -35,6 +35,18 @@ class CombatEngineTest {
     }
 
     @Test
+    void critDamageIsClampedAtOne() {
+        DiceExpression weak = DiceExpression.parse("1d4-5");
+        AttackResult crit = resolve(SequenceRandom.ofDieFaces(20), Rules.DEFAULTS, 0, 10, RollMode.NORMAL, weak);
+        assertEquals(AttackOutcome.CRIT, crit.outcome());
+        assertEquals(1, crit.damage(), "maximized 4 - 5 = -1 still deals 1 on a crit");
+
+        Rules doubleDice = TestRules.withCrits(new Rules.Crits(true, Rules.CritRule.DOUBLE_DICE, true, true, true));
+        AttackResult doubled = resolve(SequenceRandom.ofDieFaces(20, 1, 1), doubleDice, 0, 10, RollMode.NORMAL, weak);
+        assertEquals(1, doubled.damage(), "1 + 1 - 5 = -3 still deals 1 on a doubled crit");
+    }
+
+    @Test
     void missWhenTotalBelowAc() {
         SequenceRandom rng = SequenceRandom.ofDieFaces(5);
         AttackResult result = resolve(rng, Rules.DEFAULTS, 1, 10, RollMode.NORMAL, D6);
@@ -281,12 +293,12 @@ class CombatEngineTest {
     }
 
     @Test
-    void rolledDamageIsClampedAtZero() {
+    void rolledDamageOnAHitIsClampedAtOne() {
         SequenceRandom rng = SequenceRandom.ofDieFaces(11, 1);
         DiceExpression dice = DiceExpression.parse("1d4-3");
         AttackResult result = resolve(rng, Rules.DEFAULTS, 0, 10, RollMode.NORMAL, dice);
         assertEquals(AttackOutcome.HIT, result.outcome());
-        assertEquals(0, result.damage(), "1 - 3 = -2 must clamp to 0");
+        assertEquals(1, result.damage(), "1 - 3 = -2 must clamp to 1");
     }
 
     @Test

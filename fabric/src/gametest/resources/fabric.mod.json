@@ -12,6 +12,7 @@
       "studio.modroll.critfall.fabric.gametest.CombatGameTests",
       "studio.modroll.critfall.fabric.gametest.CommandGameTests",
       "studio.modroll.critfall.fabric.gametest.FeedbackGameTests",
+      "studio.modroll.critfall.fabric.gametest.ModifierProviderGameTests",
       "studio.modroll.critfall.fabric.gametest.OutcomeGameTests",
       "studio.modroll.critfall.fabric.gametest.ProjectileGameTests",
       "studio.modroll.critfall.fabric.gametest.SpellGameTests",
