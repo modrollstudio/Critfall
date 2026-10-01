@@ -97,6 +97,45 @@ public final class DiceExpression {
         return new DiceExpression(List.copyOf(combined), buildCanonical(combined));
     }
 
+    /** The sum of the constant terms: {@code 3} for {@code 1d8+2+1}. */
+    public int modifier() {
+        int modifier = 0;
+        for (Term term : terms) {
+            if (term instanceof ConstantTerm constant) {
+                modifier += constant.sign() * constant.value();
+            }
+        }
+        return modifier;
+    }
+
+    /**
+     * The same dice with all constants replaced by {@code modifier}: {@code 1d8+2+1d4} with {@code 5} is
+     * {@code 1d8+1d4+5}. An expression with no dice is returned unchanged, since its constant is the whole
+     * amount rather than a modifier.
+     */
+    public DiceExpression withModifier(int modifier) {
+        if (!hasDice()) {
+            return this;
+        }
+        if (Math.abs((long) modifier) > MAX_CONSTANT) {
+            throw new DiceParseException("modifier " + modifier + " is larger than " + MAX_CONSTANT);
+        }
+        List<Term> replaced = new ArrayList<>(
+                terms.stream().filter(DiceTerm.class::isInstance).toList());
+        if (modifier != 0) {
+            replaced.add(new ConstantTerm(modifier < 0 ? -1 : 1, Math.abs(modifier)));
+        }
+        if (replaced.size() > MAX_TERMS) {
+            throw new DiceParseException("\"" + canonical + "\" with a modifier exceeds " + MAX_TERMS + " terms");
+        }
+        return new DiceExpression(List.copyOf(replaced), buildCanonical(replaced));
+    }
+
+    /** False for a flat amount such as {@code 1}. */
+    public boolean hasDice() {
+        return terms.stream().anyMatch(DiceTerm.class::isInstance);
+    }
+
     private static String buildCanonical(List<Term> terms) {
         StringBuilder canonical = new StringBuilder();
         for (int i = 0; i < terms.size(); i++) {

@@ -20,9 +20,34 @@ public record Rules(
         Fallbacks fallbacks,
         Feedback feedback,
         Balance balance,
-        DryRun dryRun) {
+        DryRun dryRun,
+        ModifierProviders modifierProviders) {
 
     public static final int FORMAT_VERSION = 1;
+
+    /** For call sites that predate modifier providers, which default on. */
+    public Rules(
+            AttackRolls attackRolls,
+            boolean damageDice,
+            Crits crits,
+            Fumbles fumbles,
+            Spells spells,
+            Fallbacks fallbacks,
+            Feedback feedback,
+            Balance balance,
+            DryRun dryRun) {
+        this(
+                attackRolls,
+                damageDice,
+                crits,
+                fumbles,
+                spells,
+                fallbacks,
+                feedback,
+                balance,
+                dryRun,
+                ModifierProviders.DEFAULTS);
+    }
 
     /**
      * Convenience constructor for call sites that predate dry-run (all tests/GameTests build
@@ -202,6 +227,11 @@ public record Rules(
     /** PLAN §8.2.3 dry-run: rolls are computed and shown but vanilla damage still applies. */
     public record DryRun(boolean enabled) {
         public static final DryRun DEFAULTS = new DryRun(false);
+    }
+
+    /** Off ignores any registered {@link studio.modroll.critfall.api.ModifierProvider}. */
+    public record ModifierProviders(boolean enabled) {
+        public static final ModifierProviders DEFAULTS = new ModifierProviders(true);
     }
 
     public static final Rules DEFAULTS = new Rules(

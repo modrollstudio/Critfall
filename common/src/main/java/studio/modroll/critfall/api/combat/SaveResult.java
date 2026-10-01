@@ -12,6 +12,11 @@ public record SaveResult(int natural, int saveTotal, int dc, RollDetail roll) {
         this(natural, saveTotal, dc, RollDetail.normal(natural));
     }
 
+    /** The save modifier the roll actually used. */
+    public int saveBonus() {
+        return saveTotal - natural;
+    }
+
     public boolean saved() {
         return saveTotal >= dc;
     }

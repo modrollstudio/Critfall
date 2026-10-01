@@ -219,7 +219,7 @@ public final class SpellScenarios {
      * {@code mob_attack} is used as the damage type because vanilla ships no untagged spell type;
      * classification only cares that it is not exempt/projectile-tagged and not direct.
      */
-    private static DamageSource spellSource(GameTestHelper helper, LivingEntity caster) {
+    static DamageSource spellSource(GameTestHelper helper, LivingEntity caster) {
         ArmorStand proxy = helper.spawn(EntityType.ARMOR_STAND, new BlockPos(2, 1, 2));
         // DamageSources.source(key, direct, causing) is private in vanilla (NeoForge widens it via an
         // access transformer, but common compiles against unmodified NeoForm). Build the same indirect
@@ -238,7 +238,7 @@ public final class SpellScenarios {
     }
 
     /** Adds one spell profile (id {@code critfall_test:spell}) for the duration of {@code action}. */
-    private static void withSpellProfile(String json, Runnable action) {
+    static void withSpellProfile(String json, Runnable action) {
         Map<ResourceLocation, SpellProfile> before = ProfileStore.spellProfiles();
         Map<ResourceLocation, SpellProfile> patched = new HashMap<>(before);
         ResourceLocation id = ResourceLocation.parse("critfall_test:spell");

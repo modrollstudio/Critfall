@@ -17,6 +17,12 @@ import studio.modroll.critfall.api.dice.RollResult;
  */
 public final class CombatEngine {
 
+    /**
+     * A hit always hurts, however negative the dice's modifier. Applied before events, multipliers and
+     * resistances, so immunity and a listener's zero still stand.
+     */
+    public static final int MIN_HIT_DAMAGE = 1;
+
     private CombatEngine() {}
 
     /**
@@ -77,13 +83,14 @@ public final class CombatEngine {
         // With damage dice off the vanilla amount applies downstream — draw nothing from the RNG.
         if (natural >= input.critRange() && rules.crits().enabled()) {
             int damage = rules.damageDice()
-                    ? Math.max(0, critDamage(roller, rules.crits().rule(), input.damageDice()))
+                    ? Math.max(MIN_HIT_DAMAGE, critDamage(roller, rules.crits().rule(), input.damageDice()))
                     : 0;
             return new AttackResult(
                     AttackOutcome.CRIT, natural, attackTotal, armorClass, defenderAcBonus, damage, roll);
         }
-        int damage =
-                rules.damageDice() ? Math.max(0, roller.roll(input.damageDice()).total()) : 0;
+        int damage = rules.damageDice()
+                ? Math.max(MIN_HIT_DAMAGE, roller.roll(input.damageDice()).total())
+                : 0;
         return new AttackResult(AttackOutcome.HIT, natural, attackTotal, armorClass, defenderAcBonus, damage, roll);
     }
 

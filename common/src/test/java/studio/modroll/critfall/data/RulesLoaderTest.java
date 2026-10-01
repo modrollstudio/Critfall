@@ -34,6 +34,13 @@ class RulesLoaderTest {
     }
 
     @Test
+    void modifierProvidersDefaultOnAndCanBeTurnedOff() {
+        assertTrue(Rules.DEFAULTS.modifierProviders().enabled());
+        Rules rules = RulesLoader.parse(json("{\"modifier_providers\":{\"enabled\":false}}"), w -> {});
+        assertFalse(rules.modifierProviders().enabled());
+    }
+
+    @Test
     void parsesDryRunEnabled() {
         Rules rules = RulesLoader.parse(json("{\"dry_run\":{\"enabled\":true}}"), w -> {});
         assertTrue(rules.dryRun().enabled());

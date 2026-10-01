@@ -1,6 +1,8 @@
 package studio.modroll.critfall;
 
+import java.util.Optional;
 import java.util.Random;
+import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.combat.Rules;
 
@@ -22,6 +24,8 @@ public final class RollRuntime {
     private static volatile DiceRoller feedbackRoller = new DiceRoller(new Random());
 
     private static volatile Rules rules = Rules.DEFAULTS;
+
+    private static volatile ModifierProvider modifierProvider;
 
     private RollRuntime() {}
 
@@ -53,5 +57,16 @@ public final class RollRuntime {
 
     public static void setRules(Rules newRules) {
         rules = newRules;
+    }
+
+    public static Optional<ModifierProvider> modifierProvider() {
+        return Optional.ofNullable(modifierProvider);
+    }
+
+    /** Returns the previous provider; null empties the slot. */
+    public static synchronized ModifierProvider setModifierProvider(ModifierProvider provider) {
+        ModifierProvider previous = modifierProvider;
+        modifierProvider = provider;
+        return previous;
     }
 }

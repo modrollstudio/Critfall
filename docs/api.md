@@ -65,6 +65,10 @@ int critRange = eff.critRange();
 EffectiveItemProfile item = RollService.effectiveItem(itemStack);
 ```
 
+These are Critfall's **own** values, as is [`/critfall inspect`](commands.md#critfall-inspect-entity): a
+[modifier provider](#modifier-provider) answers per attacker/target pair, which neither can name. The
+modifier a roll actually used is on its result: `AttackResult.attackBonus()`, `SaveResult.saveBonus()`.
+
 ### Driven attacks
 
 `attackRoll` resolves an attack (firing the events below) **without** touching the world.
@@ -258,6 +262,47 @@ the delivery is threaded through item-profile and flavor-pool resolution, so a p
 selects the entity profile's ranged vs melee dice: `isRanged()` is true for `PROJECTILE`/`THROWN`.
 The automatic pipeline classifies a projectile that is its own launcher (tridents, snowball-likes,
 modded throwing weapons that record themselves as the firing weapon) as `THROWN`.
+
+### Modifier provider
+
+Since 0.2.7 another mod can supply the modifiers on Critfall's attack, damage and save rolls without
+Critfall depending on it. Register one `ModifierProvider`, server-side, e.g. at mod construction:
+
+```java
+RollService.registerModifierProvider(new ModifierProvider() {
+    @Override
+    public OptionalInt attackModifier(LivingEntity attacker, LivingEntity target, AttackDelivery delivery) {
+        return attacker instanceof Player p ? OptionalInt.of(myToHit(p, delivery.isRanged())) : OptionalInt.empty();
+    }
+});
+```
+
+| Method | Asked for | Replaces |
+|--------|-----------|----------|
+| `attackModifier(attacker, target, delivery)` | every attack roll (melee, projectile, thrown, spell) | the to-hit bonus (spell/entity profile `attack_bonus`, else derived) |
+| `damageModifier(attacker, delivery)` | every damage roll, including a save spell's | the flat part of the dice (`DiceExpression.modifier()`): `1d8+2` with `5` rolls `1d8+5`, with `0` rolls `1d8`. A dice-less amount (the derived flat `1`) is left as is |
+| `saveModifier(entity, saveKey)` | every saving throw | the target's `save_bonus` (else `0`) |
+
+- **Present replaces, empty keeps.** Every method defaults to empty, so implement only what you need.
+- **Bad answers fall back.** A throw, `null`, or a damage modifier beyond ±1,000,000 uses Critfall's own
+  bonus and is logged once per provider and roll type.
+- **A hit always hurts.** A hit's or crit's rolled damage, and a failed save's, is at least 1, with or
+  without a provider. The floor comes before `PostAttackRollEvent`, multipliers and resistances, so a
+  listener's `finalDamage(0)` or an immunity still stands.
+- **`delivery`**: `delivery.isRanged()` is true for `PROJECTILE`/`THROWN`; spell attacks arrive as
+  `SPELL`.
+- **Save keys** name where the save is rolled. The only one is `ModifierProvider.SPELL_SAVE`
+  (`"critfall:spell"`), the save against a `"resolution": "save"` spell profile.
+- **Explicit API values win.** `AttackContext.withAttackBonus`, `withDamageDice` and the `saveBonus` of
+  `RollService.savingThrow` are never sent to the provider.
+- **Events still apply.** `PreAttackRollEvent` starts from the provided attack bonus and can change it;
+  `PostAttackRollEvent` still adjusts final damage.
+- **One slot.** A second provider replaces the first with a warning. `clearModifierProvider()` empties
+  the slot; `modifierProvider()` reads it.
+- **Server toggle.** `modifier_providers.enabled: false` in `rules.json` ignores any provider (see
+  [rules-config.md](rules-config.md#modifier_providers)).
+- **Readouts** show the modifier actually used: `d20 13-5=8 vs AC 10`, `HIT 1d6+4 = 8`,
+  `save d20 8+5=13 vs DC 13`.
 
 ## Suppression (`CombatSuppression`)
 

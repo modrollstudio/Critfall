@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-10-01
+
+A modifier provider hook: another mod can supply the modifiers on Critfall's attack, damage and save
+rolls without Critfall depending on it.
+
+### Added
+
+- `ModifierProvider` in `studio.modroll.critfall.api`: `attackModifier(attacker, target, delivery)`,
+  `damageModifier(attacker, delivery)` and `saveModifier(entity, saveKey)`, each returning an
+  `OptionalInt` (empty by default). A present value **replaces** Critfall's own bonus for that roll
+  (profile `attack_bonus`, the flat part of the damage dice, `save_bonus`, or their derived
+  fallbacks); empty keeps it. Asked on the automatic pipeline (melee, projectile, thrown, spell attack,
+  spell save and its damage) and by `RollService.performAttack`/`attackRoll`.
+- One provider slot: `RollService.registerModifierProvider`, `clearModifierProvider`,
+  `modifierProvider`. A second, different provider logs a warning and the last one wins.
+- Save key `ModifierProvider.SPELL_SAVE` (`"critfall:spell"`) for the save against a
+  `"resolution": "save"` spell profile, the only place Critfall rolls a save.
+- A dice-less damage amount (the derived flat `1` for a 1-damage hit) has no modifier to replace and
+  stays as is.
+- A bad answer (a throw, `null`, or a damage modifier beyond ±1,000,000) falls back to Critfall's own
+  bonus and is logged once per provider and roll type.
+- `rules.json` `modifier_providers.enabled` (default `true`); `false` ignores any provider. Added to the
+  default file and the three presets.
+- `DiceExpression.modifier()`, `withModifier(int)` (`1d8+2+1d4` with `5` is `1d8+1d4+5`; dice-less
+  expressions come back unchanged) and `hasDice()`.
+- `AttackDelivery.isRanged()`; `AttackContext.isRanged()` delegates to it.
+- `AttackResult.attackBonus()` and `SaveResult.saveBonus()`: the modifier the roll actually used,
+  after the provider and any `PreAttackRollEvent` change. The readout already shows it:
+  `d20 13-5=8 vs AC 10`, `HIT 1d6+4 = 8`, `save d20 8+5=13 vs DC 13`.
+- Documented in `docs/api.md` and `docs/rules-config.md`. Unit tests cover dice-modifier replacement,
+  every resolution rule, last-wins registration, the rules key, the damage floor and the log-once
+  behaviour. GameTests on both loaders cover no provider matching 0.2.6, each roll type replaced (with
+  readouts), an empty answer, the toggle, driven attacks and explicit bonuses, the damage floor on a
+  hit and a failed save, and a dice-less hit.
+
+### Changed
+
+- A hit's rolled damage is at least 1 (was 0), with or without a provider: HIT, CRIT under every crit
+  rule, and a failed save's rolled dice. Only dice that can roll 0 or less are affected (`1d4-3`, a
+  negative provided modifier); no shipped profile can. The floor comes before `PostAttackRollEvent`,
+  multipliers and resistances, so a listener's zero and immunities still stand. With `damage_dice`
+  off the vanilla amount applies as before.
+
+### Notes
+
+- Explicit caller values are not Critfall's bonus and never go to the provider:
+  `AttackContext.withAttackBonus`, `withDamageDice`, and the `saveBonus` of `RollService.savingThrow`.
+- `RollService.effectiveEntity` and `/critfall inspect` show Critfall's own values, not the
+  provider's, since the provider answers per attacker/target pair (noted in `docs/commands.md` and
+  `docs/api.md`).
+- No KubeJS binding: Critfall has no KubeJS plugin (scripts use `Java.loadClass`), so there was no
+  one-line place to add it.
+
 ## [0.2.6] - 2026-07-22
 
 Roll detail on results and the feedback payload. Closes the gap logged in 0.2.4 and again in 0.2.5:

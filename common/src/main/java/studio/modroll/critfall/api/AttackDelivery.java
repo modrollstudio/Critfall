@@ -9,5 +9,10 @@ public enum AttackDelivery {
     MELEE,
     PROJECTILE,
     THROWN,
-    SPELL
+    SPELL;
+
+    /** Projectile or thrown — the deliveries that use an entity profile's ranged dice. */
+    public boolean isRanged() {
+        return this == PROJECTILE || this == THROWN;
+    }
 }
