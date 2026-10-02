@@ -38,7 +38,8 @@ Default file:
   "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
   "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20 } },
   "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true },
-  "modifier_providers": { "enabled": true }
+  "modifier_providers": { "enabled": true },
+  "advantage_sources": { "jump_attack": true }
 }
 ```
 
@@ -152,3 +153,23 @@ is client-side). If present in an old `rules.json` they are ignored with a one-l
 - `enabled` (default `true`): whether a [modifier provider](api.md#modifier-provider) registered by
   another mod is asked for attack, damage and save modifiers. `false` ignores it, so every roll uses
   Critfall's own bonus. Without a provider this flag changes nothing.
+
+## advantage_sources
+
+- `jump_attack` (default `true`): a player's melee hit that vanilla would score as a critical hit
+  (falling, not on the ground, fully charged, not sprinting, climbing, swimming, blind or riding)
+  rolls its attack with advantage instead. Vanilla's 1.5× crit damage is dropped from a hit Critfall
+  rolls, so damage stays dice-based and only a natural 20 crits. The readout shows both d20s, as for
+  any advantage roll. Mob attacks and attacks driven through `RollService` never get it.
+  - It combines with other sources the 5e way: a `PreAttackRollEvent` listener that sets
+    disadvantage on a jump attack makes the roll normal. The listener sees the advantage as the
+    event's mode; setting `NORMAL` clears it.
+  - A jump hit Critfall leaves vanilla (`attack_rolls.players: false`, a vanilla passthrough
+    fallback, a suppressed participant) keeps vanilla's crit multiplier. Under `dry_run` the roll
+    shows the advantage but the vanilla damage, multiplier included, still applies.
+  - `false` leaves jump hits as before 0.2.9: a normal roll, with the vanilla multiplier in the
+    vanilla amount.
+
+The other sources sketched in PLAN.md (`attack_from_behind`, `target_blinded`, `sneak_attack`,
+`low_attack_cooldown_disadvantage`) are recognised but not implemented yet; setting them only
+logs a warning.

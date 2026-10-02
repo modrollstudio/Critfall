@@ -30,7 +30,11 @@ public final class AttackPipeline {
 
     private AttackPipeline() {}
 
-    /** The resolved to-hit/damage inputs. {@code mode} is the base roll mode before any listener override. */
+    /**
+     * The resolved to-hit/damage inputs. {@code mode} is the base roll mode before any listener
+     * override. {@code jumpAttack} marks that base as a jump attack's advantage, which a listener's
+     * disadvantage cancels instead of replacing ({@link JumpAttacks#withJumpAdvantage}).
+     */
     public record Params(
             int attackBonus,
             int armorClass,
@@ -38,7 +42,20 @@ public final class AttackPipeline {
             int critRange,
             RollMode mode,
             boolean fumbleSuppressed,
-            int defenderAcBonus) {
+            int defenderAcBonus,
+            boolean jumpAttack) {
+
+        /** Driven attacks: no jump attack, listeners' mode stands as set. */
+        public Params(
+                int attackBonus,
+                int armorClass,
+                DiceExpression damageDice,
+                int critRange,
+                RollMode mode,
+                boolean fumbleSuppressed,
+                int defenderAcBonus) {
+            this(attackBonus, armorClass, damageDice, critRange, mode, fumbleSuppressed, defenderAcBonus, false);
+        }
 
         CombatEngine.AttackInput toInput(int bonus, RollMode rollMode) {
             return new CombatEngine.AttackInput(
@@ -77,7 +94,8 @@ public final class AttackPipeline {
             return new Bundle(canceled, List.of(), false);
         }
 
-        AttackResult result = CombatEngine.resolveAttack(roller, rules, params.toInput(pre.attackBonus(), pre.mode()));
+        RollMode mode = params.jumpAttack() ? JumpAttacks.withJumpAdvantage(pre.mode()) : pre.mode();
+        AttackResult result = CombatEngine.resolveAttack(roller, rules, params.toInput(pre.attackBonus(), mode));
 
         PostAttackRollEvent post = CritfallEvents.firePostAttackRoll(attacker, target, ctx, result);
         if (post.isVetoed()) {

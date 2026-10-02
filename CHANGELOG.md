@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.9] - 2026-10-02
+
+A player's jump attack rolls with advantage instead of dealing vanilla's crit damage.
+
+### Added
+
+- **Jump attacks roll with advantage.** A player melee hit that meets vanilla's critical-hit
+  conditions (falling, not on the ground, fully charged, not sprinting, climbing, in water, blind or
+  riding) rolls its attack with advantage. Vanilla decides the crit (NeoForge's
+  `CriticalHitEvent.isVanillaCritical()`, and on Fabric the branch where vanilla applies its
+  multiplier), so its conditions are not re-implemented. The readout shows both d20s, as with any
+  advantage roll. Applies to the automatic real-time pipeline only: mob attacks and
+  `RollService.performAttack`/`attackRoll` are unchanged.
+- It combines with other sources the 5e way: a `PreAttackRollEvent` listener that sets disadvantage
+  on a jump attack makes the roll normal instead of replacing the advantage. Listeners see the
+  advantage as the event's base mode (previously always `NORMAL` on the automatic path), and setting
+  `NORMAL` clears it.
+- `rules.json` `advantage_sources.jump_attack` (default `true`). `false` restores 0.2.8 behaviour
+  exactly. The other keys PLAN.md sketches under `advantage_sources` are recognised and warn as not
+  implemented yet (the whole block used to).
+
+### Changed
+
+- Vanilla's 1.5× crit multiplier no longer applies to a jump hit Critfall rolls: damage stays
+  dice-based and only a natural 20 crits. This matters wherever the vanilla amount reaches the
+  result: dice derived for a weapon without a profile (a bare-handed jump hit with 4 attack damage
+  rolled `1d12` in 0.2.8, it now rolls `1d8`) and the amount applied with `damage_dice` off. A jump
+  hit Critfall does not roll (player rolls off, a vanilla passthrough fallback, a suppressed
+  participant) keeps the multiplier, and so does a dry run's vanilla damage. Vanilla's crit sound,
+  particles and no-sweep rule are unchanged.
+
+### Notes
+
+- GameTests on both loaders drive real `Player.attack` swings: a jump hit rolls with advantage and a
+  grounded hit does not; a listener's disadvantage makes a jump hit normal; the multiplier is gone
+  from the derived dice and the dice-off amount; the multiplier stays when player rolls are off and in
+  dry-run; the flag off reproduces 0.2.8's numbers; and driven attacks by a falling player roll
+  normally.
+
 ## [0.2.8] - 2026-10-02
 
 The provided damage modifier stacks on Critfall's own damage dice instead of replacing their flat part,
