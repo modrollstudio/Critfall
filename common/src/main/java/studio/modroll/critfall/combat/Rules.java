@@ -21,9 +21,36 @@ public record Rules(
         Feedback feedback,
         Balance balance,
         DryRun dryRun,
-        ModifierProviders modifierProviders) {
+        ModifierProviders modifierProviders,
+        AdvantageSources advantageSources) {
 
     public static final int FORMAT_VERSION = 1;
+
+    /** For call sites that predate advantage sources, which default on. */
+    public Rules(
+            AttackRolls attackRolls,
+            boolean damageDice,
+            Crits crits,
+            Fumbles fumbles,
+            Spells spells,
+            Fallbacks fallbacks,
+            Feedback feedback,
+            Balance balance,
+            DryRun dryRun,
+            ModifierProviders modifierProviders) {
+        this(
+                attackRolls,
+                damageDice,
+                crits,
+                fumbles,
+                spells,
+                fallbacks,
+                feedback,
+                balance,
+                dryRun,
+                modifierProviders,
+                AdvantageSources.DEFAULTS);
+    }
 
     /** For call sites that predate modifier providers, which default on. */
     public Rules(
@@ -232,6 +259,18 @@ public record Rules(
     /** Off ignores any registered {@link studio.modroll.critfall.api.ModifierProvider}. */
     public record ModifierProviders(boolean enabled) {
         public static final ModifierProviders DEFAULTS = new ModifierProviders(true);
+    }
+
+    /**
+     * Situations that grant a real-time attack roll advantage.
+     *
+     * @param jumpAttack a player melee hit that meets vanilla's critical-hit conditions (falling,
+     *     fully charged, not sprinting...) rolls with advantage instead of taking vanilla's crit
+     *     damage multiplier. Off leaves jump crits exactly as before: a normal roll, and the vanilla
+     *     multiplier on the vanilla amount.
+     */
+    public record AdvantageSources(boolean jumpAttack) {
+        public static final AdvantageSources DEFAULTS = new AdvantageSources(true);
     }
 
     public static final Rules DEFAULTS = new Rules(

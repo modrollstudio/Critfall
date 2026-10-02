@@ -1,6 +1,7 @@
 package studio.modroll.critfall.neoforge;
 
 import java.nio.file.Path;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -37,6 +38,8 @@ public final class CritfallNeoForge {
             studio.modroll.critfall.feedback.FlavorCooldowns.clear();
         });
         NeoForge.EVENT_BUS.addListener(DamageEventHandler::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(JumpAttackHandler::onAttackEntity);
+        NeoForge.EVENT_BUS.addListener(EventPriority.LOWEST, JumpAttackHandler::onCriticalHit);
         NeoForge.EVENT_BUS.addListener(this::onAddReloadListeners);
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
         modBus.addListener(CritfallPayloads::register);

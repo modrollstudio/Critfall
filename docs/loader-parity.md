@@ -25,7 +25,8 @@ invulnerability / i-frame checks, before mitigation.** Only the hook differs.
 | Replace amount (HIT/CRIT) | `event.setAmount(rolled)` | `@ModifyVariable` on `actuallyHurt`'s amount |
 
 Fabric has no event that can *modify* the incoming amount (`ALLOW_DAMAGE` is cancel-only), so a
-mixin is required — exactly as PLAN §4.1 anticipated, and the only mixin in the mod. It is kept
+mixin is required — exactly as PLAN §4.1 anticipated (the only other mixin is for jump attacks,
+below). It is kept
 minimal (amount substitution + armor bypass) and documented in `LivingEntityMixin`. The pipeline
 still runs exactly once, in `ALLOW_DAMAGE`, which fabric-api injects at the `isSleeping()` call in
 `hurt` — verified to sit after the invulnerability checks and before `actuallyHurt`, matching the
@@ -44,6 +45,22 @@ apply on both loaders.
 Both zero out the same reduction stage. The GameTest `rolledDamageBypassesVanillaArmorReduction`
 (diamond-chestplate husk takes the full 7-damage crit) and `armorReductionAppliesWhenBypassFlagIsOff`
 (armor reduces when the flag is off) pass on both loaders, proving equivalence.
+
+## Difference 3 — spotting a jump attack
+
+A jump attack (`advantage_sources.jump_attack`, 0.2.9) is a player swing vanilla scores as a critical
+hit. Both loaders hand vanilla's own decision to the shared `JumpAttacks`, from inside
+`Player.attack`, before the `hurt`, and both forget it as the next `Player.attack` starts.
+
+| | NeoForge | Fabric |
+|---|---|---|
+| Crit decided | `CriticalHitEvent` at `LOWEST` priority, when `isVanillaCritical()` and still `isCriticalHit()` | `@ModifyConstant` on the `1.5F` in `Player.attack`, loaded only inside vanilla's crit branch |
+| Drop the 1.5× multiplier | `event.setDamageMultiplier(1)` | the handler returns `1` |
+| Attack starts | `AttackEntityEvent` | `@Inject` at the head of `Player.attack` |
+
+On NeoForge a mod that cancels the crit in `CriticalHitEvent` also cancels the advantage. On Fabric
+a mod that edits vanilla's crit check through its own mixin has the same effect. The
+`JumpAttackGameTests` drive real `Player.attack` swings on both loaders.
 
 ## Known edge cases (not exercised by vanilla combat)
 
