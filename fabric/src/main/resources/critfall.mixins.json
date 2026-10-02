@@ -2,6 +2,6 @@
   "required": true,
   "package": "studio.modroll.critfall.fabric.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": ["LivingEntityMixin"],
+  "mixins": ["LivingEntityMixin", "PlayerMixin"],
   "injectors": { "defaultRequire": 1 }
 }

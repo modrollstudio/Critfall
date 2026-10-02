@@ -369,6 +369,12 @@ CritfallEvents.onPostAttackRoll(event -> {
 });
 ```
 
+On the automatic pipeline `PreAttackRollEvent.mode()` starts as `NORMAL`, or as `ADVANTAGE` for a
+player's jump attack (`advantage_sources.jump_attack`, since 0.2.9). For a jump attack, a listener
+that sets `DISADVANTAGE` gets a normal roll (5e: advantage and disadvantage cancel), and one that sets
+`NORMAL` clears the advantage. Driven attacks (`performAttack`/`attackRoll`) start from the
+`AttackContext` mode, and the mode a listener sets is the mode rolled.
+
 A canceled `PreAttackRollEvent` means the attack does not happen (no damage, no outcome tables).
 A vetoed `PostAttackRollEvent` means it resolved but applies no damage and runs no outcome tables.
 

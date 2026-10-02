@@ -144,6 +144,31 @@ public final class DamageInterception {
                 && CombatSuppression.isSuppressed(source.getEntity().getUUID());
     }
 
+    /**
+     * True when {@link #handle} would roll {@code attacker}'s melee hit on {@code target} rather than
+     * leave it vanilla: the gates of {@code handle} and {@link #rollMelee}, short of dry-run. Lets
+     * {@link JumpAttacks} decide before the {@code hurt} whether vanilla's crit multiplier still
+     * matters. Keep in step with those two methods.
+     */
+    static boolean rollsMelee(Rules rules, LivingEntity attacker, LivingEntity target, DamageSource source) {
+        if (isSuppressed(source, target)
+                || !rules.attackRolls().enabled()
+                || DamageClassifier.classify(source) != DamageCategory.MELEE
+                || !attackerRollsEnabled(rules, attacker)) {
+            return false;
+        }
+        if (ProfileLookup.forEntity(target).isEmpty()
+                && rules.fallbacks().unknownEntity() == Rules.FallbackMode.VANILLA_PASSTHROUGH) {
+            return false;
+        }
+        return rules.fallbacks().unknownWeapon() != Rules.FallbackMode.VANILLA_PASSTHROUGH
+                || AttackDice.resolve(
+                                ProfileLookup.forItem(attacker.getMainHandItem(), AttackDelivery.MELEE),
+                                ProfileLookup.forEntity(attacker),
+                                0)
+                        .isPresent();
+    }
+
     private static void rollMelee(IncomingDamage dmg, Rules rules, DamageSource source, LivingEntity target) {
         LivingEntity attacker = (LivingEntity) source.getEntity(); // MELEE guarantees a living attacker
         if (!attackerRollsEnabled(rules, attacker)) {
@@ -192,7 +217,8 @@ public final class DamageInterception {
                 AttackDelivery.MELEE,
                 attackBonus,
                 damageDice,
-                critRange);
+                critRange,
+                JumpAttacks.consume(attacker, target));
     }
 
     private static void rollProjectile(IncomingDamage dmg, Rules rules, DamageSource source, LivingEntity target) {
@@ -247,7 +273,8 @@ public final class DamageInterception {
                 delivery,
                 attackBonus,
                 damageDice,
-                critRange);
+                critRange,
+                false);
     }
 
     /**
@@ -373,7 +400,8 @@ public final class DamageInterception {
                 AttackDelivery.SPELL,
                 attackBonus,
                 damageDice,
-                critRange);
+                critRange,
+                false);
     }
 
     /**
@@ -452,6 +480,7 @@ public final class DamageInterception {
      * @param weaponStack the item that made the attack (a thrown trident even when it left the
      *     hand) — drives event context and flavor matching
      * @param heldStack the stack fumble weapon-effects act on (empty when the weapon is gone)
+     * @param jumpAttack the hit is a player's jump attack ({@link JumpAttacks}): it rolls with advantage
      */
     private static void rollAndApply(
             IncomingDamage dmg,
@@ -467,7 +496,8 @@ public final class DamageInterception {
             AttackDelivery delivery,
             int ownAttackBonus,
             DiceExpression ownDamageDice,
-            int critRange) {
+            int critRange,
+            boolean jumpAttack) {
         int attackBonus = Modifiers.attackBonus(rules, attacker, target, delivery, ownAttackBonus);
         DiceExpression damageDice = Modifiers.damageDice(rules, attacker, delivery, ownDamageDice);
         int armorClass = intStat(
@@ -482,14 +512,15 @@ public final class DamageInterception {
                 || FumbleCooldowns.isOnCooldown(
                         attacker.getUUID(), gameTime, rules.fumbles().cooldownTicks());
 
+        RollMode mode = jumpAttack ? RollMode.ADVANTAGE : RollMode.NORMAL;
         AttackContext ctx = new AttackContext(
-                delivery, source, weaponStack, RollMode.NORMAL, java.util.OptionalInt.empty(), Optional.empty(), 0);
+                delivery, source, weaponStack, mode, java.util.OptionalInt.empty(), Optional.empty(), 0);
         AttackPipeline.Bundle bundle = AttackPipeline.resolve(
                 attacker,
                 target,
                 ctx,
                 new AttackPipeline.Params(
-                        attackBonus, armorClass, damageDice, critRange, RollMode.NORMAL, fumbleSuppressed, 0),
+                        attackBonus, armorClass, damageDice, critRange, mode, fumbleSuppressed, 0, jumpAttack),
                 rules,
                 RollRuntime.roller(),
                 heldStack,

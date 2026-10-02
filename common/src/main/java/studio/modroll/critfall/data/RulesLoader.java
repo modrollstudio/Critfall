@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
@@ -53,7 +54,8 @@ public final class RulesLoader {
               "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20 } },
               "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true },
               "dry_run": { "enabled": false },
-              "modifier_providers": { "enabled": true }
+              "modifier_providers": { "enabled": true },
+              "advantage_sources": { "jump_attack": true }
             }
             """;
 
@@ -80,7 +82,12 @@ public final class RulesLoader {
     public static Rules parse(JsonObject json, Consumer<String> warn) {
         LenientJson j = new LenientJson(json, "rules.json", warn);
         j.checkFormatVersion(Rules.FORMAT_VERSION);
-        j.reserved("advantage_sources", "advantage mechanics land in a later milestone");
+        LenientJson advantage = j.object("advantage_sources");
+        Rules.AdvantageSources advantageSources = new Rules.AdvantageSources(advantage.getBool("jump_attack", true));
+        for (String planned :
+                List.of("attack_from_behind", "target_blinded", "sneak_attack", "low_attack_cooldown_disadvantage")) {
+            advantage.reserved(planned, "this advantage source lands in a later milestone");
+        }
 
         LenientJson attackRolls = j.object("attack_rolls");
         Rules.AttackRolls attack = new Rules.AttackRolls(
@@ -180,7 +187,8 @@ public final class RulesLoader {
                 feedbackRules,
                 balanceRules,
                 dryRun,
-                modifierProviders);
+                modifierProviders,
+                advantageSources);
     }
 
     /**

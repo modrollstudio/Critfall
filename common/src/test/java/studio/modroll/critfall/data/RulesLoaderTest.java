@@ -41,6 +41,14 @@ class RulesLoaderTest {
     }
 
     @Test
+    void jumpAttackAdvantageDefaultsOnAndCanBeTurnedOff() {
+        assertTrue(Rules.DEFAULTS.advantageSources().jumpAttack());
+        assertTrue(RulesLoader.parse(json("{}"), w -> {}).advantageSources().jumpAttack());
+        Rules rules = RulesLoader.parse(json("{\"advantage_sources\":{\"jump_attack\":false}}"), w -> {});
+        assertFalse(rules.advantageSources().jumpAttack());
+    }
+
+    @Test
     void parsesDryRunEnabled() {
         Rules rules = RulesLoader.parse(json("{\"dry_run\":{\"enabled\":true}}"), w -> {});
         assertTrue(rules.dryRun().enabled());
