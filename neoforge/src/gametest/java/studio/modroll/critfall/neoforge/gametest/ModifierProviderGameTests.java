@@ -73,4 +73,34 @@ public class ModifierProviderGameTests {
     public void failedSaveNegativeModifierStillDealsOne(GameTestHelper helper) {
         ModifierProviderScenarios.failedSaveNegativeModifierStillDealsOne(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void providerRaisesMeleeArmorClass(GameTestHelper helper) {
+        ModifierProviderScenarios.providerRaisesMeleeArmorClass(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void providerLowersMeleeArmorClass(GameTestHelper helper) {
+        ModifierProviderScenarios.providerLowersMeleeArmorClass(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void providedArmorClassAppliesToRangedAttacks(GameTestHelper helper) {
+        ModifierProviderScenarios.providedArmorClassAppliesToRangedAttacks(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void providedArmorClassAppliesToSpellAttacks(GameTestHelper helper) {
+        ModifierProviderScenarios.providedArmorClassAppliesToSpellAttacks(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void drivenAttackUsesProvidedArmorClass(GameTestHelper helper) {
+        ModifierProviderScenarios.drivenAttackUsesProvidedArmorClass(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void badArmorClassAnswerFallsBackAndLogsOnce(GameTestHelper helper) {
+        ModifierProviderScenarios.badArmorClassAnswerFallsBackAndLogsOnce(helper);
+    }
 }

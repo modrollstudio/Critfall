@@ -17,7 +17,10 @@ import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.dice.DiceExpression;
 
-/** {@link Modifiers} never dereferences the entities, so these pass null. Own bonuses: attack 3, save 2, 1d6+1. */
+/**
+ * {@link Modifiers} never dereferences the entities, so these pass null. Own bonuses: attack 3, save 2, 1d6+1,
+ * AC 10.
+ */
 class ModifiersTest {
 
     private static final DiceExpression OWN_DICE = DiceExpression.parse("1d6+1");
@@ -37,6 +40,7 @@ class ModifiersTest {
     private static final class FixedProvider implements ModifierProvider {
         final List<AttackDelivery> deliveries = new ArrayList<>();
         final List<String> saveKeys = new ArrayList<>();
+        int acAsked;
         private final OptionalInt value;
 
         FixedProvider(OptionalInt value) {
@@ -60,6 +64,12 @@ class ModifiersTest {
             saveKeys.add(saveKey);
             return value;
         }
+
+        @Override
+        public OptionalInt acModifier(LivingEntity defender, LivingEntity attacker) {
+            acAsked++;
+            return value;
+        }
     }
 
     private static final class ThrowingProvider implements ModifierProvider {
@@ -75,6 +85,11 @@ class ModifiersTest {
 
         @Override
         public OptionalInt saveModifier(LivingEntity entity, String saveKey) {
+            throw new IllegalStateException("boom");
+        }
+
+        @Override
+        public OptionalInt acModifier(LivingEntity defender, LivingEntity attacker) {
             throw new IllegalStateException("boom");
         }
     }
@@ -106,10 +121,15 @@ class ModifiersTest {
         return Modifiers.saveBonus(rules, null, ModifierProvider.SPELL_SAVE, 2);
     }
 
+    private static int armorClass(Rules rules) {
+        return Modifiers.armorClass(rules, null, null, 10);
+    }
+
     private static void assertOwnBonuses(Rules rules) {
         assertEquals(3, attack(rules));
         assertSame(OWN_DICE, damage(rules));
         assertEquals(2, save(rules));
+        assertEquals(10, armorClass(rules));
     }
 
     @Test
@@ -118,21 +138,38 @@ class ModifiersTest {
     }
 
     @Test
-    void presentValueReplacesAttackAndSaveAndAddsToDamage() {
+    void presentValueReplacesAttackAndSaveAndAddsToDamageAndArmorClass() {
         FixedProvider provider = new FixedProvider(OptionalInt.of(7));
         RollService.registerModifierProvider(provider);
         assertEquals(7, Modifiers.attackBonus(Rules.DEFAULTS, null, null, AttackDelivery.PROJECTILE, 3));
         assertEquals(DiceExpression.parse("1d6+8"), damage(Rules.DEFAULTS));
         assertEquals(7, save(Rules.DEFAULTS));
+        assertEquals(17, armorClass(Rules.DEFAULTS));
+        assertEquals(1, provider.acAsked);
         assertEquals(List.of(AttackDelivery.PROJECTILE, AttackDelivery.MELEE), provider.deliveries);
         assertEquals(List.of(ModifierProvider.SPELL_SAVE), provider.saveKeys);
     }
 
     @Test
-    void presentZeroReplacesAttackButLeavesDamage() {
+    void presentZeroReplacesAttackButLeavesDamageAndArmorClass() {
         RollService.registerModifierProvider(new FixedProvider(OptionalInt.of(0)));
         assertEquals(0, attack(Rules.DEFAULTS));
         assertSame(OWN_DICE, damage(Rules.DEFAULTS));
+        assertEquals(10, armorClass(Rules.DEFAULTS));
+    }
+
+    @Test
+    void negativeArmorClassModifierLowersOwn() {
+        RollService.registerModifierProvider(new FixedProvider(OptionalInt.of(-3)));
+        assertEquals(7, armorClass(Rules.DEFAULTS));
+        assertTrue(logged.isEmpty(), logged.toString());
+    }
+
+    @Test
+    void armorClassModifierIsNotClamped() {
+        RollService.registerModifierProvider(new FixedProvider(OptionalInt.of(-15)));
+        assertEquals(-5, armorClass(Rules.DEFAULTS));
+        assertTrue(logged.isEmpty(), logged.toString());
     }
 
     @Test
@@ -152,7 +189,9 @@ class ModifiersTest {
         FixedProvider provider = new FixedProvider(OptionalInt.of(7));
         RollService.registerModifierProvider(provider);
         assertOwnBonuses(PROVIDERS_OFF);
-        assertTrue(provider.deliveries.isEmpty() && provider.saveKeys.isEmpty(), "a disabled provider is never asked");
+        assertTrue(
+                provider.deliveries.isEmpty() && provider.saveKeys.isEmpty() && provider.acAsked == 0,
+                "a disabled provider is never asked");
     }
 
     @Test
@@ -175,12 +214,14 @@ class ModifiersTest {
         for (int i = 0; i < 2; i++) {
             assertSame(OWN_DICE, damage(Rules.DEFAULTS));
             assertEquals(2, save(Rules.DEFAULTS));
+            assertEquals(10, armorClass(Rules.DEFAULTS));
         }
-        assertEquals(3, logged.size(), "damage and save each log once more");
+        assertEquals(4, logged.size(), "damage, save and armor class each log once more");
+        assertTrue(logged.get(3).contains("armor class"), logged.get(3));
 
         RollService.registerModifierProvider(new ThrowingProvider());
         attack(Rules.DEFAULTS);
-        assertEquals(4, logged.size(), "a different provider gets its own log line");
+        assertEquals(5, logged.size(), "a different provider gets its own log line");
     }
 
     @Test
@@ -201,6 +242,33 @@ class ModifiersTest {
             assertSame(OWN_DICE, damage(Rules.DEFAULTS));
         }
         assertEquals(2, logged.size(), logged.toString());
+    }
+
+    @Test
+    void nullArmorClassAnswerFallsBackAndLogsOnce() {
+        RollService.registerModifierProvider(new ModifierProvider() {
+            @Override
+            public OptionalInt acModifier(LivingEntity defender, LivingEntity attacker) {
+                return null;
+            }
+        });
+        for (int i = 0; i < 3; i++) {
+            assertEquals(10, armorClass(Rules.DEFAULTS));
+        }
+        assertEquals(1, logged.size(), logged.toString());
+    }
+
+    @Test
+    void outOfRangeArmorClassAnswersFallBackAndLogOnce() {
+        RollService.registerModifierProvider(new FixedProvider(OptionalInt.of(Modifiers.MAX_AC_MODIFIER)));
+        assertEquals(10 + Modifiers.MAX_AC_MODIFIER, armorClass(Rules.DEFAULTS), "the bound itself is in range");
+
+        for (int value : new int[] {Modifiers.MAX_AC_MODIFIER + 1, -Modifiers.MAX_AC_MODIFIER - 1, Integer.MIN_VALUE}) {
+            RollService.registerModifierProvider(new FixedProvider(OptionalInt.of(value)));
+            assertEquals(10, armorClass(Rules.DEFAULTS));
+            assertEquals(10, armorClass(Rules.DEFAULTS));
+        }
+        assertEquals(3, logged.size(), "one line per provider, " + logged);
     }
 
     @Test
