@@ -151,8 +151,8 @@ is client-side). If present in an old `rules.json` they are ignored with a one-l
 ## modifier_providers
 
 - `enabled` (default `true`): whether a [modifier provider](api.md#modifier-provider) registered by
-  another mod is asked for attack, damage and save modifiers. `false` ignores it, so every roll uses
-  Critfall's own bonus. Without a provider this flag changes nothing.
+  another mod is asked for attack, damage, save and AC modifiers. `false` ignores it, so every roll uses
+  Critfall's own bonus and AC. Without a provider this flag changes nothing.
 
 ## advantage_sources
 

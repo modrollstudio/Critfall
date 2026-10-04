@@ -94,7 +94,7 @@ public record RollFeedbackPayload(
         return new RollDetail(rollMode, natural, droppedNatural);
     }
 
-    /** The defender's own AC, before {@link #defenderAcBonus()} was applied. */
+    /** The defender's AC (with any provided AC modifier), before {@link #defenderAcBonus()} was applied. */
     public int baseArmorClass() {
         return armorClass - defenderAcBonus;
     }

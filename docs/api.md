@@ -67,7 +67,8 @@ EffectiveItemProfile item = RollService.effectiveItem(itemStack);
 
 These are Critfall's **own** values, as is [`/critfall inspect`](commands.md#critfall-inspect-entity): a
 [modifier provider](#modifier-provider) answers per attacker/target pair, which neither can name. The
-modifier a roll actually used is on its result: `AttackResult.attackBonus()`, `SaveResult.saveBonus()`.
+modifier and AC a roll actually used are on its result: `AttackResult.attackBonus()`,
+`AttackResult.armorClass()`, `SaveResult.saveBonus()`.
 
 ### Driven attacks
 
@@ -88,8 +89,9 @@ AttackResult applied = RollService.performAttack(attacker, target, ctx);
 `armorClass()`, `defenderAcBonus()`, `baseArmorClass()`, `damage()`, and `isHit()`. `armorClass()` is
 the **effective** AC the roll was made against; `defenderAcBonus()` is the situational modifier that
 was applied (see [Defender AC modifier](#defender-ac-modifier)), and `baseArmorClass()` is
-`armorClass() - defenderAcBonus()` — the defender's own AC before the modifier. With no modifier set
-they are equal and `defenderAcBonus()` is `0`.
+`armorClass() - defenderAcBonus()` — the defender's own AC before the modifier, including a
+[provided AC modifier](#modifier-provider). With no modifier set they are equal and `defenderAcBonus()`
+is `0`.
 
 > **Armor note.** `performAttack` applies damage exactly like the automatic pipeline: the attack
 > roll's AC already stood in for armor, so vanilla armor reduction is bypassed on the resulting
@@ -245,7 +247,8 @@ AttackResult result = RollService.performAttack(archer, target, ctx);
 
 - **Per-attack and non-persistent.** It affects only this `attackRoll`/`performAttack` call; it never
   mutates the entity's profile or carries over to the next attack.
-- **Effective AC** for the roll is `RollService.effectiveEntity(target).armorClass() + defenderAcBonus`.
+- **Effective AC** for the roll is `RollService.effectiveEntity(target).armorClass() + defenderAcBonus`,
+  plus a [modifier provider](#modifier-provider)'s `acModifier` when it gives one. Both apply.
 - **Negatives are allowed** (situational penalties); the value is not clamped.
 - **Defaults to `0`** — existing callers that never call it are unaffected, byte for byte.
 - **Interaction with the roll.** The modifier shifts the to-hit *threshold* only; it is independent of
@@ -267,7 +270,7 @@ modded throwing weapons that record themselves as the firing weapon) as `THROWN`
 
 Since 0.2.7 another mod can supply the modifiers on Critfall's attack, damage and save rolls without
 Critfall depending on it. Since 0.2.8 the damage modifier is added to Critfall's damage dice; in 0.2.7 it
-replaced their flat part. Register one `ModifierProvider`, server-side, e.g. at mod construction:
+replaced their flat part. Since 0.2.10 it can also add to the defender's AC. Register one `ModifierProvider`, server-side, e.g. at mod construction:
 
 ```java
 RollService.registerModifierProvider(new ModifierProvider() {
@@ -283,6 +286,7 @@ RollService.registerModifierProvider(new ModifierProvider() {
 | `attackModifier(attacker, target, delivery)` | every attack roll (melee, projectile, thrown, spell) | **replaces** the to-hit bonus (spell/entity profile `attack_bonus`, else derived) |
 | `damageModifier(attacker, delivery)` | every damage roll, including a save spell's | **adds** to Critfall's own damage dice (`DiceExpression.plusModifier`): `1d8+2` with `5` rolls `1d8+7`, with `0` rolls `1d8+2`. A dice-less amount (the derived flat `1`) is left as is |
 | `saveModifier(entity, saveKey)` | every saving throw | **replaces** the target's `save_bonus` (else `0`) |
+| `acModifier(defender, attacker)` | every attack roll (melee, projectile, thrown, spell), real-time and driven | **adds** to the defender's AC (entity profile `armor_class`, else derived from armor and toughness): AC `10` with `2` is AC `12`, with `-1` AC `9`. Since 0.2.10 |
 
 - **Present applies, empty keeps.** Every method defaults to empty, so implement only what you need.
 - **Damage is additive.** Critfall's own dice already carry the weapon and the attacker's buffs: an
@@ -291,8 +295,13 @@ RollService.registerModifierProvider(new ModifierProvider() {
   Weakness effects, Sharpness, Smite, Bane of Arthropods) or, for a launcher, from the vanilla
   projectile damage (draw strength, Power). The provided value stacks on top, so those keep counting.
   Return your mod's own bonus, not a total.
-- **Bad answers fall back.** A throw, `null`, or a damage modifier that takes the dice's constant beyond
-  ±1,000,000 uses Critfall's own bonus and is logged once per provider and roll type.
+- **AC is additive too.** Return what your mod adds to the defender's AC (a DEX bonus, a shield spell),
+  not a full AC. It is not clamped, so a negative value can take the AC below 1. It counts in
+  `AttackResult.baseArmorClass()`, and `AttackContext.withDefenderAcBonus` stacks on top: a provided `+2`
+  on AC 10 with half cover (`+5`) is `vs AC 17 (12+5)`. Saves have no AC and never ask.
+- **Bad answers fall back.** A throw, `null`, a damage modifier that takes the dice's constant beyond
+  ±1,000,000, or an AC modifier beyond ±1,000,000 uses Critfall's own bonus or AC and is logged once per
+  provider and roll type.
 - **A hit always hurts.** A hit's or crit's rolled damage, and a failed save's, is at least 1, with or
   without a provider. The floor comes before `PostAttackRollEvent`, multipliers and resistances, so a
   listener's `finalDamage(0)` or an immunity still stands.
@@ -308,8 +317,8 @@ RollService.registerModifierProvider(new ModifierProvider() {
   the slot; `modifierProvider()` reads it.
 - **Server toggle.** `modifier_providers.enabled: false` in `rules.json` ignores any provider (see
   [rules-config.md](rules-config.md#modifier_providers)).
-- **Readouts** show the modifier actually used: `d20 13-5=8 vs AC 10`, `HIT 1d6+5 = 9` (`1d6+1` plus 4),
-  `save d20 8+5=13 vs DC 13`.
+- **Readouts** show the modifier and AC actually used: `d20 13-5=8 vs AC 10`, `HIT 1d6+5 = 9` (`1d6+1`
+  plus 4), `save d20 8+5=13 vs DC 13`, `d20 7+3=10 vs AC 12` (AC 10 plus 2).
 
 ## Suppression (`CombatSuppression`)
 

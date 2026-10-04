@@ -67,4 +67,34 @@ public class ModifierProviderGameTests implements FabricGameTest {
     public void failedSaveNegativeModifierStillDealsOne(GameTestHelper helper) {
         ModifierProviderScenarios.failedSaveNegativeModifierStillDealsOne(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void providerRaisesMeleeArmorClass(GameTestHelper helper) {
+        ModifierProviderScenarios.providerRaisesMeleeArmorClass(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void providerLowersMeleeArmorClass(GameTestHelper helper) {
+        ModifierProviderScenarios.providerLowersMeleeArmorClass(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void providedArmorClassAppliesToRangedAttacks(GameTestHelper helper) {
+        ModifierProviderScenarios.providedArmorClassAppliesToRangedAttacks(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void providedArmorClassAppliesToSpellAttacks(GameTestHelper helper) {
+        ModifierProviderScenarios.providedArmorClassAppliesToSpellAttacks(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void drivenAttackUsesProvidedArmorClass(GameTestHelper helper) {
+        ModifierProviderScenarios.drivenAttackUsesProvidedArmorClass(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void badArmorClassAnswerFallsBackAndLogsOnce(GameTestHelper helper) {
+        ModifierProviderScenarios.badArmorClassAnswerFallsBackAndLogsOnce(helper);
+    }
 }

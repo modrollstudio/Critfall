@@ -3,6 +3,7 @@ package studio.modroll.critfall.gametest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.EntityType;
@@ -14,6 +15,13 @@ import net.minecraft.world.entity.monster.Skeleton;
 import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.AbstractAppender;
+import org.apache.logging.log4j.core.config.Property;
+import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.ModifierProvider;
@@ -55,14 +63,23 @@ public final class ModifierProviderScenarios {
     private static final class FixedProvider implements ModifierProvider {
         final List<AttackDelivery> attackDeliveries = new ArrayList<>();
         final List<String> saveKeys = new ArrayList<>();
+        /** Each AC question as defender then attacker. */
+        final List<LivingEntity> acAsked = new ArrayList<>();
+
         private final Integer attack;
         private final Integer damage;
         private final Integer save;
+        private final Integer armorClass;
 
         FixedProvider(Integer attack, Integer damage, Integer save) {
+            this(attack, damage, save, null);
+        }
+
+        FixedProvider(Integer attack, Integer damage, Integer save, Integer armorClass) {
             this.attack = attack;
             this.damage = damage;
             this.save = save;
+            this.armorClass = armorClass;
         }
 
         @Override
@@ -80,6 +97,13 @@ public final class ModifierProviderScenarios {
         public OptionalInt saveModifier(LivingEntity entity, String saveKey) {
             saveKeys.add(saveKey);
             return answer(save);
+        }
+
+        @Override
+        public OptionalInt acModifier(LivingEntity defender, LivingEntity attacker) {
+            acAsked.add(defender);
+            acAsked.add(attacker);
+            return answer(armorClass);
         }
 
         private static OptionalInt answer(Integer value) {
@@ -335,6 +359,152 @@ public final class ModifierProviderScenarios {
         helper.succeed();
     }
 
+    public static void providerRaisesMeleeArmorClass(GameTestHelper helper) {
+        Husk husk = spawnHusk(helper);
+        Pig pig = spawnPig(helper);
+        FixedProvider provider = new FixedProvider(null, null, null, 2);
+        run(
+                helper,
+                provider,
+                Rules.DEFAULTS,
+                sink -> {
+                    // 7 + 3 = 10 would hit the pig's own AC 10; plus 2 is AC 12 -> miss
+                    meleeHit(helper, husk, pig);
+                    expectHealth(helper, pig, pig.getMaxHealth());
+                    expectReadout(helper, sink.lastRoll(), "d20 7+3=10 vs AC 12");
+                },
+                7);
+        expectAsked(helper, provider.acAsked, List.of(pig, husk));
+        helper.succeed();
+    }
+
+    public static void providerLowersMeleeArmorClass(GameTestHelper helper) {
+        Husk husk = spawnHusk(helper);
+        Pig pig = spawnPig(helper);
+        run(
+                helper,
+                new FixedProvider(null, null, null, -2),
+                Rules.DEFAULTS,
+                sink -> {
+                    // 5 + 3 = 8 would miss AC 10; minus 2 is AC 8 -> hit, 1d6+1 rolls 4 -> 5
+                    meleeHit(helper, husk, pig);
+                    expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
+                    expectReadout(helper, sink.lastRoll(), "d20 5+3=8 vs AC 8", "1d6+1 = 5");
+                },
+                5,
+                4);
+        helper.succeed();
+    }
+
+    public static void providedArmorClassAppliesToRangedAttacks(GameTestHelper helper) {
+        Skeleton skeleton = CombatScenarios.spawnCalm(helper, EntityType.SKELETON, 1, 1);
+        skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+        Pig pig = spawnPig(helper);
+        Arrow arrow = ProjectileScenarios.shotArrow(helper, skeleton);
+        FixedProvider provider = new FixedProvider(null, null, null, 2);
+        run(
+                helper,
+                provider,
+                Rules.DEFAULTS,
+                sink -> {
+                    // 7 + 4 = 11 vs AC 12 -> miss, where the pig's own AC 10 would be hit
+                    pig.hurt(helper.getLevel().damageSources().arrow(arrow, skeleton), ARROW_DAMAGE);
+                    expectHealth(helper, pig, pig.getMaxHealth());
+                    expectReadout(helper, sink.lastRoll(), "d20 7+4=11 vs AC 12");
+                },
+                7);
+        expectAsked(helper, provider.acAsked, List.of(pig, skeleton));
+        helper.succeed();
+    }
+
+    public static void providedArmorClassAppliesToSpellAttacks(GameTestHelper helper) {
+        Husk husk = spawnHusk(helper);
+        Pig pig = spawnPig(helper);
+        FixedProvider provider = new FixedProvider(null, null, null, 2);
+        run(
+                helper,
+                provider,
+                Rules.DEFAULTS,
+                sink -> {
+                    // 7 + 3 = 10 vs AC 12 -> miss
+                    pig.hurt(SpellScenarios.spellSource(helper, husk), SPELL_DAMAGE);
+                    expectHealth(helper, pig, pig.getMaxHealth());
+                    expectReadout(helper, sink.lastRoll(), "d20 7+3=10 vs AC 12");
+                },
+                7);
+        expectAsked(helper, provider.acAsked, List.of(pig, husk));
+        helper.succeed();
+    }
+
+    public static void drivenAttackUsesProvidedArmorClass(GameTestHelper helper) {
+        Husk husk = spawnHusk(helper);
+        Pig pig = spawnPig(helper);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        FixedProvider provider = new FixedProvider(null, null, null, 2);
+        try {
+            run(
+                    helper,
+                    provider,
+                    Rules.DEFAULTS,
+                    sink -> {
+                        // attackRoll: 7 + 3 = 10 vs AC 12 -> miss
+                        AttackResult rolled = RollService.attackRoll(husk, pig, melee(helper, husk));
+                        expectArmorClass(helper, rolled, AttackOutcome.MISS, 12, 12);
+                        // performAttack, half cover on top: 9 + 3 = 12 vs AC 13 (12+1) -> miss
+                        AttackResult performed = RollService.performAttack(
+                                husk, pig, melee(helper, husk).withDefenderAcBonus(1));
+                        expectArmorClass(helper, performed, AttackOutcome.MISS, 13, 12);
+                        expectHealth(helper, pig, pig.getMaxHealth());
+                        expectReadout(helper, sink.lastRoll(), "d20 9+3=12 vs AC 13 (12+1)");
+                    },
+                    7,
+                    9);
+        } finally {
+            RollService.release(husk);
+            RollService.release(pig);
+        }
+        expectAsked(helper, provider.acAsked, List.of(pig, husk, pig, husk));
+        helper.succeed();
+    }
+
+    public static void badArmorClassAnswerFallsBackAndLogsOnce(GameTestHelper helper) {
+        Husk husk = spawnHusk(helper);
+        Pig pig = spawnPig(helper);
+        ModifierProvider throwing = new ModifierProvider() {
+            @Override
+            public OptionalInt acModifier(LivingEntity defender, LivingEntity attacker) {
+                throw new IllegalStateException("boom");
+            }
+        };
+        List<String> errors = capturingErrors(() -> run(
+                helper,
+                throwing,
+                Rules.DEFAULTS,
+                sink -> {
+                    // 7 + 3 = 10 vs the pig's own AC 10 -> hit, twice driven (resolve only) and once real time
+                    for (int i = 0; i < 2; i++) {
+                        AttackResult result = RollService.attackRoll(husk, pig, melee(helper, husk));
+                        expectArmorClass(helper, result, AttackOutcome.HIT, 10, 10);
+                    }
+                    meleeHit(helper, husk, pig);
+                    expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
+                    expectReadout(helper, sink.lastRoll(), "d20 7+3=10 vs AC 10");
+                },
+                7,
+                4,
+                7,
+                4,
+                7,
+                4));
+        long armorClassErrors =
+                errors.stream().filter(line -> line.contains("armor class")).count();
+        if (armorClassErrors != 1) {
+            helper.fail("expected one armor class error for three bad answers, got " + errors);
+        }
+        helper.succeed();
+    }
+
     /** Runs {@code action} with {@code provider} registered (null for none), feedback captured, and scripted rolls. */
     private static void run(
             GameTestHelper helper,
@@ -370,6 +540,41 @@ public final class ModifierProviderScenarios {
 
     private static AttackContext melee(GameTestHelper helper, Husk husk) {
         return AttackContext.melee(helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem());
+    }
+
+    /** Runs {@code action} and returns the messages Critfall logged at ERROR meanwhile. */
+    private static List<String> capturingErrors(Runnable action) {
+        Logger logger = (Logger) LogManager.getLogger(Critfall.MOD_NAME);
+        List<String> errors = new CopyOnWriteArrayList<>();
+        AbstractAppender appender =
+                new AbstractAppender("critfall-gametest-errors", null, null, true, Property.EMPTY_ARRAY) {
+                    @Override
+                    public void append(LogEvent event) {
+                        if (event.getLevel() == Level.ERROR) {
+                            errors.add(event.getMessage().getFormattedMessage());
+                        }
+                    }
+                };
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            action.run();
+        } finally {
+            logger.removeAppender(appender);
+            appender.stop();
+        }
+        return errors;
+    }
+
+    private static void expectArmorClass(
+            GameTestHelper helper, AttackResult result, AttackOutcome outcome, int armorClass, int baseArmorClass) {
+        if (result.outcome() != outcome
+                || result.armorClass() != armorClass
+                || result.baseArmorClass() != baseArmorClass) {
+            helper.fail("expected a " + outcome + " vs AC " + armorClass + " (base " + baseArmorClass + "), got "
+                    + result.outcome() + " vs AC " + result.armorClass() + " (base " + result.baseArmorClass()
+                    + ")");
+        }
     }
 
     private static <T> void expectAsked(GameTestHelper helper, List<T> asked, List<T> expected) {

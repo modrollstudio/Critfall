@@ -219,13 +219,14 @@ public final class RollService {
                         target,
                         ctx.delivery(),
                         effectiveEntity(attacker).attackBonus()));
+        int armorClass = Modifiers.armorClass(RollRuntime.rules(), target, attacker, targetEff.armorClass());
         int critRange = critRange(attacker, ctx);
         return AttackPipeline.resolve(
                 attacker,
                 target,
                 ctx,
                 new AttackPipeline.Params(
-                        attackBonus, targetEff.armorClass(), dice, critRange, ctx.mode(), false, ctx.defenderAcBonus()),
+                        attackBonus, armorClass, dice, critRange, ctx.mode(), false, ctx.defenderAcBonus()),
                 RollRuntime.rules(),
                 RollRuntime.roller(),
                 ctx.weapon(),

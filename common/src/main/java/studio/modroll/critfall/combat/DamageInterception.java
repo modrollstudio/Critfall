@@ -500,11 +500,15 @@ public final class DamageInterception {
             boolean jumpAttack) {
         int attackBonus = Modifiers.attackBonus(rules, attacker, target, delivery, ownAttackBonus);
         DiceExpression damageDice = Modifiers.damageDice(rules, attacker, delivery, ownDamageDice);
-        int armorClass = intStat(
-                targetProfile.map(EntityProfile::armorClass),
-                () -> Derivation.armorClass(
-                        target.getAttributeValue(Attributes.ARMOR),
-                        target.getAttributeValue(Attributes.ARMOR_TOUGHNESS)));
+        int armorClass = Modifiers.armorClass(
+                rules,
+                target,
+                attacker,
+                intStat(
+                        targetProfile.map(EntityProfile::armorClass),
+                        () -> Derivation.armorClass(
+                                target.getAttributeValue(Attributes.ARMOR),
+                                target.getAttributeValue(Attributes.ARMOR_TOUGHNESS))));
 
         boolean playerAttacker = attacker instanceof Player;
         long gameTime = target.level().getGameTime();

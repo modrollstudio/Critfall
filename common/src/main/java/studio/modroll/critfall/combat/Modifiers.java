@@ -17,16 +17,20 @@ import studio.modroll.critfall.api.dice.DiceParseException;
 
 /**
  * Applies the registered {@link ModifierProvider}'s answer when it gives one: it replaces Critfall's own
- * attack and save bonus, and adds to Critfall's own damage dice. Bad answers are logged once per provider
- * and roll type, since real-time combat asks on every hit.
+ * attack and save bonus, and adds to Critfall's own damage dice and the defender's AC. Bad answers are
+ * logged once per provider and roll type, since real-time combat asks on every hit.
  */
 public final class Modifiers {
 
     enum Roll {
         ATTACK,
         DAMAGE,
-        SAVE
+        SAVE,
+        ARMOR_CLASS
     }
+
+    /** Largest AC modifier magnitude accepted; the same bound as a dice constant. */
+    static final int MAX_AC_MODIFIER = 1_000_000;
 
     /** Weak so a replaced provider can be collected. */
     private static final Map<ModifierProvider, EnumSet<Roll>> REPORTED = new WeakHashMap<>();
@@ -68,6 +72,22 @@ public final class Modifiers {
                 : ask(p, Roll.SAVE, () -> p.saveModifier(entity, saveKey)).orElse(own);
     }
 
+    /** Critfall's own AC for the defender plus the provider's modifier, when it gives one in range. */
+    public static int armorClass(Rules rules, LivingEntity defender, LivingEntity attacker, int own) {
+        ModifierProvider p = provider(rules);
+        OptionalInt modifier =
+                p == null ? OptionalInt.empty() : ask(p, Roll.ARMOR_CLASS, () -> p.acModifier(defender, attacker));
+        if (modifier.isEmpty()) {
+            return own;
+        }
+        int value = modifier.getAsInt();
+        if (value < -MAX_AC_MODIFIER || value > MAX_AC_MODIFIER) {
+            reportOnce(p, Roll.ARMOR_CLASS, new IllegalArgumentException(value + " is beyond ±" + MAX_AC_MODIFIER));
+            return own;
+        }
+        return own + value;
+    }
+
     /** Null when providers are turned off or none is registered. */
     private static ModifierProvider provider(Rules rules) {
         return rules.modifierProviders().enabled()
@@ -96,7 +116,7 @@ public final class Modifiers {
         }
         if (first) {
             errorLog.accept(
-                    "Bad " + roll.name().toLowerCase(Locale.ROOT) + " modifier from "
+                    "Bad " + roll.name().toLowerCase(Locale.ROOT).replace('_', ' ') + " modifier from "
                             + provider.getClass().getName() + ", using Critfall's own (logged once)",
                     cause);
         }

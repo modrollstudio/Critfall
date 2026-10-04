@@ -6,8 +6,8 @@ import net.minecraft.world.entity.LivingEntity;
 /**
  * Supplies the modifiers Critfall adds to its rolls; register one with {@link
  * RollService#registerModifierProvider}. A present attack or save value replaces Critfall's own bonus for
- * that roll; a present damage value is added to Critfall's own damage dice. An empty one keeps Critfall's
- * own.
+ * that roll; a present damage or AC value is added to Critfall's own damage dice or the defender's AC. An
+ * empty one keeps Critfall's own.
  *
  * <p>Explicit API values ({@link AttackContext#withAttackBonus}, {@link AttackContext#withDamageDice},
  * the {@code saveBonus} of {@link RollService#savingThrow}) are never sent here. A provider that throws
@@ -35,6 +35,19 @@ public interface ModifierProvider {
 
     /** The saving-throw modifier; {@code saveKey} names the save, such as {@link #SPELL_SAVE}. */
     default OptionalInt saveModifier(LivingEntity entity, String saveKey) {
+        return OptionalInt.empty();
+    }
+
+    /**
+     * Added to the defender's AC as Critfall computes it (entity profile {@code armor_class}, else derived
+     * from armor and toughness): AC {@code 10} with {@code 2} is rolled against as AC {@code 12}, with
+     * {@code -1} as AC {@code 9}. Asked once per attack roll of every delivery, real-time and driven
+     * ({@link RollService#attackRoll}, {@link RollService#performAttack}). The result counts it in
+     * {@link studio.modroll.critfall.api.combat.AttackResult#baseArmorClass}, and an {@link
+     * AttackContext#withDefenderAcBonus} stacks on top. Not clamped; a value beyond ±1,000,000 is a bad
+     * answer. Since 0.2.10.
+     */
+    default OptionalInt acModifier(LivingEntity defender, LivingEntity attacker) {
         return OptionalInt.empty();
     }
 }
