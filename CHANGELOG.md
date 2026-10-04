@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.10] - 2026-10-04
+
+A modifier provider can add to the defender's AC.
+
+### Added
+
+- `ModifierProvider.acModifier(defender, attacker)`, returning an `OptionalInt` (empty by default). A
+  present value is **added** to the defender's AC as Critfall computes it (entity profile
+  `armor_class`, else derived from armor and toughness): AC 10 with `2` rolls against AC 12, with `-1`
+  against AC 9. Empty changes nothing. Asked once per attack roll on the automatic pipeline (melee,
+  projectile, thrown, spell attack) and by `RollService.performAttack`/`attackRoll`. Saving throws have
+  no AC and never ask.
+- The provided value is part of the defender's AC on the result: `AttackResult.armorClass()` and
+  `baseArmorClass()` include it, and `AttackContext.withDefenderAcBonus` stacks on top
+  (`vs AC 17 (12+5)`). The readout shows the final AC. Outcome-table miss margins measure from it.
+- A bad answer (a throw, `null`, or a value beyond ±1,000,000) keeps Critfall's own AC and is logged
+  once per provider, like the other methods. The value is not clamped otherwise.
+- `rules.json` `modifier_providers.enabled: false` ignores it, as for the other methods.
+
+### Notes
+
+- With no provider, or one that does not implement `acModifier`, every roll is unchanged from 0.2.9.
+- `RollService.effectiveEntity` and `/critfall inspect` still show Critfall's own AC; the provider
+  answers per attacker, which neither names.
+- Unit tests cover the addition, a negative value, zero, the toggle, and throw/`null`/out-of-range
+  fallbacks logging once. GameTests on both loaders cover a melee roll that hit at AC 10 missing at the
+  provided AC 12, a negative value turning a miss into a hit, ranged and spell attacks, driven
+  `attackRoll`/`performAttack` (stacked with `withDefenderAcBonus`), and a throwing provider falling back
+  to AC 10 with one log line over three attacks.
+
 ## [0.2.9] - 2026-10-02
 
 A player's jump attack rolls with advantage instead of dealing vanilla's crit damage.
