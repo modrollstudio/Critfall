@@ -2,6 +2,8 @@ modLoader = "javafml"
 loaderVersion = "[4,)"
 license = "${mod_license}"
 issueTrackerURL = "${mod_issue_tracker}"
+logoFile = "logo.png"
+logoBlur = false
 
 [[mods]]
 modId = "${mod_id}"
