@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.11] - 2026-10-08
+
+Kill lines show only on real kills.
+
+### Fixed
+
+- A kill flavor line (e.g. "Beaten down, bare-handed") was chosen from the rolled damage against the
+  target's health before vanilla applied Resistance, absorption, a Totem of Undying, or other mods'
+  damage handling. A high roll against a golem-punched player with Resistance V showed a kill line on
+  every swing with no damage taken. The feedback for a rolled hit (attack or failed saving throw) is
+  now sent once the target's `hurt` has fully resolved, and the kill line shows only if the target died.
+  A survived hit gets the normal hit line.
+- A hit that took no health and no absorption keeps its rolled readout and appends `no damage taken`
+  (new consequence key `critfall.consequence.resisted`), so it no longer reads as damage taken. Also
+  applies to `RollService.performAttack`. Absorbed and totem-saved hits are not marked: they took
+  damage. A hit where a Totem of Undying fired is never marked, even at 1 HP, where the totem leaves
+  health where it started.
+
+### Notes
+
+- Rolls, damage and the rest of the readout are unchanged. Misses and fumbles still send their
+  feedback straight away; hits now send it at the end of the same `hurt` call instead of during it.
+- Both loaders wrap `LivingEntity.hurt` with a MixinExtras `@WrapMethod` to send the held feedback.
+  This is NeoForge's first mixin (`critfall.mixins.json`, declared in `neoforge.mods.toml`).
+- `critfall.consequence.resisted` is the only new key. The server-rendered action bar (clients without
+  Critfall) uses `translatableWithFallback` and reads `no damage taken`. A Critfall client builds the
+  text itself from the key in the packet, so a 0.2.10 client on a 0.2.11 server shows the raw key for a
+  negated hit: the packet has no field to carry a fallback string.
+- Totem use is detected with an inject at the return of `LivingEntity.checkTotemDeathProtection`, on
+  both loaders.
+- GameTests on both loaders: a lethal roll against a target with Resistance V, holding a Totem of
+  Undying (totem used), or with enough absorption shows no kill line; an unprotected target dies and
+  shows the kill line; a target at 1 HP saved by a totem shows no kill line and is not marked resisted.
+  A unit test checks the resisted readout renders in English without the lang file.
+
 ## [0.2.10] - 2026-10-04
 
 A modifier provider can add to the defender's AC.

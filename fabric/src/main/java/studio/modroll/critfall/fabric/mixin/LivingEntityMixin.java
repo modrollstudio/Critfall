@@ -1,5 +1,7 @@
 package studio.modroll.critfall.fabric.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -8,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import studio.modroll.critfall.combat.HurtFeedback;
 import studio.modroll.critfall.fabric.CritfallHurtState;
 
 /**
@@ -20,6 +23,10 @@ import studio.modroll.critfall.fabric.CritfallHurtState;
  * damage and suppress base-armor reduction. It reads the decision the hook cached on this entity via
  * {@link CritfallHurtState}. Because the hook runs strictly before {@code actuallyHurt}, the fields
  * are always set before these injectors read them — no injector-ordering ambiguity.
+ *
+ * <p>It also wraps the whole {@code hurt} for {@link HurtFeedback}, so a rolled hit's feedback is
+ * sent once the hurt has fully resolved (mitigation, totem, death). A wrap rather than a RETURN
+ * inject: it still runs when another mod's ALLOW_DAMAGE listener cancels the hurt early.
  */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin implements CritfallHurtState {
@@ -73,6 +80,28 @@ public abstract class LivingEntityMixin implements CritfallHurtState {
     private void critfall$bypassArmor(DamageSource source, float amount, CallbackInfoReturnable<Float> cir) {
         if (critfall$active && critfall$bypassArmor) {
             cir.setReturnValue(amount);
+        }
+    }
+
+    @WrapMethod(method = "hurt")
+    private boolean critfall$resolveFeedback(DamageSource source, float amount, Operation<Boolean> original) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        HurtFeedback.enter(self);
+        boolean completed = false;
+        try {
+            boolean hurt = original.call(source, amount);
+            completed = true;
+            return hurt;
+        } finally {
+            HurtFeedback.exit(self, completed);
+        }
+    }
+
+    /** A totem kept this entity alive: the hurt was lethal, so it must never read as negated. */
+    @Inject(method = "checkTotemDeathProtection", at = @At("RETURN"))
+    private void critfall$noteDeathProtection(DamageSource source, CallbackInfoReturnable<Boolean> cir) {
+        if (cir.getReturnValueZ()) {
+            HurtFeedback.deathProtectionUsed((LivingEntity) (Object) this);
         }
     }
 }

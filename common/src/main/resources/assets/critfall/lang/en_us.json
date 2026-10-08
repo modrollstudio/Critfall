@@ -16,6 +16,7 @@
   "critfall.consequence.stumble": "you stumble!",
   "critfall.consequence.apply_effect": "%s!",
   "critfall.consequence.knockback": "a staggering blow!",
+  "critfall.consequence.resisted": "no damage taken",
 
   "critfall.flavor.sword.crit.0": "A perfect thrust finds the gap in its guard!",
   "critfall.flavor.sword.crit.1": "Steel bites deep!",
