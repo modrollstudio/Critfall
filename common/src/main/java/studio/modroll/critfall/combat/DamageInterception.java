@@ -1,5 +1,6 @@
 package studio.modroll.critfall.combat;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -24,6 +25,7 @@ import studio.modroll.critfall.api.event.CritfallEvents;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.data.EntityProfile;
+import studio.modroll.critfall.data.FlavorPool;
 import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.data.SpellProfile;
@@ -459,16 +461,49 @@ public final class DamageInterception {
             }
         }
 
-        boolean isKill = damage > 0 && target.getHealth() <= damage;
         String notation = saveDice.map(DiceExpression::toString).orElse("vanilla");
+        int shownDamage = (int) damage;
+        boolean showDamage = useDice || save.saved();
+        Optional<FlavorPool> pool = ProfileLookup.forFlavor(attacker.getMainHandItem(), AttackDelivery.SPELL);
+        if (damage <= 0) {
+            emitSave(attacker, target, save, false, onSuccess, notation, shownDamage, showDamage, pool, rules);
+            return;
+        }
+        // The kill is read once the hurt has resolved: mitigation after this point can still save it.
+        HurtFeedback.defer(
+                target,
+                hurt -> emitSave(
+                        attacker,
+                        target,
+                        save,
+                        hurt.killed(),
+                        onSuccess,
+                        notation,
+                        shownDamage,
+                        showDamage,
+                        pool,
+                        rules));
+    }
+
+    private static void emitSave(
+            LivingEntity attacker,
+            LivingEntity target,
+            SaveResult save,
+            boolean isKill,
+            Rules.SaveOutcome onSuccess,
+            String notation,
+            int damage,
+            boolean showDamage,
+            Optional<FlavorPool> pool,
+            Rules rules) {
         SaveFeedbackPayload payload = FeedbackBuilder.buildSave(
                 save,
                 isKill,
                 onSuccess,
                 notation,
-                (int) damage,
-                useDice || save.saved(),
-                ProfileLookup.forFlavor(attacker.getMainHandItem(), AttackDelivery.SPELL),
+                damage,
+                showDamage,
+                pool,
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
@@ -560,35 +595,55 @@ public final class DamageInterception {
         }
 
         List<ConsequenceLine> consequences = bundle.consequences();
-        // Approximation, documented: predicts the kill from the damage THIS hit will apply, before
-        // any later mitigators (other mods' post-hoc reductions). Good enough for flavor gating.
-        boolean isKill =
-                result.isHit() && target.getHealth() <= result.damage() * killScale(rules, targetProfile, source);
+        String notation = damageDice.toString();
+        Optional<FlavorPool> pool = ProfileLookup.forFlavor(weaponStack, delivery);
+        if (!result.isHit()) {
+            emitAttack(attacker, target, result, false, notation, consequences, pool, rules);
+            return;
+        }
+        // The kill is read once the hurt has resolved: Resistance, absorption, a totem or another
+        // mod's handling still run after this point and can keep the target alive.
+        HurtFeedback.defer(
+                target,
+                hurt -> emitAttack(
+                        attacker,
+                        target,
+                        result,
+                        hurt.killed(),
+                        notation,
+                        hurt.negated() ? withResisted(consequences) : consequences,
+                        pool,
+                        rules));
+    }
+
+    /** A hit that took no health or absorption says so, rather than reading as damage taken. */
+    private static List<ConsequenceLine> withResisted(List<ConsequenceLine> consequences) {
+        List<ConsequenceLine> lines = new ArrayList<>(consequences);
+        lines.add(ConsequenceLine.of(ConsequenceLine.RESISTED));
+        return lines;
+    }
+
+    private static void emitAttack(
+            LivingEntity attacker,
+            LivingEntity target,
+            AttackResult result,
+            boolean isKill,
+            String notation,
+            List<ConsequenceLine> consequences,
+            Optional<FlavorPool> pool,
+            Rules rules) {
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
                 result,
                 isKill,
-                damageDice.toString(),
+                notation,
                 rules.damageDice(),
                 consequences,
-                ProfileLookup.forFlavor(weaponStack, delivery),
+                pool,
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
                 target.level().getGameTime());
         FeedbackSink.get().roll(attacker, target, payload, rules.feedback().visibility());
-    }
-
-    /**
-     * The damage multiplier applied to {@code result.damage()} in the switch above (global × the
-     * target profile's resist/immune/vulnerable for this source) — kept in sync so the kill
-     * prediction matches the damage this hit will actually apply.
-     */
-    private static float killScale(Rules rules, Optional<EntityProfile> targetProfile, DamageSource source) {
-        float multiplier = (float) rules.balance().globalDamageMultiplier();
-        return multiplier
-                * targetProfile
-                        .map(p -> ProfileLookup.damageMultiplier(p, source))
-                        .orElse(1.0f);
     }
 
     /** The {@code attack_rolls.players}/{@code attack_rolls.mobs} gate, by attacker kind. */

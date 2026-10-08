@@ -19,6 +19,8 @@ public record ConsequenceLine(String key, Optional<String> arg) {
     public static final String STUMBLE = "critfall.consequence.stumble";
     public static final String APPLY_EFFECT = "critfall.consequence.apply_effect";
     public static final String KNOCKBACK = "critfall.consequence.knockback";
+    /** Not an outcome-table effect: the hit landed but the target lost no health or absorption. */
+    public static final String RESISTED = "critfall.consequence.resisted";
 
     public static ConsequenceLine of(String key) {
         return new ConsequenceLine(key, Optional.empty());

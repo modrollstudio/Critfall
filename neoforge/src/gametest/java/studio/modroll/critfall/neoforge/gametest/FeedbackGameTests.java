@@ -23,4 +23,29 @@ public class FeedbackGameTests {
     public void critDispatchesCritPayload(GameTestHelper helper) {
         FeedbackScenarios.critDispatchesCritPayload(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void resistanceFiveLethalRollShowsNoKillLine(GameTestHelper helper) {
+        FeedbackScenarios.resistanceFiveLethalRollShowsNoKillLine(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void totemLethalRollShowsNoKillLine(GameTestHelper helper) {
+        FeedbackScenarios.totemLethalRollShowsNoKillLine(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void absorptionLethalRollShowsNoKillLine(GameTestHelper helper) {
+        FeedbackScenarios.absorptionLethalRollShowsNoKillLine(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void realKillShowsKillLine(GameTestHelper helper) {
+        FeedbackScenarios.realKillShowsKillLine(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void totemAtOneHealthIsNotMarkedResisted(GameTestHelper helper) {
+        FeedbackScenarios.totemAtOneHealthIsNotMarkedResisted(helper);
+    }
 }
