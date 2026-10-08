@@ -99,6 +99,11 @@ also keeps scripted-RNG GameTests deterministic).
 
 ## Kill detection
 
-The "kill" that gates kill-flavor is **predicted** at damage time (the damage this hit will apply vs.
-the target's current health), before other mods' post-hoc mitigators. It can occasionally mispredict
-under those mods; it only affects the cosmetic flavor line, never gameplay.
+The "kill" that gates kill-flavor is **observed**, not predicted: a rolled hit's feedback is sent once
+the target's `hurt` has fully resolved (Resistance, absorption, a Totem of Undying, other mods' damage
+and death handling), and the kill line shows only if the target is dead at that point. A hit the target
+survived gets the plain hit readout. A hit that took no health and no absorption (Resistance V, a
+shield, another mod cancelling the damage) appends a `no damage taken` consequence
+(`critfall.consequence.resisted`) after the rolled damage, unless a Totem of Undying fired during the
+hurt. Saving throws use the same kill check but
+have no resisted marker.

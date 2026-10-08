@@ -169,4 +169,22 @@ class CombatTextTest {
         assertTrue(text.contains("HIT"), text);
         assertTrue(text.contains("5"), text);
     }
+
+    /** New in 0.2.11: a client or fallback render without the lang entry still reads in English. */
+    @Test
+    void resistedHitReadsNoDamageTakenWithoutLang() {
+        RollFeedbackPayload payload = new RollFeedbackPayload(
+                AttackOutcome.HIT,
+                15,
+                18,
+                12,
+                9,
+                "1d8+4",
+                true,
+                Optional.empty(),
+                List.of(ConsequenceLine.of(ConsequenceLine.RESISTED)));
+        String text = CombatText.actionBar(payload).getString();
+        assertTrue(text.contains("no damage taken"), text);
+        assertFalse(text.contains("critfall.consequence"), text);
+    }
 }

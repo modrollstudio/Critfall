@@ -121,6 +121,7 @@ public final class CombatText {
             case ConsequenceLine.STUMBLE -> "you stumble!";
             case ConsequenceLine.APPLY_EFFECT -> "%s!";
             case ConsequenceLine.KNOCKBACK -> "a staggering blow!";
+            case ConsequenceLine.RESISTED -> "no damage taken";
             default -> key;
         };
     }

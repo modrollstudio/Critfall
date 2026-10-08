@@ -17,4 +17,29 @@ public class FeedbackGameTests implements FabricGameTest {
     public void critDispatchesCritPayload(GameTestHelper helper) {
         FeedbackScenarios.critDispatchesCritPayload(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void resistanceFiveLethalRollShowsNoKillLine(GameTestHelper helper) {
+        FeedbackScenarios.resistanceFiveLethalRollShowsNoKillLine(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void totemLethalRollShowsNoKillLine(GameTestHelper helper) {
+        FeedbackScenarios.totemLethalRollShowsNoKillLine(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void absorptionLethalRollShowsNoKillLine(GameTestHelper helper) {
+        FeedbackScenarios.absorptionLethalRollShowsNoKillLine(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void realKillShowsKillLine(GameTestHelper helper) {
+        FeedbackScenarios.realKillShowsKillLine(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void totemAtOneHealthIsNotMarkedResisted(GameTestHelper helper) {
+        FeedbackScenarios.totemAtOneHealthIsNotMarkedResisted(helper);
+    }
 }

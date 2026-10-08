@@ -1,5 +1,6 @@
 package studio.modroll.critfall.api;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -24,6 +25,7 @@ import studio.modroll.critfall.combat.CombatEngine;
 import studio.modroll.critfall.combat.DamageInterception;
 import studio.modroll.critfall.combat.Derivation;
 import studio.modroll.critfall.combat.EnchantmentDamage;
+import studio.modroll.critfall.combat.HurtFeedback;
 import studio.modroll.critfall.combat.Modifiers;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.EntityProfile;
@@ -190,8 +192,14 @@ public final class RollService {
             return result; // canceled/vetoed by a listener
         }
         Rules rules = RollRuntime.rules();
+        List<ConsequenceLine> consequences = bundle.consequences();
         if (result.isHit() && result.damage() > 0) {
-            DamageInterception.applyRolledDamage(target, ctx.source(), result.damage());
+            HurtFeedback.Result hurt = HurtFeedback.observe(
+                    target, () -> DamageInterception.applyRolledDamage(target, ctx.source(), result.damage()));
+            if (hurt.negated()) {
+                consequences = new ArrayList<>(consequences);
+                consequences.add(ConsequenceLine.of(ConsequenceLine.RESISTED));
+            }
         }
         boolean isKill = result.isHit() && !target.isAlive();
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
@@ -199,7 +207,7 @@ public final class RollService {
                 isKill,
                 dice.toString(),
                 rules.damageDice(),
-                bundle.consequences(),
+                consequences,
                 ProfileLookup.forFlavor(ctx.weapon(), ctx.delivery()),
                 rules,
                 RollRuntime.feedbackRoller(),
