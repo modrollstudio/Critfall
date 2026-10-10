@@ -67,6 +67,13 @@
   "critfall.flavor.default.kill.0": "Beaten down, bare-handed.",
   "critfall.flavor.default.kill.1": "Finished with one final, bare-fisted blow.",
 
+  "critfall.flavor.natural.crit.0": "A savage strike lands square!",
+  "critfall.flavor.natural.crit.1": "The attack hits with brutal force!",
+  "critfall.flavor.natural.fumble.0": "The lunge falls short, striking only air.",
+  "critfall.flavor.natural.fumble.1": "A wild charge goes nowhere.",
+  "critfall.flavor.natural.kill.0": "Overwhelmed and brought down.",
+  "critfall.flavor.natural.kill.1": "Finished with one final, savage blow.",
+
   "critfall.flavor.pickaxe.crit.0": "The spike punches clean through!",
   "critfall.flavor.pickaxe.crit.1": "A miner's precise strike finds the gap!",
   "critfall.flavor.pickaxe.fumble.0": "The pick's weight wrenches the swing wide.",

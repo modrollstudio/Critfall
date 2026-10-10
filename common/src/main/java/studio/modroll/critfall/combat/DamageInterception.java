@@ -464,7 +464,7 @@ public final class DamageInterception {
         String notation = saveDice.map(DiceExpression::toString).orElse("vanilla");
         int shownDamage = (int) damage;
         boolean showDamage = useDice || save.saved();
-        Optional<FlavorPool> pool = ProfileLookup.forFlavor(attacker.getMainHandItem(), AttackDelivery.SPELL);
+        Optional<FlavorPool> pool = ProfileLookup.forFlavor(attacker, attacker.getMainHandItem(), AttackDelivery.SPELL);
         if (damage <= 0) {
             emitSave(attacker, target, save, false, onSuccess, notation, shownDamage, showDamage, pool, rules);
             return;
@@ -596,7 +596,7 @@ public final class DamageInterception {
 
         List<ConsequenceLine> consequences = bundle.consequences();
         String notation = damageDice.toString();
-        Optional<FlavorPool> pool = ProfileLookup.forFlavor(weaponStack, delivery);
+        Optional<FlavorPool> pool = ProfileLookup.forFlavor(attacker, weaponStack, delivery);
         if (!result.isHit()) {
             emitAttack(attacker, target, result, false, notation, consequences, pool, rules);
             return;

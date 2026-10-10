@@ -234,9 +234,20 @@ never triggers another attack roll.
 
 Narrative flavor lines shown by the M6 client feedback module, keyed by **weapon category** and
 **outcome**. Matched against the attack's weapon item with the same `matches` / `priority` /
-`delivery` resolution as the other profiles (see *Matching & priority*); an empty-handed / mob
-attack carries item `minecraft:air`, so a low-priority pool matching `minecraft:air` acts as the
-catch-all. A `delivery` list picks the pool by how the attack landed — the shipped trident pools
+`delivery` resolution as the other profiles (see *Matching & priority*). An empty-handed attack
+depends on who made it:
+
+- A melee attack by an attacker in the entity type tag `#critfall:fights_with_fists` (players,
+  zombies, piglins, villagers, illagers, witches, endermen, skeletons) is a punch: the attack carries
+  item `minecraft:air`, so a low-priority pool matching `minecraft:air` acts as the unarmed
+  catch-all.
+- Any other empty-handed attack is a natural attack: a melee attack by any other attacker (beasts,
+  slimes, golems, modded mobs), and every ranged attack and spell (attack roll or saving throw),
+  tagged attacker or not. The attack carries the pseudo item id `critfall:natural_attack`, matched
+  only by that exact id. Add an entity type to `#critfall:fights_with_fists` to give its
+  empty-handed melee attacks the unarmed lines instead.
+
+A `delivery` list picks the pool by how the attack landed — the shipped trident pools
 use it so a stab and a throw read differently.
 
 ```json
@@ -261,8 +272,8 @@ use it so a stab and a throw read differently.
   they localize). One key is picked at random per pool per outcome.
 - The mod ships default pools for swords, axes, ranged (bow/crossbow), trident (split into
   `trident_melee` and `trident_thrown` by `delivery`), mace, pickaxes, shovels, hoes, shears,
-  fishing rods, and a `minecraft:air` catch-all for unarmed strikes, each with a couple of lines
-  per outcome.
+  fishing rods, a `minecraft:air` catch-all for unarmed strikes, and a `critfall:natural_attack`
+  pool for creatures that do not fight with fists, each with a couple of lines per outcome.
 
 Server-side anti-spam (crit/fumble/kill only, per-target cooldown, nat-20/nat-1 priority) and the
 per-client display/sound/particle toggles are documented in [client-feedback.md](client-feedback.md).

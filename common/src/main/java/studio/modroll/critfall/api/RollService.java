@@ -208,7 +208,7 @@ public final class RollService {
                 dice.toString(),
                 rules.damageDice(),
                 consequences,
-                ProfileLookup.forFlavor(ctx.weapon(), ctx.delivery()),
+                ProfileLookup.forFlavor(attacker, ctx.weapon(), ctx.delivery()),
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
