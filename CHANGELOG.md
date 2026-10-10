@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.12] - 2026-10-10
 
 Creatures without hands no longer punch, and Critfall requires Minecraft 1.21.1.
+### Added
+- `critfall:fights_with_fists` entity tag: decides which empty-handed mobs punch.
 
 ### Fixed
 
