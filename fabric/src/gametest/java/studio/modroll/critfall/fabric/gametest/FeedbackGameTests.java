@@ -42,4 +42,19 @@ public class FeedbackGameTests implements FabricGameTest {
     public void totemAtOneHealthIsNotMarkedResisted(GameTestHelper helper) {
         FeedbackScenarios.totemAtOneHealthIsNotMarkedResisted(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void zoglinKillShowsNaturalLine(GameTestHelper helper) {
+        FeedbackScenarios.zoglinKillShowsNaturalLine(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void zombieKillShowsUnarmedLine(GameTestHelper helper) {
+        FeedbackScenarios.zombieKillShowsUnarmedLine(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void evokerFangKillShowsNaturalLine(GameTestHelper helper) {
+        FeedbackScenarios.evokerFangKillShowsNaturalLine(helper);
+    }
 }
