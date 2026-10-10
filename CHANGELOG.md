@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.12] - 2026-10-10
+
+Creatures without hands no longer punch, and Critfall requires Minecraft 1.21.1.
+
+### Fixed
+
+- Creatures without hands, such as zoglins, slimes and iron golems, were described as punching: a
+  zoglin kill read "Finished with one final, bare-fisted blow." Their crit, fumble and kill lines now
+  describe a natural attack. Players, zombies, piglins, villagers, illagers, witches, endermen and
+  skeletons still punch when empty-handed.
+- A ranged attack or a spell made with an empty hand also read as a punch. It now uses the
+  natural-attack lines, whoever made it.
+- Fabric allowed any Minecraft 1.21.x, and Critfall crashed on 1.21.2 or later. Both loaders now
+  require exactly 1.21.1.
+
 ## [0.2.11] - 2026-10-08
 
 Kill lines show only on real kills.

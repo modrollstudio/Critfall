@@ -4,9 +4,10 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.EntityType;
 import studio.modroll.critfall.Critfall;
 
-/** Damage type tags pack devs use to steer Critfall (see docs/design-decisions.md). */
+/** Tags pack devs use to steer Critfall (see docs/design-decisions.md). */
 public final class CritfallTags {
 
     /** Damage types that always pass through vanilla untouched (DoT, environment, AoE…). */
@@ -21,6 +22,14 @@ public final class CritfallTags {
      * types as optional entries (see docs/compat.md).
      */
     public static final TagKey<DamageType> SPELL = create("spell");
+
+    /**
+     * Entity types whose empty-handed melee attacks are punches and read with the unarmed flavor
+     * lines. Every other empty-handed attack (by beasts, slimes, golems, modded mobs, or a ranged or
+     * spell attack by anyone) gets the natural-attack pool instead (see {@link studio.modroll.critfall.data.ProfileLookup#forFlavor}).
+     */
+    public static final TagKey<EntityType<?>> FIGHTS_WITH_FISTS = TagKey.create(
+            Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "fights_with_fists"));
 
     private CritfallTags() {}
 

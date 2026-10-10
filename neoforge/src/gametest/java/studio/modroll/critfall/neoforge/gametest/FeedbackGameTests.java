@@ -48,4 +48,19 @@ public class FeedbackGameTests {
     public void totemAtOneHealthIsNotMarkedResisted(GameTestHelper helper) {
         FeedbackScenarios.totemAtOneHealthIsNotMarkedResisted(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void zoglinKillShowsNaturalLine(GameTestHelper helper) {
+        FeedbackScenarios.zoglinKillShowsNaturalLine(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void zombieKillShowsUnarmedLine(GameTestHelper helper) {
+        FeedbackScenarios.zombieKillShowsUnarmedLine(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void evokerFangKillShowsNaturalLine(GameTestHelper helper) {
+        FeedbackScenarios.evokerFangKillShowsNaturalLine(helper);
+    }
 }

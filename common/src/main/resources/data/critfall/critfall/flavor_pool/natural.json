@@ -1,0 +1,10 @@
+{
+  "format_version": 1,
+  "matches": ["critfall:natural_attack"],
+  "priority": 0,
+  "lines": {
+    "crit": ["critfall.flavor.natural.crit.0", "critfall.flavor.natural.crit.1"],
+    "fumble": ["critfall.flavor.natural.fumble.0", "critfall.flavor.natural.fumble.1"],
+    "kill": ["critfall.flavor.natural.kill.0", "critfall.flavor.natural.kill.1"]
+  }
+}
