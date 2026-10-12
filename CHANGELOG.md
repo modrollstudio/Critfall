@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.13] - 2026-10-12
+
+API additions for traps and dungeon mobs: one entity can have its own profile, hazards roll saves and
+attacks, and add-ons can show saves and checks in Critfall's readout. Nothing existing changes.
+
+### Added
+
+- Per-entity profiles. `RollService.setEntityProfile(entity, id)` gives one living entity an entity
+  profile ahead of the one its type or tags match, so a dungeon zombie can have its own stats without
+  changing every zombie. `clearEntityProfile` removes it and `entityProfile` reads it. The id is saved
+  with the entity as the NBT string `CritfallProfile`, which packs can set with `/summon` or
+  `/data merge`. An id that is not loaded falls back to the type's profile and logs one warning.
+- An entity profile may have `"matches": []`: only entities assigned it use it. A missing `matches` is
+  still an error.
+- `/critfall inspect` shows when an entity uses its own profile, or that its assigned profile is not
+  loaded.
+- Hazards: damage with no living attacker, such as a trap or a gas cloud.
+  - `RollService.performHazardSave(target, HazardSave)`: the target rolls a saving throw (save key and
+    DC) with the modifier provider's save modifier, else its `save_bonus`. A fail takes the rolled
+    damage; a success takes half or none (`SuccessDamage`). Returns a `HazardSaveResult`.
+  - `RollService.performHazardAttack(target, HazardAttack)`: the hazard rolls d20 plus its bonus against
+    the target's AC, including the provider's AC modifier. A natural 20 uses the crit rule; a natural 1
+    is a plain miss.
+  - Both take a label, a damage type and a roll mode (advantage or disadvantage), roll on the combat
+    roller so tests can force them, apply the damage like a driven attack (after the target's damage
+    modifiers and the global multiplier, without vanilla armor), and show the readout to the target.
+- `HazardRollEvent` (`CritfallEvents.onHazardRoll`), fired before the d20 of every hazard save and hazard
+  attack. It carries the target, the `HazardSave` or `HazardAttack`, the damage type, the label and the
+  roll mode. Listeners call `grantAdvantage()` or `imposeDisadvantage()`, for example advantage on saves
+  against poison, and Critfall combines them the 5e way: any advantage plus any disadvantage rolls
+  normally, and several advantages count as one. The hazard's own `withMode` counts as a source, and
+  `mode()` reads the combined result.
+- Save keys for the six abilities on `ModifierProvider`: `STRENGTH_SAVE` (`"critfall:strength"`),
+  `DEXTERITY_SAVE`, `CONSTITUTION_SAVE`, `INTELLIGENCE_SAVE`, `WISDOM_SAVE`, `CHARISMA_SAVE`.
+- `RollService.sendCheckFeedback(roller, CheckFeedbackPayload)` shows an add-on's save or check in
+  Critfall's readout, for example `Perception: check d20 14+3=17 vs DC 15 — SUCCESS`. Build the payload
+  from a `SaveResult` with `CheckFeedbackPayload.save(label, result)` or `.check(label, result)`.
+- Lang keys `critfall.feedback.saved`, `critfall.feedback.check_success` and
+  `critfall.feedback.check_failed`.
+
+### Notes
+
+- Save and check readouts use a new optional channel, `critfall:check_feedback`. The existing packets
+  are unchanged, so a 0.2.12 client on a 0.2.13 server keeps working and sees the new readouts on the
+  action bar.
+- Hazards fire `HazardRollEvent` and no attack events (`PreAttackRollEvent`, `PostAttackRollEvent`,
+  `CritEvent`, `FumbleEvent`, `CombatInteractionEvent`), so no existing listener sees a null attacker. The
+  attack events are unchanged. `ModifierProvider.acModifier` is asked with a `null` attacker for a
+  hazard attack; a provider that throws keeps Critfall's AC and is logged once.
+- `RollService.isDrivenDamage` is `true` during a hazard's hurt.
+- The per-entity profile is stored by a mixin on `LivingEntity` (save and load), on both loaders.
+- GameTests on both loaders: assigned profiles win over the type's, drive the live roll, survive save
+  and load, come from `/summon` data, and fall back when not loaded; hazard saves fail, halve, negate,
+  roll with disadvantage, and use a Checks-style save modifier provider; hazard attacks hit, miss on a
+  natural 1, crit, roll with advantage, use the provided AC, and respect immunity; add-on saves and
+  checks reach the roller with the right readout; a `HazardRollEvent` listener grants advantage on a
+  poison save (and not on another save) without firing `PreAttackRollEvent`, imposes disadvantage on a
+  hazard attack, and one listener's advantage with another's disadvantage gives a normal roll.
+
 ## [0.2.12] - 2026-10-10
 
 Creatures without hands no longer punch, and Critfall requires Minecraft 1.21.1.

@@ -2,6 +2,7 @@ package studio.modroll.critfall.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.AfterEach;
@@ -13,6 +14,9 @@ import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.dice.SequenceRandom;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
+import studio.modroll.critfall.feedback.CapturingFeedbackSink;
+import studio.modroll.critfall.feedback.FeedbackSink;
 
 class RollServiceTest {
 
@@ -60,5 +64,18 @@ class RollServiceTest {
         assertEquals(11, result.opponentTotal());
         assertEquals(ContestSide.INITIATOR, result.winner());
         assertTrue(result.initiatorWins());
+    }
+
+    @Test
+    void sendCheckFeedbackReachesTheSink() {
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink.set(sink);
+        try {
+            CheckFeedbackPayload payload = CheckFeedbackPayload.save("Trap", new SaveResult(8, 10, 13));
+            RollService.sendCheckFeedback(null, payload);
+            assertSame(payload, sink.lastCheck());
+        } finally {
+            FeedbackSink.set(null);
+        }
     }
 }

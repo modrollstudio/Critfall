@@ -1,6 +1,7 @@
 package studio.modroll.critfall.feedback;
 
 import net.minecraft.world.entity.LivingEntity;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
@@ -13,6 +14,8 @@ public final class CapturingFeedbackSink implements FeedbackSink {
 
     private volatile RollFeedbackPayload lastRoll;
     private volatile SaveFeedbackPayload lastSave;
+    private volatile CheckFeedbackPayload lastCheck;
+    private volatile LivingEntity lastCheckRoller;
 
     @Override
     public void roll(
@@ -26,6 +29,12 @@ public final class CapturingFeedbackSink implements FeedbackSink {
         this.lastSave = payload;
     }
 
+    @Override
+    public void check(LivingEntity roller, CheckFeedbackPayload payload, Rules.FeedbackVisibility v) {
+        this.lastCheck = payload;
+        this.lastCheckRoller = roller;
+    }
+
     public RollFeedbackPayload lastRoll() {
         return lastRoll;
     }
@@ -34,8 +43,19 @@ public final class CapturingFeedbackSink implements FeedbackSink {
         return lastSave;
     }
 
+    public CheckFeedbackPayload lastCheck() {
+        return lastCheck;
+    }
+
+    /** Who {@link #lastCheck()} was shown to. */
+    public LivingEntity lastCheckRoller() {
+        return lastCheckRoller;
+    }
+
     public void reset() {
         lastRoll = null;
         lastSave = null;
+        lastCheck = null;
+        lastCheckRoller = null;
     }
 }

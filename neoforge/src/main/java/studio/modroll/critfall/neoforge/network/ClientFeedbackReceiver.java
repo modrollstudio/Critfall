@@ -8,6 +8,7 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.feedback.ClientConfig;
@@ -30,6 +31,14 @@ public final class ClientFeedbackReceiver {
 
     public static void receiveSave(SaveFeedbackPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> renderSave(payload));
+    }
+
+    public static void receiveCheck(CheckFeedbackPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (CritfallClient.config().rolls()) {
+                Minecraft.getInstance().gui.setOverlayMessage(CombatText.actionBar(payload), false);
+            }
+        });
     }
 
     private static void renderRoll(RollFeedbackPayload payload) {

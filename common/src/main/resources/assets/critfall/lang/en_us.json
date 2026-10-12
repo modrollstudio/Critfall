@@ -7,6 +7,9 @@
   "critfall.feedback.save_failed": "FAILED",
   "critfall.feedback.save_negated": "SAVED, no damage",
   "critfall.feedback.save_halved": "SAVED, half damage",
+  "critfall.feedback.saved": "SAVED",
+  "critfall.feedback.check_success": "SUCCESS",
+  "critfall.feedback.check_failed": "FAILED",
 
   "critfall.consequence.durability.broken": "weapon nearly broken!",
   "critfall.consequence.durability.worn": "weapon takes a beating",

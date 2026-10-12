@@ -6,6 +6,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.combat.Rules;
@@ -64,6 +65,19 @@ public final class FeedbackDispatcher {
         }
     }
 
+    /** A labelled save, check or hazard attack goes to the player who rolled or took it. */
+    public static void dispatchCheck(
+            LivingEntity roller, CheckFeedbackPayload payload, Rules.FeedbackVisibility visibility) {
+        if (visibility == Rules.FeedbackVisibility.OFF || !(roller instanceof ServerPlayer player)) {
+            return;
+        }
+        if (hasChannel(player, CheckFeedbackPayload.TYPE)) {
+            PacketDistributor.sendToPlayer(player, payload);
+        } else {
+            actionBarSink.accept(player, CombatText.actionBar(payload));
+        }
+    }
+
     private static void sendRoll(ServerPlayer player, RollFeedbackPayload payload) {
         if (hasChannel(player, RollFeedbackPayload.TYPE)) {
             PacketDistributor.sendToPlayer(player, payload);
@@ -112,6 +126,11 @@ public final class FeedbackDispatcher {
                     SaveFeedbackPayload payload,
                     Rules.FeedbackVisibility visibility) {
                 dispatchSave(attacker, target, payload, visibility);
+            }
+
+            @Override
+            public void check(LivingEntity roller, CheckFeedbackPayload payload, Rules.FeedbackVisibility visibility) {
+                dispatchCheck(roller, payload, visibility);
             }
         };
     }

@@ -63,4 +63,14 @@ public class FeedbackGameTests {
     public void evokerFangKillShowsNaturalLine(GameTestHelper helper) {
         FeedbackScenarios.evokerFangKillShowsNaturalLine(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void addOnSaveReadoutGoesToTheRoller(GameTestHelper helper) {
+        FeedbackScenarios.addOnSaveReadoutGoesToTheRoller(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void addOnCheckReadoutShowsAdvantage(GameTestHelper helper) {
+        FeedbackScenarios.addOnCheckReadoutShowsAdvantage(helper);
+    }
 }

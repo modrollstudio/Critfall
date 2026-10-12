@@ -1,6 +1,7 @@
 package studio.modroll.critfall.feedback;
 
 import net.minecraft.world.entity.LivingEntity;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
@@ -22,6 +23,12 @@ public interface FeedbackSink {
             LivingEntity target,
             SaveFeedbackPayload payload,
             Rules.FeedbackVisibility visibility);
+
+    /**
+     * A labelled save, check or hazard attack ({@link CheckFeedbackPayload}), shown to {@code roller} when it
+     * is a player and {@code visibility} is not off.
+     */
+    default void check(LivingEntity roller, CheckFeedbackPayload payload, Rules.FeedbackVisibility visibility) {}
 
     FeedbackSink NOOP = new FeedbackSink() {
         @Override

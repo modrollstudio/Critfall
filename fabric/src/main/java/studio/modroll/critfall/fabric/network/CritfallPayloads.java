@@ -1,6 +1,7 @@
 package studio.modroll.critfall.fabric.network;
 
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
@@ -16,5 +17,6 @@ public final class CritfallPayloads {
     public static void registerCodecs() {
         PayloadTypeRegistry.playS2C().register(RollFeedbackPayload.TYPE, RollFeedbackPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(SaveFeedbackPayload.TYPE, SaveFeedbackPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(CheckFeedbackPayload.TYPE, CheckFeedbackPayload.STREAM_CODEC);
     }
 }

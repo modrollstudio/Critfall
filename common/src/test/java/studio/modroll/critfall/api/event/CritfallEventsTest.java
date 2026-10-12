@@ -6,14 +6,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.item.ItemStack;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.AttackDelivery;
+import studio.modroll.critfall.api.HazardAttack;
+import studio.modroll.critfall.api.HazardSave;
+import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.RollMode;
 
 class CritfallEventsTest {
@@ -94,5 +99,99 @@ class CritfallEventsTest {
         AttackResult result = new AttackResult(AttackOutcome.CRIT, 20, 24, 12, 7);
         CritfallEvents.fireCrit(null, null, ctx(), result); // must not throw
         assertTrue(second[0]);
+    }
+
+    private static HazardAttack darts() {
+        return HazardAttack.of("Darts", DamageTypes.ARROW, 5, DiceExpression.parse("1d4"));
+    }
+
+    private static RollMode fire(HazardAttack attack) {
+        return CritfallEvents.fireHazardRoll(new HazardRollEvent(null, attack)).mode();
+    }
+
+    @Test
+    void hazardRollListenerSeesTheSaveAndGrantsAdvantage() {
+        HazardSave gas = HazardSave.of(
+                "Gas vent", DamageTypes.MAGIC, ModifierProvider.CONSTITUTION_SAVE, 13, DiceExpression.parse("2d6"));
+        RollMode[] seen = new RollMode[1];
+        CritfallEvents.onHazardRoll(e -> {
+            seen[0] = e.mode();
+            if (e.save().map(HazardSave::saveKey).orElse("").equals(ModifierProvider.CONSTITUTION_SAVE)) {
+                e.grantAdvantage();
+            }
+        });
+        HazardRollEvent fired = CritfallEvents.fireHazardRoll(new HazardRollEvent(null, gas));
+        assertEquals(RollMode.NORMAL, seen[0]);
+        assertEquals(RollMode.ADVANTAGE, fired.mode());
+        assertEquals(HazardRollEvent.Kind.SAVE, fired.kind());
+        assertEquals("Gas vent", fired.label());
+        assertEquals(DamageTypes.MAGIC, fired.damageType());
+        assertTrue(fired.attack().isEmpty());
+    }
+
+    @Test
+    void hazardRollEventStartsFromTheAttacksMode() {
+        HazardRollEvent fired =
+                CritfallEvents.fireHazardRoll(new HazardRollEvent(null, darts().withMode(RollMode.DISADVANTAGE)));
+        assertEquals(HazardRollEvent.Kind.ATTACK, fired.kind());
+        assertEquals(RollMode.DISADVANTAGE, fired.mode());
+        assertEquals(5, fired.attack().orElseThrow().attackBonus());
+    }
+
+    @Test
+    void disadvantageAloneRollsWithDisadvantage() {
+        CritfallEvents.onHazardRoll(HazardRollEvent::imposeDisadvantage);
+        assertEquals(RollMode.DISADVANTAGE, fire(darts()));
+    }
+
+    @Test
+    void advantageAndDisadvantageRollNormally() {
+        CritfallEvents.onHazardRoll(HazardRollEvent::grantAdvantage);
+        CritfallEvents.onHazardRoll(HazardRollEvent::imposeDisadvantage);
+        assertEquals(RollMode.NORMAL, fire(darts()));
+    }
+
+    @Test
+    void severalAdvantagesStillCancelAgainstOneDisadvantage() {
+        CritfallEvents.onHazardRoll(HazardRollEvent::grantAdvantage);
+        CritfallEvents.onHazardRoll(HazardRollEvent::grantAdvantage);
+        assertEquals(RollMode.ADVANTAGE, fire(darts()));
+        CritfallEvents.onHazardRoll(HazardRollEvent::imposeDisadvantage);
+        assertEquals(RollMode.NORMAL, fire(darts()));
+    }
+
+    @Test
+    void theHazardsOwnModeIsOneSource() {
+        CritfallEvents.onHazardRoll(HazardRollEvent::grantAdvantage);
+        assertEquals(RollMode.NORMAL, fire(darts().withMode(RollMode.DISADVANTAGE)));
+        assertEquals(RollMode.ADVANTAGE, fire(darts().withMode(RollMode.ADVANTAGE)));
+    }
+
+    @Test
+    void listenersSeeTheModeSoFar() {
+        RollMode[] seen = new RollMode[2];
+        CritfallEvents.onHazardRoll(HazardRollEvent::grantAdvantage);
+        CritfallEvents.onHazardRoll(e -> seen[0] = e.mode());
+        CritfallEvents.onHazardRoll(HazardRollEvent::imposeDisadvantage);
+        CritfallEvents.onHazardRoll(e -> seen[1] = e.mode());
+        fire(darts());
+        assertEquals(RollMode.ADVANTAGE, seen[0]);
+        assertEquals(RollMode.NORMAL, seen[1]);
+    }
+
+    @Test
+    void throwingHazardRollListenerKeepsTheOtherSources() {
+        CritfallEvents.onHazardRoll(HazardRollEvent::grantAdvantage);
+        CritfallEvents.onHazardRoll(e -> {
+            throw new IllegalStateException("bad listener");
+        });
+        assertEquals(RollMode.ADVANTAGE, fire(darts()));
+    }
+
+    @Test
+    void clearListenersDropsHazardRollListeners() {
+        CritfallEvents.onHazardRoll(HazardRollEvent::grantAdvantage);
+        CritfallEvents.clearListeners();
+        assertEquals(RollMode.NORMAL, fire(darts()));
     }
 }

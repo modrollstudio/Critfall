@@ -92,6 +92,21 @@ public final class ProfileStore {
                 key -> resolve(entityProfiles.values(), entityTypeId, tagTest, null));
     }
 
+    /**
+     * The profile an entity uses: the one assigned to it ({@code assignedId}, null for none) when it is
+     * loaded, else the type and tag match. An assigned id no loaded profile has falls back to the match.
+     */
+    public static Optional<EntityProfile> findEntityProfile(
+            ResourceLocation assignedId, ResourceLocation entityTypeId, Predicate<ResourceLocation> tagTest) {
+        if (assignedId != null) {
+            EntityProfile assigned = entityProfiles.get(assignedId);
+            if (assigned != null) {
+                return Optional.of(assigned);
+            }
+        }
+        return findEntityProfile(entityTypeId, tagTest);
+    }
+
     public static Optional<ItemProfile> findItemProfile(ResourceLocation itemId, Predicate<ResourceLocation> tagTest) {
         return findItemProfile(itemId, tagTest, null);
     }

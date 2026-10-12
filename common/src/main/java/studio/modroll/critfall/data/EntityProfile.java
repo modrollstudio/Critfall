@@ -1,5 +1,6 @@
 package studio.modroll.critfall.data;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,9 +42,13 @@ public record EntityProfile(
         LenientJson j = new LenientJson(json, "entity_profile " + id, warn);
         j.checkFormatVersion(FORMAT_VERSION);
 
+        // An explicit empty list is a profile only an entity assigned it uses (RollService.setEntityProfile).
+        boolean assignedOnly = json.get("matches") instanceof JsonArray array && array.isEmpty();
         List<String> matchTexts = j.stringList("matches");
-        if (matchTexts.isEmpty()) {
-            throw new IllegalArgumentException("'matches' must list at least one entity id, #tag, or namespace:*");
+        if (matchTexts.isEmpty() && !assignedOnly) {
+            throw new IllegalArgumentException(
+                    "'matches' must list at least one entity id, #tag, or namespace:*, or be [] for a profile"
+                            + " only assigned entities use");
         }
         List<MatchEntry> matches = new ArrayList<>(matchTexts.size());
         for (String text : matchTexts) {

@@ -2,6 +2,8 @@ package studio.modroll.critfall.fabric.mixin;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -9,8 +11,11 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import studio.modroll.critfall.combat.HurtFeedback;
+import studio.modroll.critfall.data.EntityProfileHolder;
+import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.fabric.CritfallHurtState;
 
 /**
@@ -27,9 +32,36 @@ import studio.modroll.critfall.fabric.CritfallHurtState;
  * <p>It also wraps the whole {@code hurt} for {@link HurtFeedback}, so a rolled hit's feedback is
  * sent once the hurt has fully resolved (mitigation, totem, death). A wrap rather than a RETURN
  * inject: it still runs when another mod's ALLOW_DAMAGE listener cancels the hurt early.
+ *
+ * <p>It also holds and saves the entity profile assigned to the entity ({@link EntityProfileHolder}).
  */
 @Mixin(LivingEntity.class)
-public abstract class LivingEntityMixin implements CritfallHurtState {
+public abstract class LivingEntityMixin implements CritfallHurtState, EntityProfileHolder {
+
+    @Unique
+    private ResourceLocation critfall$profileId;
+
+    @Override
+    public ResourceLocation critfall$profileId() {
+        return critfall$profileId;
+    }
+
+    @Override
+    public void critfall$setProfileId(ResourceLocation id) {
+        this.critfall$profileId = id;
+    }
+
+    /** Saves an assigned entity profile with the entity. */
+    @Inject(method = "addAdditionalSaveData", at = @At("HEAD"))
+    private void critfall$saveProfile(CompoundTag tag, CallbackInfo ci) {
+        ProfileLookup.saveAssignedProfile(this, tag);
+    }
+
+    /** Loads it back, also from {@code /summon} and {@code /data merge}. */
+    @Inject(method = "readAdditionalSaveData", at = @At("HEAD"))
+    private void critfall$loadProfile(CompoundTag tag, CallbackInfo ci) {
+        ProfileLookup.loadAssignedProfile(this, tag);
+    }
 
     @Unique
     private boolean critfall$active;

@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.combat.Rules;
@@ -39,6 +40,14 @@ public final class FabricFeedbackDispatcher {
                     Rules.FeedbackVisibility visibility) {
                 dispatch(attacker, target, visibility, player -> sendSave(player, payload));
             }
+
+            /** A labelled save, check or hazard attack goes to the player who rolled or took it. */
+            @Override
+            public void check(LivingEntity roller, CheckFeedbackPayload payload, Rules.FeedbackVisibility visibility) {
+                if (visibility != Rules.FeedbackVisibility.OFF && roller instanceof ServerPlayer player) {
+                    sendCheck(player, payload);
+                }
+            }
         };
     }
 
@@ -68,6 +77,14 @@ public final class FabricFeedbackDispatcher {
 
     private static void sendSave(ServerPlayer player, SaveFeedbackPayload payload) {
         if (hasChannel(player, SaveFeedbackPayload.TYPE)) {
+            ServerPlayNetworking.send(player, payload);
+        } else {
+            player.displayClientMessage(CombatText.actionBar(payload), true);
+        }
+    }
+
+    private static void sendCheck(ServerPlayer player, CheckFeedbackPayload payload) {
+        if (hasChannel(player, CheckFeedbackPayload.TYPE)) {
             ServerPlayNetworking.send(player, payload);
         } else {
             player.displayClientMessage(CombatText.actionBar(payload), true);

@@ -18,6 +18,19 @@ public interface ModifierProvider {
     /** Save key for the save against a {@code "resolution": "save"} spell profile. */
     String SPELL_SAVE = "critfall:spell";
 
+    /** Save keys naming an ability, for saves such as a {@link HazardSave}. Since 0.2.13. */
+    String STRENGTH_SAVE = "critfall:strength";
+
+    String DEXTERITY_SAVE = "critfall:dexterity";
+
+    String CONSTITUTION_SAVE = "critfall:constitution";
+
+    String INTELLIGENCE_SAVE = "critfall:intelligence";
+
+    String WISDOM_SAVE = "critfall:wisdom";
+
+    String CHARISMA_SAVE = "critfall:charisma";
+
     /** The to-hit modifier; spell attack rolls arrive as {@link AttackDelivery#SPELL}. */
     default OptionalInt attackModifier(LivingEntity attacker, LivingEntity target, AttackDelivery delivery) {
         return OptionalInt.empty();
@@ -45,7 +58,8 @@ public interface ModifierProvider {
      * ({@link RollService#attackRoll}, {@link RollService#performAttack}). The result counts it in
      * {@link studio.modroll.critfall.api.combat.AttackResult#baseArmorClass}, and an {@link
      * AttackContext#withDefenderAcBonus} stacks on top. Not clamped; a value beyond ±1,000,000 is a bad
-     * answer. Since 0.2.10.
+     * answer. Since 0.2.10. {@code attacker} is null for a {@link RollService#performHazardAttack hazard
+     * attack} (since 0.2.13).
      */
     default OptionalInt acModifier(LivingEntity defender, LivingEntity attacker) {
         return OptionalInt.empty();

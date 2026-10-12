@@ -5,6 +5,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 import studio.modroll.critfall.Critfall;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.ClientConfig;
 import studio.modroll.critfall.feedback.ClientConfigLoader;
@@ -36,5 +37,7 @@ public final class CritfallFabricClient implements ClientModInitializer {
                 .execute(() -> ClientFeedbackReceiver.renderRoll(payload)));
         ClientPlayNetworking.registerGlobalReceiver(SaveFeedbackPayload.TYPE, (payload, context) -> context.client()
                 .execute(() -> ClientFeedbackReceiver.renderSave(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(CheckFeedbackPayload.TYPE, (payload, context) -> context.client()
+                .execute(() -> ClientFeedbackReceiver.renderCheck(payload)));
     }
 }

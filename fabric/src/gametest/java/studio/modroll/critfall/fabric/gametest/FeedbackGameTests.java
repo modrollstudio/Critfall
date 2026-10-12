@@ -57,4 +57,14 @@ public class FeedbackGameTests implements FabricGameTest {
     public void evokerFangKillShowsNaturalLine(GameTestHelper helper) {
         FeedbackScenarios.evokerFangKillShowsNaturalLine(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void addOnSaveReadoutGoesToTheRoller(GameTestHelper helper) {
+        FeedbackScenarios.addOnSaveReadoutGoesToTheRoller(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void addOnCheckReadoutShowsAdvantage(GameTestHelper helper) {
+        FeedbackScenarios.addOnCheckReadoutShowsAdvantage(helper);
+    }
 }

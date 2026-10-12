@@ -7,6 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.feedback.ClientConfig;
@@ -47,6 +48,12 @@ public final class ClientFeedbackReceiver {
         }
         if (config.flavor()) {
             payload.flavorKey().ifPresent(key -> mc.gui.getChat().addMessage(Component.translatable(key)));
+        }
+    }
+
+    public static void renderCheck(CheckFeedbackPayload payload) {
+        if (CritfallFabricClient.config().rolls()) {
+            Minecraft.getInstance().gui.setOverlayMessage(CombatText.actionBar(payload), false);
         }
     }
 
