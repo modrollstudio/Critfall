@@ -1,7 +1,12 @@
 package studio.modroll.critfall.data;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -30,10 +35,12 @@ public final class ProfileStore {
 
     private record LookupKey(ResourceLocation id, AttackDelivery delivery) {}
 
+    private record FlavorKey(ResourceLocation id, AttackDelivery delivery, ResourceLocation dimension) {}
+
     private static final Map<LookupKey, Optional<EntityProfile>> entityCache = new ConcurrentHashMap<>();
     private static final Map<LookupKey, Optional<ItemProfile>> itemCache = new ConcurrentHashMap<>();
     private static final Map<LookupKey, Optional<SpellProfile>> spellCache = new ConcurrentHashMap<>();
-    private static final Map<LookupKey, Optional<FlavorPool>> flavorCache = new ConcurrentHashMap<>();
+    private static final Map<FlavorKey, FlavorLines> flavorCache = new ConcurrentHashMap<>();
 
     private ProfileStore() {}
 
@@ -123,10 +130,70 @@ public final class ProfileStore {
                 new LookupKey(damageTypeId, null), key -> resolve(spellProfiles.values(), damageTypeId, tagTest, null));
     }
 
-    public static Optional<FlavorPool> findFlavorPool(
-            ResourceLocation itemId, Predicate<ResourceLocation> tagTest, AttackDelivery delivery) {
+    /**
+     * The flavor keys an attack with {@code itemId} picks from in {@code dimension} (null: no dimension).
+     * Per outcome, the dimension's own pools are used when they give any line; otherwise the pools with
+     * no dimension. Within one set of pools the matched pool's lines come first, then the lines of every
+     * base pool in id order, unless the matched pool sets {@code include_base} to false.
+     */
+    public static FlavorLines findFlavorLines(
+            ResourceLocation itemId,
+            Predicate<ResourceLocation> tagTest,
+            AttackDelivery delivery,
+            ResourceLocation dimension) {
         return flavorCache.computeIfAbsent(
-                new LookupKey(itemId, delivery), key -> resolve(flavorPools.values(), itemId, tagTest, delivery));
+                new FlavorKey(itemId, delivery, dimension),
+                key -> flavorLines(flavorPools.values(), itemId, tagTest, delivery, dimension));
+    }
+
+    static FlavorLines flavorLines(
+            Collection<FlavorPool> pools,
+            ResourceLocation itemId,
+            Predicate<ResourceLocation> tagTest,
+            AttackDelivery delivery,
+            ResourceLocation dimension) {
+        Map<String, List<String>> inDimension =
+                dimension == null ? Map.of() : flavorLinesIn(pools, Optional.of(dimension), itemId, tagTest, delivery);
+        Map<String, List<String>> everywhere = flavorLinesIn(pools, Optional.empty(), itemId, tagTest, delivery);
+        Map<String, List<String>> lines = new LinkedHashMap<>();
+        for (String outcome : FlavorPool.OUTCOMES) {
+            List<String> keys = inDimension.getOrDefault(outcome, List.of());
+            if (keys.isEmpty()) {
+                keys = everywhere.getOrDefault(outcome, List.of());
+            }
+            if (!keys.isEmpty()) {
+                lines.put(outcome, keys);
+            }
+        }
+        return lines.isEmpty() ? FlavorLines.NONE : new FlavorLines(Map.copyOf(lines));
+    }
+
+    private static Map<String, List<String>> flavorLinesIn(
+            Collection<FlavorPool> pools,
+            Optional<ResourceLocation> dimension,
+            ResourceLocation itemId,
+            Predicate<ResourceLocation> tagTest,
+            AttackDelivery delivery) {
+        List<FlavorPool> here = pools.stream()
+                .filter(pool -> Objects.equals(pool.dimension(), dimension))
+                .toList();
+        Optional<FlavorPool> matched = resolve(here, itemId, tagTest, delivery);
+        List<FlavorPool> bases = matched.map(FlavorPool::includeBase).orElse(true)
+                ? here.stream()
+                        .filter(FlavorPool::base)
+                        .sorted(Comparator.comparing(FlavorPool::id))
+                        .toList()
+                : List.of();
+        Map<String, List<String>> lines = new LinkedHashMap<>();
+        for (String outcome : FlavorPool.OUTCOMES) {
+            List<String> keys =
+                    new ArrayList<>(matched.map(pool -> pool.lines(outcome)).orElse(List.of()));
+            for (FlavorPool base : bases) {
+                keys.addAll(base.lines(outcome));
+            }
+            lines.put(outcome, List.copyOf(keys));
+        }
+        return lines;
     }
 
     /**

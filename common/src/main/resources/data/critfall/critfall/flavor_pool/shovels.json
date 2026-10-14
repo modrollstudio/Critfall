@@ -3,8 +3,35 @@
   "matches": ["#minecraft:shovels"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.shovel.crit.0", "critfall.flavor.shovel.crit.1"],
-    "fumble": ["critfall.flavor.shovel.fumble.0", "critfall.flavor.shovel.fumble.1"],
-    "kill": ["critfall.flavor.shovel.kill.0", "critfall.flavor.shovel.kill.1"]
+    "crit": [
+      "critfall.flavor.shovel.crit.0",
+      "critfall.flavor.shovel.crit.1",
+      "critfall.flavor.shovel.crit.2",
+      "critfall.flavor.shovel.crit.3",
+      "critfall.flavor.shovel.crit.4",
+      "critfall.flavor.shovel.crit.5",
+      "critfall.flavor.shovel.crit.6",
+      "critfall.flavor.shovel.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.shovel.fumble.0",
+      "critfall.flavor.shovel.fumble.1",
+      "critfall.flavor.shovel.fumble.2",
+      "critfall.flavor.shovel.fumble.3",
+      "critfall.flavor.shovel.fumble.4",
+      "critfall.flavor.shovel.fumble.5",
+      "critfall.flavor.shovel.fumble.6",
+      "critfall.flavor.shovel.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.shovel.kill.0",
+      "critfall.flavor.shovel.kill.1",
+      "critfall.flavor.shovel.kill.2",
+      "critfall.flavor.shovel.kill.3",
+      "critfall.flavor.shovel.kill.4",
+      "critfall.flavor.shovel.kill.5",
+      "critfall.flavor.shovel.kill.6",
+      "critfall.flavor.shovel.kill.7"
+    ]
   }
 }

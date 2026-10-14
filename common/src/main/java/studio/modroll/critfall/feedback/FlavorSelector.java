@@ -3,18 +3,15 @@ package studio.modroll.critfall.feedback;
 import java.util.List;
 import java.util.Optional;
 import studio.modroll.critfall.api.dice.DiceRoller;
-import studio.modroll.critfall.data.FlavorPool;
+import studio.modroll.critfall.data.FlavorLines;
 
-/** Randomly picks one flavor translation key from a pool for an outcome, using the injected RNG. */
+/** Randomly picks one flavor translation key for an outcome, using the injected RNG. */
 public final class FlavorSelector {
 
     private FlavorSelector() {}
 
-    public static Optional<String> pick(Optional<FlavorPool> pool, String outcome, DiceRoller roller) {
-        if (pool.isEmpty()) {
-            return Optional.empty();
-        }
-        List<String> keys = pool.get().lines(outcome);
+    public static Optional<String> pick(FlavorLines lines, String outcome, DiceRoller roller) {
+        List<String> keys = lines.lines(outcome);
         if (keys.isEmpty()) {
             return Optional.empty();
         }

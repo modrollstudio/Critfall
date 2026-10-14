@@ -8,16 +8,18 @@ import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.FlavorName;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
+import studio.modroll.critfall.data.FlavorLines;
 import studio.modroll.critfall.data.FlavorPool;
 
 /**
  * Builds the S2C feedback payloads and owns the server-authoritative flavor anti-spam gate
  * (PLAN §4.5): flavor only on crit/fumble/kill; nat 20 crit and nat 1 fumble are priority and always
  * fire (bypassing and resetting the per-target cooldown); a non-crit kill fires only when the target
- * is off cooldown. Pure — the caller resolves the matching {@link FlavorPool} and passes the target's
- * UUID and the level game time.
+ * is off cooldown. Pure — the caller resolves the {@link FlavorLines} and the names for the line's
+ * placeholders, and passes the target's UUID and the level game time.
  */
 public final class FeedbackBuilder {
 
@@ -29,12 +31,14 @@ public final class FeedbackBuilder {
             String diceNotation,
             boolean showDamage,
             List<ConsequenceLine> consequences,
-            Optional<FlavorPool> pool,
+            FlavorLines flavorLines,
+            FlavorName attacker,
+            FlavorName target,
             Rules rules,
             DiceRoller roller,
             UUID targetId,
             long gameTime) {
-        Optional<String> flavor = pickFlavor(result.outcome(), isKill, pool, rules, roller, targetId, gameTime);
+        Optional<String> flavor = pickFlavor(result.outcome(), isKill, flavorLines, rules, roller, targetId, gameTime);
         return new RollFeedbackPayload(
                 result.outcome(),
                 result.natural(),
@@ -48,7 +52,9 @@ public final class FeedbackBuilder {
                 rules.dryRun().enabled(),
                 result.roll().mode(),
                 result.roll().dropped(),
-                result.defenderAcBonus());
+                result.defenderAcBonus(),
+                flavor.isPresent() ? attacker : FlavorName.NONE,
+                flavor.isPresent() ? target : FlavorName.NONE);
     }
 
     public static SaveFeedbackPayload buildSave(
@@ -58,7 +64,9 @@ public final class FeedbackBuilder {
             String diceNotation,
             int damage,
             boolean showDamage,
-            Optional<FlavorPool> pool,
+            FlavorLines flavorLines,
+            FlavorName attacker,
+            FlavorName target,
             Rules rules,
             DiceRoller roller,
             UUID targetId,
@@ -68,7 +76,7 @@ public final class FeedbackBuilder {
         if (isKill && rules.feedback().flavor().enabled()) {
             int cooldown = rules.feedback().flavor().cooldownTicks();
             if (!FlavorCooldowns.isOnCooldown(targetId, gameTime, cooldown)) {
-                flavor = FlavorSelector.pick(pool, FlavorPool.KILL, roller);
+                flavor = FlavorSelector.pick(flavorLines, FlavorPool.KILL, roller);
                 if (flavor.isPresent()) {
                     FlavorCooldowns.record(targetId, gameTime, cooldown);
                 }
@@ -86,13 +94,15 @@ public final class FeedbackBuilder {
                 flavor,
                 rules.dryRun().enabled(),
                 save.roll().mode(),
-                save.roll().dropped());
+                save.roll().dropped(),
+                flavor.isPresent() ? attacker : FlavorName.NONE,
+                flavor.isPresent() ? target : FlavorName.NONE);
     }
 
     private static Optional<String> pickFlavor(
             AttackOutcome outcome,
             boolean isKill,
-            Optional<FlavorPool> pool,
+            FlavorLines flavorLines,
             Rules rules,
             DiceRoller roller,
             UUID targetId,
@@ -103,17 +113,17 @@ public final class FeedbackBuilder {
         int cooldown = rules.feedback().flavor().cooldownTicks();
         // Priority lines: nat 20 crit and nat 1 fumble always show and reset the cooldown.
         if (outcome == AttackOutcome.CRIT) {
-            return record(FlavorSelector.pick(pool, FlavorPool.CRIT, roller), targetId, gameTime, cooldown);
+            return record(FlavorSelector.pick(flavorLines, FlavorPool.CRIT, roller), targetId, gameTime, cooldown);
         }
         if (outcome == AttackOutcome.FUMBLE) {
-            return record(FlavorSelector.pick(pool, FlavorPool.FUMBLE, roller), targetId, gameTime, cooldown);
+            return record(FlavorSelector.pick(flavorLines, FlavorPool.FUMBLE, roller), targetId, gameTime, cooldown);
         }
         // A non-crit kill is low priority: gated by the per-target cooldown.
         if (isKill && (outcome == AttackOutcome.HIT)) {
             if (FlavorCooldowns.isOnCooldown(targetId, gameTime, cooldown)) {
                 return Optional.empty();
             }
-            return record(FlavorSelector.pick(pool, FlavorPool.KILL, roller), targetId, gameTime, cooldown);
+            return record(FlavorSelector.pick(flavorLines, FlavorPool.KILL, roller), targetId, gameTime, cooldown);
         }
         return Optional.empty();
     }

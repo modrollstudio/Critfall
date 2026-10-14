@@ -3,8 +3,35 @@
   "matches": ["minecraft:mace"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.mace.crit.0", "critfall.flavor.mace.crit.1"],
-    "fumble": ["critfall.flavor.mace.fumble.0", "critfall.flavor.mace.fumble.1"],
-    "kill": ["critfall.flavor.mace.kill.0", "critfall.flavor.mace.kill.1"]
+    "crit": [
+      "critfall.flavor.mace.crit.0",
+      "critfall.flavor.mace.crit.1",
+      "critfall.flavor.mace.crit.2",
+      "critfall.flavor.mace.crit.3",
+      "critfall.flavor.mace.crit.4",
+      "critfall.flavor.mace.crit.5",
+      "critfall.flavor.mace.crit.6",
+      "critfall.flavor.mace.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.mace.fumble.0",
+      "critfall.flavor.mace.fumble.1",
+      "critfall.flavor.mace.fumble.2",
+      "critfall.flavor.mace.fumble.3",
+      "critfall.flavor.mace.fumble.4",
+      "critfall.flavor.mace.fumble.5",
+      "critfall.flavor.mace.fumble.6",
+      "critfall.flavor.mace.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.mace.kill.0",
+      "critfall.flavor.mace.kill.1",
+      "critfall.flavor.mace.kill.2",
+      "critfall.flavor.mace.kill.3",
+      "critfall.flavor.mace.kill.4",
+      "critfall.flavor.mace.kill.5",
+      "critfall.flavor.mace.kill.6",
+      "critfall.flavor.mace.kill.7"
+    ]
   }
 }

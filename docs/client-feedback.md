@@ -9,12 +9,20 @@ with vanilla / non-Critfall clients, which fall back to a plain action-bar reado
 Three server→client packets, all registered `optional()` so a client that doesn't understand them is
 never disconnected:
 
-- `critfall:roll_feedback` — one resolved attack roll: outcome, natural d20, attack total, AC,
-  damage, dice notation, an optional flavor-line key, and the list of consequences that fired. Since
-  0.2.6 it also carries the roll mode, the dropped d20 face under advantage/disadvantage, and the
-  situational defender-AC modifier (`roll()` and `baseArmorClass()` derive from them).
-- `critfall:save_feedback` — one resolved saving throw: natural, total, DC, saved/failed, half/negate,
-  dice, damage, optional flavor key, and (0.2.6) the same roll mode and dropped face.
+- `critfall:roll_feedback_v2` (0.2.15; `critfall:roll_feedback` before) — one resolved attack roll:
+  outcome, natural d20, attack total, AC, damage, dice notation, an optional flavor-line key, and the
+  list of consequences that fired. Since 0.2.6 it also carries the roll mode, the dropped d20 face
+  under advantage/disadvantage, and the situational defender-AC modifier (`roll()` and
+  `baseArmorClass()` derive from them). Since 0.2.15 it carries the attacker's and the target's names
+  for the flavor line's placeholders (`FlavorName`: a mob's type name as its translation key, any
+  other name as text).
+- `critfall:save_feedback_v2` (0.2.15; `critfall:save_feedback` before) — one resolved saving throw:
+  natural, total, DC, saved/failed, half/negate, dice, damage, optional flavor key, (0.2.6) the same
+  roll mode and dropped face, and (0.2.15) the two flavor names.
+
+The 0.2.15 roll and save packets gained fields, so they moved to new channel names, as the check
+packet did in 0.2.14. A server only sends a packet on a channel the client has, so a 0.2.14 client
+gets the action-bar text instead of a packet it cannot read.
 - `critfall:check_feedback_v2` (0.2.14; `critfall:check_feedback` in 0.2.13) — one labelled save,
   check, or hazard attack: kind, label, natural, total, DC (or AC), success, crit, roll mode and dropped
   face, the damage dice and amount when it dealt damage, and since 0.2.14 the save key (for the save's
@@ -92,7 +100,10 @@ warning.)
 Flavor lines are datapack-driven message pools keyed by weapon category + outcome — see the
 `flavor_pool` format in [datapack-formats.md](datapack-formats.md#flavor-pool). To add or replace
 lines, ship a `flavor_pool` JSON (data pack) **and** the matching translation keys in a resource pack
-`lang` file; the client resolves them, so they localize.
+`lang` file; the client resolves them, so they localize. A line may contain `{attacker}` and
+`{target}`, which the client replaces with the two names from the packet. Every attack picks from its
+weapon's pool plus the shared base pool, and a pool can be limited to one dimension, where its lines
+replace the normal ones (see [datapack-formats.md](datapack-formats.md#flavor-pool)).
 
 Anti-spam (server-authoritative, so it also throttles packets):
 

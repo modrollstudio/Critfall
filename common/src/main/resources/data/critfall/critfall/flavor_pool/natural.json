@@ -3,8 +3,35 @@
   "matches": ["critfall:natural_attack"],
   "priority": 0,
   "lines": {
-    "crit": ["critfall.flavor.natural.crit.0", "critfall.flavor.natural.crit.1"],
-    "fumble": ["critfall.flavor.natural.fumble.0", "critfall.flavor.natural.fumble.1"],
-    "kill": ["critfall.flavor.natural.kill.0", "critfall.flavor.natural.kill.1"]
+    "crit": [
+      "critfall.flavor.natural.crit.0",
+      "critfall.flavor.natural.crit.1",
+      "critfall.flavor.natural.crit.2",
+      "critfall.flavor.natural.crit.3",
+      "critfall.flavor.natural.crit.4",
+      "critfall.flavor.natural.crit.5",
+      "critfall.flavor.natural.crit.6",
+      "critfall.flavor.natural.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.natural.fumble.0",
+      "critfall.flavor.natural.fumble.1",
+      "critfall.flavor.natural.fumble.2",
+      "critfall.flavor.natural.fumble.3",
+      "critfall.flavor.natural.fumble.4",
+      "critfall.flavor.natural.fumble.5",
+      "critfall.flavor.natural.fumble.6",
+      "critfall.flavor.natural.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.natural.kill.0",
+      "critfall.flavor.natural.kill.1",
+      "critfall.flavor.natural.kill.2",
+      "critfall.flavor.natural.kill.3",
+      "critfall.flavor.natural.kill.4",
+      "critfall.flavor.natural.kill.5",
+      "critfall.flavor.natural.kill.6",
+      "critfall.flavor.natural.kill.7"
+    ]
   }
 }

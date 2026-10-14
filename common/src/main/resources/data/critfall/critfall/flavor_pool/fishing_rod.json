@@ -3,8 +3,35 @@
   "matches": ["minecraft:fishing_rod"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.fishing_rod.crit.0", "critfall.flavor.fishing_rod.crit.1"],
-    "fumble": ["critfall.flavor.fishing_rod.fumble.0", "critfall.flavor.fishing_rod.fumble.1"],
-    "kill": ["critfall.flavor.fishing_rod.kill.0", "critfall.flavor.fishing_rod.kill.1"]
+    "crit": [
+      "critfall.flavor.fishing_rod.crit.0",
+      "critfall.flavor.fishing_rod.crit.1",
+      "critfall.flavor.fishing_rod.crit.2",
+      "critfall.flavor.fishing_rod.crit.3",
+      "critfall.flavor.fishing_rod.crit.4",
+      "critfall.flavor.fishing_rod.crit.5",
+      "critfall.flavor.fishing_rod.crit.6",
+      "critfall.flavor.fishing_rod.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.fishing_rod.fumble.0",
+      "critfall.flavor.fishing_rod.fumble.1",
+      "critfall.flavor.fishing_rod.fumble.2",
+      "critfall.flavor.fishing_rod.fumble.3",
+      "critfall.flavor.fishing_rod.fumble.4",
+      "critfall.flavor.fishing_rod.fumble.5",
+      "critfall.flavor.fishing_rod.fumble.6",
+      "critfall.flavor.fishing_rod.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.fishing_rod.kill.0",
+      "critfall.flavor.fishing_rod.kill.1",
+      "critfall.flavor.fishing_rod.kill.2",
+      "critfall.flavor.fishing_rod.kill.3",
+      "critfall.flavor.fishing_rod.kill.4",
+      "critfall.flavor.fishing_rod.kill.5",
+      "critfall.flavor.fishing_rod.kill.6",
+      "critfall.flavor.fishing_rod.kill.7"
+    ]
   }
 }

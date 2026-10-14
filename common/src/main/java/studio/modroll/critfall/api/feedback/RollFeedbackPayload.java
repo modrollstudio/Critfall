@@ -21,6 +21,8 @@ import studio.modroll.critfall.api.dice.RollMode;
  * present only when the server's anti-spam gate let a flavor line through; {@code consequences} lists
  * the outcome-table consequences that actually fired. {@code natural} is the kept d20 face, which
  * {@code rollMode} and {@code droppedNatural} complete into the {@link #roll()} detail.
+ * {@code flavorAttacker} and {@code flavorTarget} fill the flavor line's placeholders; both are
+ * {@link FlavorName#NONE} when there is no flavor line.
  */
 public record RollFeedbackPayload(
         AttackOutcome outcome,
@@ -35,8 +37,43 @@ public record RollFeedbackPayload(
         boolean dryRun,
         RollMode rollMode,
         OptionalInt droppedNatural,
-        int defenderAcBonus)
+        int defenderAcBonus,
+        FlavorName flavorAttacker,
+        FlavorName flavorTarget)
         implements CustomPacketPayload {
+
+    /** Convenience without flavor names (pre-0.2.15 callers). */
+    public RollFeedbackPayload(
+            AttackOutcome outcome,
+            int natural,
+            int attackTotal,
+            int armorClass,
+            int damage,
+            String diceNotation,
+            boolean showDamage,
+            Optional<String> flavorKey,
+            List<ConsequenceLine> consequences,
+            boolean dryRun,
+            RollMode rollMode,
+            OptionalInt droppedNatural,
+            int defenderAcBonus) {
+        this(
+                outcome,
+                natural,
+                attackTotal,
+                armorClass,
+                damage,
+                diceNotation,
+                showDamage,
+                flavorKey,
+                consequences,
+                dryRun,
+                rollMode,
+                droppedNatural,
+                defenderAcBonus,
+                FlavorName.NONE,
+                FlavorName.NONE);
+    }
 
     /** Convenience for a plain normal roll against an unmodified AC (pre-0.2.6 callers). */
     public RollFeedbackPayload(
@@ -107,8 +144,13 @@ public record RollFeedbackPayload(
      */
     private static final int MAX_CONSEQUENCES = 64;
 
+    /**
+     * {@code critfall:roll_feedback_v2} since 0.2.15, which added the flavor line's names to the packet. A
+     * 0.2.14 client only has {@code critfall:roll_feedback}, so it gets the action bar instead of a packet it
+     * cannot read.
+     */
     public static final Type<RollFeedbackPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "roll_feedback"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "roll_feedback_v2"));
 
     public static final StreamCodec<FriendlyByteBuf, RollFeedbackPayload> STREAM_CODEC =
             StreamCodec.of(RollFeedbackPayload::encode, RollFeedbackPayload::decode);
@@ -135,6 +177,8 @@ public record RollFeedbackPayload(
             buf.writeVarInt(p.droppedNatural.getAsInt());
         }
         buf.writeInt(p.defenderAcBonus);
+        FlavorName.write(buf, p.flavorAttacker);
+        FlavorName.write(buf, p.flavorTarget);
     }
 
     private static RollFeedbackPayload decode(FriendlyByteBuf buf) {
@@ -159,6 +203,8 @@ public record RollFeedbackPayload(
         RollMode rollMode = buf.readEnum(RollMode.class);
         OptionalInt dropped = buf.readBoolean() ? OptionalInt.of(buf.readVarInt()) : OptionalInt.empty();
         int defenderAcBonus = buf.readInt();
+        FlavorName flavorAttacker = FlavorName.read(buf);
+        FlavorName flavorTarget = FlavorName.read(buf);
         return new RollFeedbackPayload(
                 outcome,
                 natural,
@@ -172,7 +218,9 @@ public record RollFeedbackPayload(
                 dryRun,
                 rollMode,
                 dropped,
-                defenderAcBonus);
+                defenderAcBonus,
+                flavorAttacker,
+                flavorTarget);
     }
 
     static void writeLine(FriendlyByteBuf buf, ConsequenceLine line) {
