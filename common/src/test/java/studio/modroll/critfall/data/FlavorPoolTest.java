@@ -91,4 +91,59 @@ class FlavorPoolTest {
                 ID, json("{\"matches\": [\"minecraft:stick\"], \"lines\": {\"whiff\": [\"x\"]}}"), warnings::add);
         assertTrue(warnings.stream().anyMatch(w -> w.contains("whiff")), warnings.toString());
     }
+
+    @Test
+    void parsesABasePoolWithoutMatches() {
+        List<String> warnings = new ArrayList<>();
+        FlavorPool pool = FlavorPool.parse(ID, json("""
+                {"format_version": 1, "base": true, "lines": {"kill": ["a.b.kill.0"]}}
+                """), warnings::add);
+        assertTrue(pool.base());
+        assertTrue(pool.matches().isEmpty());
+        assertEquals(List.of("a.b.kill.0"), pool.lines(FlavorPool.KILL));
+        assertTrue(warnings.isEmpty(), warnings.toString());
+    }
+
+    @Test
+    void aBasePoolRejectsMatchesAndDelivery() {
+        assertThrows(IllegalArgumentException.class, () -> FlavorPool.parse(ID, json("""
+                {"base": true, "matches": ["#minecraft:swords"], "lines": {}}
+                """), w -> {}));
+        assertThrows(IllegalArgumentException.class, () -> FlavorPool.parse(ID, json("""
+                {"base": true, "delivery": ["melee"], "lines": {}}
+                """), w -> {}));
+    }
+
+    @Test
+    void parsesDimensionAndIncludeBase() {
+        List<String> warnings = new ArrayList<>();
+        FlavorPool pool = FlavorPool.parse(ID, json("""
+                {
+                  "matches": ["#minecraft:swords"],
+                  "dimension": "minecraft:the_nether",
+                  "include_base": false,
+                  "lines": {"crit": ["a.b.crit.0"]}
+                }
+                """), warnings::add);
+        assertEquals(java.util.Optional.of(ResourceLocation.parse("minecraft:the_nether")), pool.dimension());
+        assertTrue(!pool.includeBase());
+        assertTrue(!pool.base());
+        assertTrue(warnings.isEmpty(), warnings.toString());
+    }
+
+    @Test
+    void defaultsToNoDimensionAndIncludingTheBase() {
+        FlavorPool pool = FlavorPool.parse(ID, json("""
+                {"matches": ["#minecraft:swords"], "lines": {"crit": ["a.b.crit.0"]}}
+                """), w -> {});
+        assertTrue(pool.dimension().isEmpty());
+        assertTrue(pool.includeBase());
+    }
+
+    @Test
+    void rejectsABadDimensionId() {
+        assertThrows(IllegalArgumentException.class, () -> FlavorPool.parse(ID, json("""
+                {"matches": ["#minecraft:swords"], "dimension": "Not A Dimension", "lines": {}}
+                """), w -> {}));
+    }
 }

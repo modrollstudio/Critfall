@@ -15,7 +15,7 @@ The `api` subpackages:
 |---------|-------|
 | `api.dice` | `DiceExpression`, `DiceRoller`, `RollResult`, `DieRoll`, `RollMode`, `RollDetail`, `DiceParseException` |
 | `api.combat` | `AttackResult`, `AttackOutcome`, `SaveResult`, `ContestResult`, `ContestSide`, `HazardSaveResult`, `SuccessDamage` |
-| `api.feedback` | `RollFeedbackPayload`, `CheckFeedbackPayload`, `ConsequenceLine` |
+| `api.feedback` | `RollFeedbackPayload`, `CheckFeedbackPayload`, `ConsequenceLine`, `FlavorName` |
 | `api.event` | the events below |
 
 ## `RollService`

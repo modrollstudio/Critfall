@@ -3,8 +3,35 @@
   "matches": ["#minecraft:pickaxes"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.pickaxe.crit.0", "critfall.flavor.pickaxe.crit.1"],
-    "fumble": ["critfall.flavor.pickaxe.fumble.0", "critfall.flavor.pickaxe.fumble.1"],
-    "kill": ["critfall.flavor.pickaxe.kill.0", "critfall.flavor.pickaxe.kill.1"]
+    "crit": [
+      "critfall.flavor.pickaxe.crit.0",
+      "critfall.flavor.pickaxe.crit.1",
+      "critfall.flavor.pickaxe.crit.2",
+      "critfall.flavor.pickaxe.crit.3",
+      "critfall.flavor.pickaxe.crit.4",
+      "critfall.flavor.pickaxe.crit.5",
+      "critfall.flavor.pickaxe.crit.6",
+      "critfall.flavor.pickaxe.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.pickaxe.fumble.0",
+      "critfall.flavor.pickaxe.fumble.1",
+      "critfall.flavor.pickaxe.fumble.2",
+      "critfall.flavor.pickaxe.fumble.3",
+      "critfall.flavor.pickaxe.fumble.4",
+      "critfall.flavor.pickaxe.fumble.5",
+      "critfall.flavor.pickaxe.fumble.6",
+      "critfall.flavor.pickaxe.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.pickaxe.kill.0",
+      "critfall.flavor.pickaxe.kill.1",
+      "critfall.flavor.pickaxe.kill.2",
+      "critfall.flavor.pickaxe.kill.3",
+      "critfall.flavor.pickaxe.kill.4",
+      "critfall.flavor.pickaxe.kill.5",
+      "critfall.flavor.pickaxe.kill.6",
+      "critfall.flavor.pickaxe.kill.7"
+    ]
   }
 }

@@ -21,6 +21,7 @@ import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.dice.RollResult;
 import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.FlavorName;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.AttackDice;
 import studio.modroll.critfall.combat.AttackPipeline;
@@ -274,6 +275,8 @@ public final class RollService {
                 rules.damageDice(),
                 consequences,
                 ProfileLookup.forFlavor(attacker, ctx.weapon(), ctx.delivery()),
+                FlavorName.of(attacker),
+                FlavorName.of(target),
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),

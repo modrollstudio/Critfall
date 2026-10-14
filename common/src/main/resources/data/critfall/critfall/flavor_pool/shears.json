@@ -3,8 +3,35 @@
   "matches": ["minecraft:shears"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.shears.crit.0", "critfall.flavor.shears.crit.1"],
-    "fumble": ["critfall.flavor.shears.fumble.0", "critfall.flavor.shears.fumble.1"],
-    "kill": ["critfall.flavor.shears.kill.0", "critfall.flavor.shears.kill.1"]
+    "crit": [
+      "critfall.flavor.shears.crit.0",
+      "critfall.flavor.shears.crit.1",
+      "critfall.flavor.shears.crit.2",
+      "critfall.flavor.shears.crit.3",
+      "critfall.flavor.shears.crit.4",
+      "critfall.flavor.shears.crit.5",
+      "critfall.flavor.shears.crit.6",
+      "critfall.flavor.shears.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.shears.fumble.0",
+      "critfall.flavor.shears.fumble.1",
+      "critfall.flavor.shears.fumble.2",
+      "critfall.flavor.shears.fumble.3",
+      "critfall.flavor.shears.fumble.4",
+      "critfall.flavor.shears.fumble.5",
+      "critfall.flavor.shears.fumble.6",
+      "critfall.flavor.shears.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.shears.kill.0",
+      "critfall.flavor.shears.kill.1",
+      "critfall.flavor.shears.kill.2",
+      "critfall.flavor.shears.kill.3",
+      "critfall.flavor.shears.kill.4",
+      "critfall.flavor.shears.kill.5",
+      "critfall.flavor.shears.kill.6",
+      "critfall.flavor.shears.kill.7"
+    ]
   }
 }

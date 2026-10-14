@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.api.feedback.FlavorName;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
@@ -25,8 +26,41 @@ public record SaveFeedbackPayload(
         Optional<String> flavorKey,
         boolean dryRun,
         RollMode rollMode,
-        OptionalInt droppedNatural)
+        OptionalInt droppedNatural,
+        FlavorName flavorAttacker,
+        FlavorName flavorTarget)
         implements CustomPacketPayload {
+
+    /** Convenience without flavor names (pre-0.2.15 callers). */
+    public SaveFeedbackPayload(
+            int natural,
+            int saveTotal,
+            int dc,
+            boolean saved,
+            Rules.SaveOutcome onSuccess,
+            String diceNotation,
+            int damage,
+            boolean showDamage,
+            Optional<String> flavorKey,
+            boolean dryRun,
+            RollMode rollMode,
+            OptionalInt droppedNatural) {
+        this(
+                natural,
+                saveTotal,
+                dc,
+                saved,
+                onSuccess,
+                diceNotation,
+                damage,
+                showDamage,
+                flavorKey,
+                dryRun,
+                rollMode,
+                droppedNatural,
+                FlavorName.NONE,
+                FlavorName.NONE);
+    }
 
     /** Convenience for a plain normal roll (pre-0.2.6 callers). */
     public SaveFeedbackPayload(
@@ -73,8 +107,9 @@ public record SaveFeedbackPayload(
         return new RollDetail(rollMode, natural, droppedNatural);
     }
 
+    /** {@code critfall:save_feedback_v2} since 0.2.15, for the same reason as {@link RollFeedbackPayload#TYPE}. */
     public static final Type<SaveFeedbackPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "save_feedback"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "save_feedback_v2"));
 
     public static final StreamCodec<FriendlyByteBuf, SaveFeedbackPayload> STREAM_CODEC =
             StreamCodec.of(SaveFeedbackPayload::encode, SaveFeedbackPayload::decode);
@@ -100,6 +135,8 @@ public record SaveFeedbackPayload(
         if (p.droppedNatural.isPresent()) {
             buf.writeVarInt(p.droppedNatural.getAsInt());
         }
+        FlavorName.write(buf, p.flavorAttacker);
+        FlavorName.write(buf, p.flavorTarget);
     }
 
     private static SaveFeedbackPayload decode(FriendlyByteBuf buf) {
@@ -115,7 +152,22 @@ public record SaveFeedbackPayload(
         boolean dryRun = buf.readBoolean();
         RollMode rollMode = buf.readEnum(RollMode.class);
         OptionalInt dropped = buf.readBoolean() ? OptionalInt.of(buf.readVarInt()) : OptionalInt.empty();
+        FlavorName flavorAttacker = FlavorName.read(buf);
+        FlavorName flavorTarget = FlavorName.read(buf);
         return new SaveFeedbackPayload(
-                natural, saveTotal, dc, saved, onSuccess, dice, damage, showDamage, flavor, dryRun, rollMode, dropped);
+                natural,
+                saveTotal,
+                dc,
+                saved,
+                onSuccess,
+                dice,
+                damage,
+                showDamage,
+                flavor,
+                dryRun,
+                rollMode,
+                dropped,
+                flavorAttacker,
+                flavorTarget);
     }
 }

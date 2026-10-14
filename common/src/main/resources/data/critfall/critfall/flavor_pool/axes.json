@@ -3,8 +3,35 @@
   "matches": ["#minecraft:axes"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.axe.crit.0", "critfall.flavor.axe.crit.1"],
-    "fumble": ["critfall.flavor.axe.fumble.0", "critfall.flavor.axe.fumble.1"],
-    "kill": ["critfall.flavor.axe.kill.0", "critfall.flavor.axe.kill.1"]
+    "crit": [
+      "critfall.flavor.axe.crit.0",
+      "critfall.flavor.axe.crit.1",
+      "critfall.flavor.axe.crit.2",
+      "critfall.flavor.axe.crit.3",
+      "critfall.flavor.axe.crit.4",
+      "critfall.flavor.axe.crit.5",
+      "critfall.flavor.axe.crit.6",
+      "critfall.flavor.axe.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.axe.fumble.0",
+      "critfall.flavor.axe.fumble.1",
+      "critfall.flavor.axe.fumble.2",
+      "critfall.flavor.axe.fumble.3",
+      "critfall.flavor.axe.fumble.4",
+      "critfall.flavor.axe.fumble.5",
+      "critfall.flavor.axe.fumble.6",
+      "critfall.flavor.axe.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.axe.kill.0",
+      "critfall.flavor.axe.kill.1",
+      "critfall.flavor.axe.kill.2",
+      "critfall.flavor.axe.kill.3",
+      "critfall.flavor.axe.kill.4",
+      "critfall.flavor.axe.kill.5",
+      "critfall.flavor.axe.kill.6",
+      "critfall.flavor.axe.kill.7"
+    ]
   }
 }

@@ -23,9 +23,10 @@ import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.event.CritfallEvents;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.FlavorName;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.data.EntityProfile;
-import studio.modroll.critfall.data.FlavorPool;
+import studio.modroll.critfall.data.FlavorLines;
 import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.data.SpellProfile;
@@ -464,7 +465,7 @@ public final class DamageInterception {
         String notation = saveDice.map(DiceExpression::toString).orElse("vanilla");
         int shownDamage = (int) damage;
         boolean showDamage = useDice || save.saved();
-        Optional<FlavorPool> pool = ProfileLookup.forFlavor(attacker, attacker.getMainHandItem(), AttackDelivery.SPELL);
+        FlavorLines pool = ProfileLookup.forFlavor(attacker, attacker.getMainHandItem(), AttackDelivery.SPELL);
         if (damage <= 0) {
             emitSave(attacker, target, save, false, onSuccess, notation, shownDamage, showDamage, pool, rules);
             return;
@@ -494,7 +495,7 @@ public final class DamageInterception {
             String notation,
             int damage,
             boolean showDamage,
-            Optional<FlavorPool> pool,
+            FlavorLines pool,
             Rules rules) {
         SaveFeedbackPayload payload = FeedbackBuilder.buildSave(
                 save,
@@ -504,6 +505,8 @@ public final class DamageInterception {
                 damage,
                 showDamage,
                 pool,
+                FlavorName.of(attacker),
+                FlavorName.of(target),
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
@@ -596,7 +599,7 @@ public final class DamageInterception {
 
         List<ConsequenceLine> consequences = bundle.consequences();
         String notation = damageDice.toString();
-        Optional<FlavorPool> pool = ProfileLookup.forFlavor(attacker, weaponStack, delivery);
+        FlavorLines pool = ProfileLookup.forFlavor(attacker, weaponStack, delivery);
         if (!result.isHit()) {
             emitAttack(attacker, target, result, false, notation, consequences, pool, rules);
             return;
@@ -630,7 +633,7 @@ public final class DamageInterception {
             boolean isKill,
             String notation,
             List<ConsequenceLine> consequences,
-            Optional<FlavorPool> pool,
+            FlavorLines pool,
             Rules rules) {
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
                 result,
@@ -639,6 +642,8 @@ public final class DamageInterception {
                 rules.damageDice(),
                 consequences,
                 pool,
+                FlavorName.of(attacker),
+                FlavorName.of(target),
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),

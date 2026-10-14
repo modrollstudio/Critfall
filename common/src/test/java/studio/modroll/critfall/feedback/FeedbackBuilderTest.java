@@ -1,13 +1,12 @@
 package studio.modroll.critfall.feedback;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
-import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.combat.AttackOutcome;
@@ -15,24 +14,24 @@ import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.api.dice.SequenceRandom;
+import studio.modroll.critfall.api.feedback.FlavorName;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
+import studio.modroll.critfall.data.FlavorLines;
 import studio.modroll.critfall.data.FlavorPool;
 
 class FeedbackBuilderTest {
 
     private final UUID target = UUID.randomUUID();
 
-    private static Optional<studio.modroll.critfall.data.FlavorPool> pool() {
-        return Optional.of(new studio.modroll.critfall.data.FlavorPool(
-                ResourceLocation.parse("test:p"),
-                List.of(),
-                java.util.Set.of(),
-                Map.of(
-                        studio.modroll.critfall.data.FlavorPool.CRIT, List.of("crit.line"),
-                        studio.modroll.critfall.data.FlavorPool.FUMBLE, List.of("fumble.line"),
-                        studio.modroll.critfall.data.FlavorPool.KILL, List.of("kill.line")),
-                0));
+    private static final FlavorName ATTACKER = FlavorName.literal("Alex");
+    private static final FlavorName TARGET = new FlavorName("entity.minecraft.zombie", true);
+
+    private static FlavorLines pool() {
+        return new FlavorLines(Map.of(
+                FlavorPool.CRIT, List.of("crit.line"),
+                FlavorPool.FUMBLE, List.of("fumble.line"),
+                FlavorPool.KILL, List.of("kill.line")));
     }
 
     private RollFeedbackPayload build(AttackOutcome outcome, int natural, boolean isKill, long gameTime) {
@@ -44,6 +43,8 @@ class FeedbackBuilderTest {
                 true,
                 List.of(),
                 pool(),
+                ATTACKER,
+                TARGET,
                 Rules.DEFAULTS,
                 new DiceRoller(SequenceRandom.ofDieFaces()),
                 target,
@@ -60,6 +61,8 @@ class FeedbackBuilderTest {
                 7,
                 true,
                 pool(),
+                ATTACKER,
+                TARGET,
                 rules,
                 new DiceRoller(SequenceRandom.ofDieFaces()),
                 target,
@@ -115,6 +118,8 @@ class FeedbackBuilderTest {
                 true,
                 List.of(),
                 pool(),
+                ATTACKER,
+                TARGET,
                 noFlavorRules(),
                 new DiceRoller(SequenceRandom.ofDieFaces()),
                 target,
@@ -130,12 +135,7 @@ class FeedbackBuilderTest {
 
     @Test
     void nonCritKillWithEmptyPoolRecordsNoCooldown() {
-        Optional<FlavorPool> critOnlyPool = Optional.of(new FlavorPool(
-                ResourceLocation.parse("test:p"),
-                List.of(),
-                java.util.Set.of(),
-                Map.of(FlavorPool.CRIT, List.of("c")),
-                0));
+        FlavorLines critOnlyPool = new FlavorLines(Map.of(FlavorPool.CRIT, List.of("c")));
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
                 new AttackResult(AttackOutcome.HIT, 13, 13, 10, 0),
                 true,
@@ -143,12 +143,32 @@ class FeedbackBuilderTest {
                 true,
                 List.of(),
                 critOnlyPool,
+                ATTACKER,
+                TARGET,
                 Rules.DEFAULTS,
                 new DiceRoller(SequenceRandom.ofDieFaces()),
                 target,
                 100);
         assertTrue(payload.flavorKey().isEmpty());
         assertFalse(FlavorCooldowns.isOnCooldown(target, 100, 20));
+    }
+
+    @Test
+    void flavorLineCarriesBothNames() {
+        RollFeedbackPayload payload = build(AttackOutcome.CRIT, 20, false, 100);
+        assertEquals(ATTACKER, payload.flavorAttacker());
+        assertEquals(TARGET, payload.flavorTarget());
+        FlavorCooldowns.clear(); // the crit's line put the target on cooldown
+        SaveFeedbackPayload save = buildSave(true, Rules.DEFAULTS, 100);
+        assertEquals(ATTACKER, save.flavorAttacker());
+        assertEquals(TARGET, save.flavorTarget());
+    }
+
+    @Test
+    void noFlavorLineCarriesNoNames() {
+        RollFeedbackPayload payload = build(AttackOutcome.HIT, 13, false, 100);
+        assertEquals(FlavorName.NONE, payload.flavorAttacker());
+        assertEquals(FlavorName.NONE, payload.flavorTarget());
     }
 
     @Test

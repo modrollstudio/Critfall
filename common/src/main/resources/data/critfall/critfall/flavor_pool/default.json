@@ -3,8 +3,35 @@
   "matches": ["minecraft:air"],
   "priority": 0,
   "lines": {
-    "crit": ["critfall.flavor.default.crit.0", "critfall.flavor.default.crit.1"],
-    "fumble": ["critfall.flavor.default.fumble.0", "critfall.flavor.default.fumble.1"],
-    "kill": ["critfall.flavor.default.kill.0", "critfall.flavor.default.kill.1"]
+    "crit": [
+      "critfall.flavor.default.crit.0",
+      "critfall.flavor.default.crit.1",
+      "critfall.flavor.default.crit.2",
+      "critfall.flavor.default.crit.3",
+      "critfall.flavor.default.crit.4",
+      "critfall.flavor.default.crit.5",
+      "critfall.flavor.default.crit.6",
+      "critfall.flavor.default.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.default.fumble.0",
+      "critfall.flavor.default.fumble.1",
+      "critfall.flavor.default.fumble.2",
+      "critfall.flavor.default.fumble.3",
+      "critfall.flavor.default.fumble.4",
+      "critfall.flavor.default.fumble.5",
+      "critfall.flavor.default.fumble.6",
+      "critfall.flavor.default.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.default.kill.0",
+      "critfall.flavor.default.kill.1",
+      "critfall.flavor.default.kill.2",
+      "critfall.flavor.default.kill.3",
+      "critfall.flavor.default.kill.4",
+      "critfall.flavor.default.kill.5",
+      "critfall.flavor.default.kill.6",
+      "critfall.flavor.default.kill.7"
+    ]
   }
 }

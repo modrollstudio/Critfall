@@ -8,7 +8,7 @@ Critfall loads five kinds of JSON from datapacks, reloadable with `/reload`:
 | Item profiles | `data/<ns>/critfall/item_profile/*.json` | Damage dice, crit range, outcome tables per weapon/item |
 | Spell profiles | `data/<ns>/critfall/spell_profile/*.json` | Attack-roll vs saving-throw resolution per DAMAGE TYPE (spells) |
 | Outcome tables | `data/<ns>/critfall/outcome_table/*.json` | Trigger → weighted effect lists (fumbles AND crit effects) |
-| Flavor pools | `data/<ns>/critfall/flavor_pool/*.json` | Narrative flavor-line message pools per weapon category (M6 client feedback) |
+| Flavor pools | `data/<ns>/critfall/flavor_pool/*.json` | Narrative flavor-line message pools per weapon category, shared base lines, and lines for one dimension (M6 client feedback) |
 
 Every file carries `"format_version": 1`. Unknown keys log a warning and are ignored (forward
 compatibility); a file that fails structural validation (missing `matches`, bad dice, bad ids) is
@@ -282,11 +282,80 @@ use it so a stab and a throw read differently.
   ignored.
 - Values are **translation keys**, not literal text. The mod ships English in
   `assets/critfall/lang/en_us.json`; add your own via a resource pack (the client resolves them, so
-  they localize). One key is picked at random per pool per outcome.
-- The mod ships default pools for swords, axes, ranged (bow/crossbow), trident (split into
-  `trident_melee` and `trident_thrown` by `delivery`), mace, pickaxes, shovels, hoes, shears,
-  fishing rods, a `minecraft:air` catch-all for unarmed strikes, and a `critfall:natural_attack`
-  pool for creatures that do not fight with fists, each with a couple of lines per outcome.
+  they localize).
+- The mod ships pools for swords, axes, ranged (bow/crossbow), trident (split into `trident_melee`
+  and `trident_thrown` by `delivery`), mace, pickaxes, shovels, hoes, shears, fishing rods, a
+  `minecraft:air` catch-all for unarmed strikes, and a `critfall:natural_attack` pool for creatures
+  that do not fight with fists, each with eight lines per outcome. They share the `critfall:base`
+  pool below, which holds 44 lines per outcome.
+
+### Placeholders
+
+Since 0.2.15 a line can name the two sides: `{attacker}` and `{target}`. The client fills them in
+with the attacker's and the target's names: a player's name, a custom name, or a mob's type name in
+the client's own language. Lines read the way vanilla death messages do, so a mob name has no
+article:
+
+```json
+"mypack.flavor.crit.0": "{attacker} finds the one place {target} forgot to guard."
+```
+
+shows as `Alex finds the one place Zombie forgot to guard.` Write the braces as they are in the lang
+file; Minecraft's `%s` formatting does not apply to flavor lines. Players, mobs, ranged attacks and
+spells all use the same lines, so the shipped lines avoid "you" and only name a weapon in a pool that
+matches that weapon.
+
+### Base pools
+
+A pool with `"base": true` joins every attack instead of matching an item. It has no `matches` and
+no `delivery`:
+
+```json
+{
+  "format_version": 1,
+  "base": true,
+  "lines": {
+    "crit":   ["mypack.flavor.crit.0", "mypack.flavor.crit.1"],
+    "fumble": ["mypack.flavor.fumble.0"],
+    "kill":   ["mypack.flavor.kill.0"]
+  }
+}
+```
+
+A flavor line is picked at random from the matched pool's lines followed by the lines of every base
+pool. With the shipped pools that is 8 weapon lines among 52, so about one pick in six names the
+weapon. An attack no pool matches, such as a modded weapon, uses the base lines alone.
+
+- Base pools add up: a pack's base pool adds to `critfall:base`, it does not replace it. To replace
+  the shipped base lines, override `data/critfall/critfall/flavor_pool/base.json` in your pack.
+- A matched pool with `"include_base": false` keeps the base lines out, so its own lines are the only
+  ones picked for that weapon. The default is `true`.
+
+### Lines for one dimension
+
+Any pool, base or matched, can take a `dimension`. It is then used only in that dimension:
+
+```json
+{
+  "format_version": 1,
+  "base": true,
+  "dimension": "mypack:catacombs",
+  "lines": {
+    "crit": ["mypack.flavor.catacombs.crit.0", "mypack.flavor.catacombs.crit.1"],
+    "kill": ["mypack.flavor.catacombs.kill.0"]
+  }
+}
+```
+
+In a dimension, each outcome first looks at the pools for that dimension, matching and joining them
+the same way as above (matched pool, then its base pools). When they give at least one line for that
+outcome, those lines are the only ones picked there. When they give none, the outcome uses the pools
+with no `dimension`. So the pack above replaces every crit and kill line in `mypack:catacombs`, keeps
+the normal fumble lines there, and changes nothing anywhere else. A pool with a `dimension` and
+`matches` gives one weapon its own lines in that dimension.
+
+The dimension is the attacker's. Other mods add dimension lines with a datapack and a lang file, no
+code.
 
 Server-side anti-spam (crit/fumble/kill only, per-target cooldown, nat-20/nat-1 priority) and the
 per-client display/sound/particle toggles are documented in [client-feedback.md](client-feedback.md).

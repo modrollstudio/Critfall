@@ -6,6 +6,7 @@ import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.gametest.FeedbackScenarios;
+import studio.modroll.critfall.gametest.FlavorScenarios;
 
 /** NeoForge registration shim: delegates to the shared {@link FeedbackScenarios} bodies (M8). */
 @GameTestHolder(Critfall.MOD_ID)
@@ -82,5 +83,20 @@ public class FeedbackGameTests {
     @GameTest(template = TEMPLATE)
     public void addOnSaveReadoutNamesTheSave(GameTestHelper helper) {
         FeedbackScenarios.addOnSaveReadoutNamesTheSave(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void dimensionLinesReplaceTheNormalPools(GameTestHelper helper) {
+        FlavorScenarios.dimensionLinesReplaceTheNormalPools(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void otherDimensionsUseTheBasePools(GameTestHelper helper) {
+        FlavorScenarios.otherDimensionsUseTheBasePools(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void everyShippedLineFillsItsPlaceholders(GameTestHelper helper) {
+        FlavorScenarios.everyShippedLineFillsItsPlaceholders(helper);
     }
 }

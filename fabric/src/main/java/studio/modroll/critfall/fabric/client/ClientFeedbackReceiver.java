@@ -3,7 +3,6 @@ package studio.modroll.critfall.fabric.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import studio.modroll.critfall.api.combat.AttackOutcome;
@@ -11,6 +10,7 @@ import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.feedback.ClientConfig;
+import studio.modroll.critfall.feedback.FlavorText;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
 /**
@@ -30,7 +30,9 @@ public final class ClientFeedbackReceiver {
             mc.gui.setOverlayMessage(CombatText.actionBar(payload), false);
         }
         if (config.flavor()) {
-            payload.flavorKey().ifPresent(key -> mc.gui.getChat().addMessage(Component.translatable(key)));
+            payload.flavorKey().ifPresent(key -> mc.gui
+                    .getChat()
+                    .addMessage(FlavorText.line(key, payload.flavorAttacker(), payload.flavorTarget())));
         }
         if (config.sounds()) {
             playSound(payload.outcome());
@@ -47,7 +49,9 @@ public final class ClientFeedbackReceiver {
             mc.gui.setOverlayMessage(CombatText.actionBar(payload), false);
         }
         if (config.flavor()) {
-            payload.flavorKey().ifPresent(key -> mc.gui.getChat().addMessage(Component.translatable(key)));
+            payload.flavorKey().ifPresent(key -> mc.gui
+                    .getChat()
+                    .addMessage(FlavorText.line(key, payload.flavorAttacker(), payload.flavorTarget())));
         }
     }
 

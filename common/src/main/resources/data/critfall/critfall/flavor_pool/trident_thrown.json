@@ -4,8 +4,35 @@
   "delivery": ["thrown"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.trident_thrown.crit.0", "critfall.flavor.trident_thrown.crit.1"],
-    "fumble": ["critfall.flavor.trident_thrown.fumble.0", "critfall.flavor.trident_thrown.fumble.1"],
-    "kill": ["critfall.flavor.trident_thrown.kill.0", "critfall.flavor.trident_thrown.kill.1"]
+    "crit": [
+      "critfall.flavor.trident_thrown.crit.0",
+      "critfall.flavor.trident_thrown.crit.1",
+      "critfall.flavor.trident_thrown.crit.2",
+      "critfall.flavor.trident_thrown.crit.3",
+      "critfall.flavor.trident_thrown.crit.4",
+      "critfall.flavor.trident_thrown.crit.5",
+      "critfall.flavor.trident_thrown.crit.6",
+      "critfall.flavor.trident_thrown.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.trident_thrown.fumble.0",
+      "critfall.flavor.trident_thrown.fumble.1",
+      "critfall.flavor.trident_thrown.fumble.2",
+      "critfall.flavor.trident_thrown.fumble.3",
+      "critfall.flavor.trident_thrown.fumble.4",
+      "critfall.flavor.trident_thrown.fumble.5",
+      "critfall.flavor.trident_thrown.fumble.6",
+      "critfall.flavor.trident_thrown.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.trident_thrown.kill.0",
+      "critfall.flavor.trident_thrown.kill.1",
+      "critfall.flavor.trident_thrown.kill.2",
+      "critfall.flavor.trident_thrown.kill.3",
+      "critfall.flavor.trident_thrown.kill.4",
+      "critfall.flavor.trident_thrown.kill.5",
+      "critfall.flavor.trident_thrown.kill.6",
+      "critfall.flavor.trident_thrown.kill.7"
+    ]
   }
 }

@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.15] - 2026-10-14
+
+Better flavor lines, and flavor lines for one dimension.
+
+### Added
+
+- Flavor pools for one dimension: a `flavor_pool` with `"dimension": "<id>"` is used only there. In
+  that dimension its lines replace the normal ones for each outcome it has lines for; other outcomes
+  and other dimensions use the normal pools. Datapack and lang file only, no code.
+- Base pools: a `flavor_pool` with `"base": true` (and no `matches`) joins every attack. Each pick
+  draws from the matched weapon pool's lines plus every base pool's lines. A weapon pool can set
+  `"include_base": false` to show only its own.
+- `{attacker}` and `{target}` placeholders in flavor lines, filled by the client with the two names.
+  The names travel as `FlavorName` (`api.feedback`), so mob names show in the client's language.
+
+### Changed
+
+- The flavor lines are rewritten. The new `critfall:base` pool has 44 lines each for natural 20s,
+  fumbles and killing blows, written to read right for players and mobs, armed and unarmed, melee,
+  ranged and spells. Every weapon pool has eight lines per outcome (about one pick in six), now in the
+  third person, so a skeleton's fumble no longer reads "your blade".
+
+### Notes
+
+- The roll and save readout packets gained the flavor names and moved to
+  `critfall:roll_feedback_v2` and `critfall:save_feedback_v2`; 0.2.14 clients get the action bar
+  instead.
+
 ## [0.2.14] - 2026-10-13
 
 API additions for Dungeon Crawl and Checks. Additive only: Initiative, Checks 0.1.1 and Crawl keep working.
