@@ -18,6 +18,7 @@ import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.entity.projectile.EvokerFangs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.SaveResult;
@@ -141,6 +142,56 @@ public final class FeedbackScenarios {
                     },
                     6,
                     11);
+            helper.succeed();
+        } finally {
+            FeedbackSink.set(previous);
+        }
+    }
+
+    /** A hidden check (a search) shows the roll and total, but no DC and no result. */
+    public static void addOnHiddenCheckShowsNoDcOrResult(GameTestHelper helper) {
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        try {
+            Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+            CombatScenarios.withRolls(
+                    helper,
+                    Rules.DEFAULTS,
+                    () -> {
+                        SaveResult search = RollService.savingThrow(pig, 3, 15);
+                        RollService.sendCheckFeedback(pig, CheckFeedbackPayload.hiddenCheck("Search", search));
+                        expectCheckReadout(helper, sink, pig, "Search: check d20 14+3=17");
+                        CheckFeedbackPayload payload = sink.lastCheck();
+                        if (payload.dc() != 0 || payload.success()) {
+                            helper.fail("a hidden check must not carry its DC or result, was " + payload);
+                        }
+                    },
+                    14);
+            helper.succeed();
+        } finally {
+            FeedbackSink.set(previous);
+        }
+    }
+
+    /** An add-on's save named by its save key reads "DEX save". */
+    public static void addOnSaveReadoutNamesTheSave(GameTestHelper helper) {
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        try {
+            Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+            CombatScenarios.withRolls(
+                    helper,
+                    Rules.DEFAULTS,
+                    () -> {
+                        SaveResult save = RollService.savingThrow(pig, 2, 13);
+                        RollService.sendCheckFeedback(
+                                pig,
+                                CheckFeedbackPayload.save("Pressure plate", ModifierProvider.DEXTERITY_SAVE, save));
+                        expectCheckReadout(helper, sink, pig, "Pressure plate: DEX save d20 12+2=14 vs DC 13 — SAVED");
+                    },
+                    12);
             helper.succeed();
         } finally {
             FeedbackSink.set(previous);

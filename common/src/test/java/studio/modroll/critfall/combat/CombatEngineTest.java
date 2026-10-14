@@ -454,4 +454,72 @@ class CombatEngineTest {
                         .saved(),
                 "a natural 1 still saves when the total meets the DC");
     }
+
+    @Test
+    void rerollOnesRollsANaturalOneAgain() {
+        SaveResult save = CombatEngine.resolveSave(
+                new DiceRoller(SequenceRandom.ofDieFaces(1, 14)), 2, 13, RollMode.NORMAL, true);
+        assertEquals(14, save.natural());
+        assertEquals(16, save.saveTotal());
+        assertFalse(save.roll().hasTwoDice());
+    }
+
+    @Test
+    void rerollOnesRerollsOnlyOnce() {
+        // The second 1 stands; a third draw would run the scripted roller dry.
+        SequenceRandom rng = SequenceRandom.ofDieFaces(1, 1);
+        SaveResult save = CombatEngine.resolveSave(new DiceRoller(rng), 0, 13, RollMode.NORMAL, true);
+        assertEquals(1, save.natural());
+    }
+
+    @Test
+    void rerollOnesLeavesOtherFacesAlone() {
+        SaveResult save =
+                CombatEngine.resolveSave(new DiceRoller(SequenceRandom.ofDieFaces(2)), 0, 13, RollMode.NORMAL, true);
+        assertEquals(2, save.natural());
+    }
+
+    @Test
+    void rerollOnesUnderDisadvantageRerollsTheKeptOne() {
+        // 1 and 15 keep 1; the 1 rolls 12, and disadvantage keeps the lower of 12 and 15.
+        SaveResult save = CombatEngine.resolveSave(
+                new DiceRoller(SequenceRandom.ofDieFaces(1, 15, 12)), 0, 13, RollMode.DISADVANTAGE, true);
+        assertEquals(12, save.natural());
+        assertEquals(RollMode.DISADVANTAGE, save.roll().mode());
+        assertEquals(OptionalInt.of(15), save.roll().dropped());
+    }
+
+    @Test
+    void rerollOnesUnderDisadvantageKeepsTheOtherDieWhenLower() {
+        // 1 and 6 keep 1; the 1 rolls 18, and disadvantage keeps 6.
+        SaveResult save = CombatEngine.resolveSave(
+                new DiceRoller(SequenceRandom.ofDieFaces(6, 1, 18)), 0, 13, RollMode.DISADVANTAGE, true);
+        assertEquals(6, save.natural());
+        assertEquals(OptionalInt.of(18), save.roll().dropped());
+    }
+
+    @Test
+    void rerollOnesUnderAdvantageOnlyWhenBothDiceAreOne() {
+        SaveResult both = CombatEngine.resolveSave(
+                new DiceRoller(SequenceRandom.ofDieFaces(1, 1, 9)), 0, 13, RollMode.ADVANTAGE, true);
+        assertEquals(9, both.natural());
+        assertEquals(OptionalInt.of(1), both.roll().dropped());
+        // 1 and 7 keep 7: the 1 does not matter, so nothing rerolls.
+        SaveResult one = CombatEngine.resolveSave(
+                new DiceRoller(SequenceRandom.ofDieFaces(1, 7)), 0, 13, RollMode.ADVANTAGE, true);
+        assertEquals(7, one.natural());
+    }
+
+    @Test
+    void attackRerollOnesTurnsANaturalOneIntoAHit() {
+        // Without the reroll the natural 1 would fumble; 15 + 2 hits AC 12 and 1d6 rolls 4.
+        AttackResult result = CombatEngine.resolveAttack(
+                new DiceRoller(SequenceRandom.ofDieFaces(1, 15, 4)),
+                Rules.DEFAULTS,
+                new AttackInput(2, 12, RollMode.NORMAL, D6, 20, false, 0, true));
+        assertEquals(AttackOutcome.HIT, result.outcome());
+        assertEquals(15, result.natural());
+        assertEquals(17, result.attackTotal());
+        assertEquals(4, result.damage());
+    }
 }

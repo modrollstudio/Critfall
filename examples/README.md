@@ -9,6 +9,8 @@ Modern KubeJS exposes public Java classes to scripts directly, so these call `Ro
 for the full API.
 
 - `pre_attack_advantage.js` — grant advantage on the attack roll when the attacker is sneaking.
+- `hazard_traits.js` — reroll a natural 1 and grant advantage on hazards by id, and add a bonus to
+  attack rolls (0.2.14+).
 - `roll_and_suppress.js` — suppress two entities and drive an attack entirely from script.
 - `effective_profile_lookup.js` — read an entity's effective AC / attack bonus / dice.
 

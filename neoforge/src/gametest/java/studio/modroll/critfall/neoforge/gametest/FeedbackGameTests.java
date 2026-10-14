@@ -73,4 +73,14 @@ public class FeedbackGameTests {
     public void addOnCheckReadoutShowsAdvantage(GameTestHelper helper) {
         FeedbackScenarios.addOnCheckReadoutShowsAdvantage(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void addOnHiddenCheckShowsNoDcOrResult(GameTestHelper helper) {
+        FeedbackScenarios.addOnHiddenCheckShowsNoDcOrResult(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void addOnSaveReadoutNamesTheSave(GameTestHelper helper) {
+        FeedbackScenarios.addOnSaveReadoutNamesTheSave(helper);
+    }
 }

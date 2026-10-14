@@ -151,4 +151,29 @@ public class ApiGameTests implements FabricGameTest {
             return () -> active = null;
         }
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void attackAdvantageAndDisadvantageCancel(GameTestHelper helper) {
+        ApiScenarios.attackAdvantageAndDisadvantageCancel(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void attackTwoAdvantagesAreStillAdvantage(GameTestHelper helper) {
+        ApiScenarios.attackTwoAdvantagesAreStillAdvantage(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void attackModeReplacementStillWorks(GameTestHelper helper) {
+        ApiScenarios.attackModeReplacementStillWorks(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void attackBonusShowsInTheReadout(GameTestHelper helper) {
+        ApiScenarios.attackBonusShowsInTheReadout(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void attackRerollOnesRerollsANaturalOne(GameTestHelper helper) {
+        ApiScenarios.attackRerollOnesRerollsANaturalOne(helper);
+    }
 }

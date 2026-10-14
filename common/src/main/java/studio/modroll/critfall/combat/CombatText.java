@@ -2,6 +2,7 @@ package studio.modroll.critfall.combat;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
@@ -71,9 +72,10 @@ public final class CombatText {
     }
 
     /**
-     * Renders a labelled save, check or hazard attack: {@code Spike trap: save d20 8+2=10 vs DC 13 — FAILED
-     * 2d6 = 7}, {@code Perception: check d20 14+3=17 vs DC 15 — SUCCESS}, {@code Dart trap: d20 15+5=20 vs
-     * AC 14 — HIT 1d4 = 3}.
+     * Renders a labelled save, check or hazard attack: {@code Spike trap: DEX save d20 8+2=10 vs DC 13 —
+     * FAILED 2d6 = 7}, {@code Perception: check d20 14+3=17 vs DC 15 — SUCCESS}, {@code Dart trap: d20
+     * 15+5=20 vs AC 14 — HIT 1d4 = 3}. A hidden outcome stops after the total: {@code Search: check d20
+     * 14+3=17}.
      */
     public static Component actionBar(CheckFeedbackPayload p) {
         MutableComponent line = Component.empty();
@@ -83,9 +85,17 @@ public final class CombatText {
         }
         String roll = d20(p.roll()) + signed(p.bonus()) + "=" + p.total();
         String dice = p.showsDamage() ? " " + p.diceNotation() + " = " + p.damage() : "";
+        if (p.outcomeHidden()) {
+            switch (p.kind()) {
+                case SAVE -> line.append(saveName(p)).append(" " + roll);
+                case CHECK -> line.append("check " + roll);
+                case ATTACK -> line.append(roll);
+            }
+            return line;
+        }
         switch (p.kind()) {
             case SAVE -> {
-                line.append("save " + roll + " vs DC " + p.dc() + " — ");
+                line.append(saveName(p)).append(" " + roll + " vs DC " + p.dc() + " — ");
                 if (!p.success()) {
                     line.append(Component.translatableWithFallback("critfall.feedback.save_failed", "FAILED"))
                             .append(dice);
@@ -121,6 +131,36 @@ public final class CombatText {
             }
         }
         return line;
+    }
+
+    /**
+     * {@code "save"}, or the save key's name: {@code critfall.save.<namespace>.<path>} from the lang file, else
+     * Critfall's English name for its own keys, else the key itself.
+     */
+    private static Component saveName(CheckFeedbackPayload p) {
+        if (p.saveKey().isEmpty()) {
+            return Component.literal("save");
+        }
+        return Component.translatableWithFallback(saveNameKey(p.saveKey()), saveNameFallback(p.saveKey()));
+    }
+
+    /** {@code critfall.save.critfall.dexterity} for {@code critfall:dexterity}. */
+    private static String saveNameKey(String saveKey) {
+        return "critfall.save." + saveKey.replace(':', '.');
+    }
+
+    /** English names for modless clients; {@code en_us.json} must match. */
+    private static String saveNameFallback(String saveKey) {
+        return switch (saveKey) {
+            case ModifierProvider.SPELL_SAVE -> "Spell save";
+            case ModifierProvider.STRENGTH_SAVE -> "STR save";
+            case ModifierProvider.DEXTERITY_SAVE -> "DEX save";
+            case ModifierProvider.CONSTITUTION_SAVE -> "CON save";
+            case ModifierProvider.INTELLIGENCE_SAVE -> "INT save";
+            case ModifierProvider.WISDOM_SAVE -> "WIS save";
+            case ModifierProvider.CHARISMA_SAVE -> "CHA save";
+            default -> saveKey;
+        };
     }
 
     private static String d20(RollDetail roll) {
