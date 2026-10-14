@@ -14,7 +14,6 @@ import studio.modroll.critfall.api.combat.HazardSaveResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.combat.SuccessDamage;
 import studio.modroll.critfall.api.dice.DiceRoller;
-import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.event.CritfallEvents;
 import studio.modroll.critfall.api.event.HazardRollEvent;
 import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
@@ -33,18 +32,22 @@ public final class Hazards {
 
     private Hazards() {}
 
-    /** The target saves (provider modifier, else {@code ownSaveBonus}); a fail takes the dice, a success half or none. */
+    /**
+     * The target saves (provider modifier, else {@code ownSaveBonus}, plus listeners' bonuses); a fail takes
+     * the dice, a success half or none. A hazard with no damage deals none either way.
+     */
     public static HazardSaveResult save(LivingEntity target, HazardSave hazard, int ownSaveBonus) {
         Rules rules = RollRuntime.rules();
         DiceRoller roller = RollRuntime.roller();
         DamageSource source = source(target, hazard.damageType());
         int saveBonus = Modifiers.saveBonus(rules, target, hazard.saveKey(), ownSaveBonus);
-        RollMode mode = CritfallEvents.fireHazardRoll(new HazardRollEvent(target, hazard))
-                .mode();
-        SaveResult save = CombatEngine.resolveSave(roller, saveBonus, hazard.dc(), mode);
+        HazardRollEvent event = CritfallEvents.fireHazardRoll(new HazardRollEvent(target, hazard));
+        SaveResult save = CombatEngine.resolveSave(
+                roller, saveBonus + event.bonus(), hazard.dc(), event.mode(), event.rerollsOnes());
 
         float damage = 0;
-        if (!save.saved() || hazard.onSuccess() == SuccessDamage.HALF) {
+        boolean takesDamage = !save.saved() || hazard.onSuccess() == SuccessDamage.HALF;
+        if (takesDamage && hazard.dealsDamage()) {
             // A failed save always hurts; the floor comes before resistances, so immunity still stands.
             damage = Math.max(
                             CombatEngine.MIN_HIT_DAMAGE,
@@ -65,26 +68,37 @@ public final class Hazards {
                 false,
                 save.roll().mode(),
                 save.roll().dropped(),
-                hazard.damage().toString(),
-                (int) damage);
+                hazard.dealsDamage() ? hazard.damage().toString() : "",
+                (int) damage,
+                hazard.saveKey(),
+                false);
         FeedbackSink.get().check(target, payload, rules.feedback().visibility());
         return new HazardSaveResult(save, (int) damage);
     }
 
-    /** The hazard rolls against the target's AC ({@code ownArmorClass} plus the provider's modifier). */
+    /**
+     * The hazard rolls against the target's AC ({@code ownArmorClass} plus the provider's modifier), with
+     * listeners' bonuses. A hazard with no damage hits for none.
+     */
     public static AttackResult attack(LivingEntity target, HazardAttack hazard, int ownArmorClass) {
         Rules rules = RollRuntime.rules();
         DamageSource source = source(target, hazard.damageType());
         int armorClass = Modifiers.armorClass(rules, target, null, ownArmorClass);
-        RollMode mode = CritfallEvents.fireHazardRoll(new HazardRollEvent(target, hazard))
-                .mode();
+        HazardRollEvent event = CritfallEvents.fireHazardRoll(new HazardRollEvent(target, hazard));
         // A hazard has no vanilla amount to fall back on, so it rolls its dice even with damage_dice off;
         // a natural 1 just misses: a trap cannot fumble.
-        CombatEngine.AttackInput input =
-                new CombatEngine.AttackInput(hazard.attackBonus(), armorClass, mode, hazard.damage(), 20, true, 0);
+        CombatEngine.AttackInput input = new CombatEngine.AttackInput(
+                hazard.attackBonus() + event.bonus(),
+                armorClass,
+                event.mode(),
+                hazard.damage(),
+                20,
+                true,
+                0,
+                event.rerollsOnes());
         AttackResult rolled = CombatEngine.resolveAttack(RollRuntime.roller(), withDamageDice(rules), input);
 
-        float damage = rolled.isHit() ? rolled.damage() * multiplier(rules, target, source) : 0;
+        float damage = rolled.isHit() && hazard.dealsDamage() ? rolled.damage() * multiplier(rules, target, source) : 0;
         AttackResult result = rolled.withDamage((int) damage);
         apply(target, source, damage);
         CheckFeedbackPayload payload = new CheckFeedbackPayload(
@@ -97,7 +111,7 @@ public final class Hazards {
                 result.outcome() == AttackOutcome.CRIT,
                 result.roll().mode(),
                 result.roll().dropped(),
-                hazard.damage().toString(),
+                hazard.dealsDamage() ? hazard.damage().toString() : "",
                 result.damage());
         FeedbackSink.get().check(target, payload, rules.feedback().visibility());
         return result;

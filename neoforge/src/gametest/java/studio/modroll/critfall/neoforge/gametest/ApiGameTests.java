@@ -164,4 +164,29 @@ public class ApiGameTests {
             NeoForge.EVENT_BUS.unregister(this);
         }
     }
+
+    @GameTest(template = TEMPLATE)
+    public void attackAdvantageAndDisadvantageCancel(GameTestHelper helper) {
+        ApiScenarios.attackAdvantageAndDisadvantageCancel(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void attackTwoAdvantagesAreStillAdvantage(GameTestHelper helper) {
+        ApiScenarios.attackTwoAdvantagesAreStillAdvantage(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void attackModeReplacementStillWorks(GameTestHelper helper) {
+        ApiScenarios.attackModeReplacementStillWorks(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void attackBonusShowsInTheReadout(GameTestHelper helper) {
+        ApiScenarios.attackBonusShowsInTheReadout(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void attackRerollOnesRerollsANaturalOne(GameTestHelper helper) {
+        ApiScenarios.attackRerollOnesRerollsANaturalOne(helper);
+    }
 }

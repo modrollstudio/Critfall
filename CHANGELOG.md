@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.14] - 2026-10-13
+
+API additions for Dungeon Crawl and Checks. Additive only: Initiative, Checks 0.1.1 and Crawl keep working.
+
+### Added
+
+- Hazard ids: `HazardSave.withId(id)` / `HazardAttack.withId(id)`, read as `HazardRollEvent.id()`.
+- `HazardSave.NO_DAMAGE`: a hazard that deals no damage, even on a failed save. Hazards with damage
+  still deal at least 1.
+- `PreAttackRollEvent.grantAdvantage()` and `imposeDisadvantage()`, combined the 5e way. `mode(RollMode)`
+  still replaces the mode.
+- `addBonus(int)` and `rerollOnes()` (reroll a natural 1 once) on `PreAttackRollEvent` and
+  `HazardRollEvent`. The bonus shows in the readout.
+- `CheckFeedbackPayload.hiddenCheck(label, result)`: a check readout with no DC and no result.
+- Hazard save readouts name the save (`Spike trap: DEX save d20 ...`), from the lang key
+  `critfall.save.<namespace>.<path>`; unknown keys show the key. Add-ons use
+  `CheckFeedbackPayload.save(label, saveKey, result)`.
+
+### Notes
+
+- The check readout packet gained fields and moved to `critfall:check_feedback_v2`; 0.2.13 clients get
+  it on the action bar instead.
+
 ## [0.2.13] - 2026-10-12
 
 API additions for traps and dungeon mobs: one entity can have its own profile, hazards roll saves and

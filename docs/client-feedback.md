@@ -15,10 +15,13 @@ never disconnected:
   situational defender-AC modifier (`roll()` and `baseArmorClass()` derive from them).
 - `critfall:save_feedback` — one resolved saving throw: natural, total, DC, saved/failed, half/negate,
   dice, damage, optional flavor key, and (0.2.6) the same roll mode and dropped face.
-- `critfall:check_feedback` (0.2.13) — one labelled save, check, or hazard attack: kind, label, natural,
-  total, DC (or AC), success, crit, roll mode and dropped face, and the damage dice and amount when it
-  dealt damage. Add-ons send it through `RollService.sendCheckFeedback`; hazards send it too. A client
-  without this channel gets the action-bar text instead, so an older Critfall client keeps working.
+- `critfall:check_feedback_v2` (0.2.14; `critfall:check_feedback` in 0.2.13) — one labelled save,
+  check, or hazard attack: kind, label, natural, total, DC (or AC), success, crit, roll mode and dropped
+  face, the damage dice and amount when it dealt damage, and since 0.2.14 the save key (for the save's
+  name) and whether the outcome is hidden (no DC or result shown, and none sent). Add-ons send it through
+  `RollService.sendCheckFeedback`; hazards send it too. A client without this channel gets the
+  action-bar text instead, so an older Critfall client keeps working: the 0.2.14 packet gained fields,
+  so it moved to a new channel name rather than reach a 0.2.13 client that cannot read it.
 
 The payloads carry only flat primitives + translation keys; the client builds all text from them.
 

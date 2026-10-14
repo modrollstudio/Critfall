@@ -11,6 +11,14 @@
   "critfall.feedback.check_success": "SUCCESS",
   "critfall.feedback.check_failed": "FAILED",
 
+  "critfall.save.critfall.spell": "Spell save",
+  "critfall.save.critfall.strength": "STR save",
+  "critfall.save.critfall.dexterity": "DEX save",
+  "critfall.save.critfall.constitution": "CON save",
+  "critfall.save.critfall.intelligence": "INT save",
+  "critfall.save.critfall.wisdom": "WIS save",
+  "critfall.save.critfall.charisma": "CHA save",
+
   "critfall.consequence.durability.broken": "weapon nearly broken!",
   "critfall.consequence.durability.worn": "weapon takes a beating",
   "critfall.consequence.hit_ally": "you hit %s!",

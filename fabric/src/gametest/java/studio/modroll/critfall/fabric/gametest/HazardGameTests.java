@@ -77,4 +77,39 @@ public class HazardGameTests implements FabricGameTest {
     public void advantageAndDisadvantageListenersRollNormally(GameTestHelper helper) {
         HazardScenarios.advantageAndDisadvantageListenersRollNormally(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void hazardIdReachesTheEvent(GameTestHelper helper) {
+        HazardScenarios.hazardIdReachesTheEvent(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void failedSaveWithoutDamageDealsNone(GameTestHelper helper) {
+        HazardScenarios.failedSaveWithoutDamageDealsNone(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void failedSaveWithDamageStillDealsAtLeastOne(GameTestHelper helper) {
+        HazardScenarios.failedSaveWithDamageStillDealsAtLeastOne(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void hazardAttackWithoutDamageHitsForNone(GameTestHelper helper) {
+        HazardScenarios.hazardAttackWithoutDamageHitsForNone(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void listenerBonusRaisesTheHazardSave(GameTestHelper helper) {
+        HazardScenarios.listenerBonusRaisesTheHazardSave(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void listenerRerollsANaturalOneOnTheHazardSave(GameTestHelper helper) {
+        HazardScenarios.listenerRerollsANaturalOneOnTheHazardSave(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void listenerBonusAndRerollOnHazardAttack(GameTestHelper helper) {
+        HazardScenarios.listenerBonusAndRerollOnHazardAttack(helper);
+    }
 }

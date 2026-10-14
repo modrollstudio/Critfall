@@ -1,8 +1,12 @@
 package studio.modroll.critfall.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Optional;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageTypes;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.combat.SuccessDamage;
@@ -44,5 +48,39 @@ class HazardSpecTest {
         assertThrows(NullPointerException.class, () -> HazardSave.of(null, DamageTypes.FALL, "k", 10, DICE));
         assertThrows(NullPointerException.class, () -> HazardSave.of("Pit", null, "k", 10, DICE));
         assertThrows(NullPointerException.class, () -> HazardAttack.of("Darts", DamageTypes.ARROW, 5, null));
+    }
+
+    @Test
+    void idIsEmptyUnlessGiven() {
+        ResourceLocation id = ResourceLocation.parse("crawl:trap/spikes");
+        HazardSave save = HazardSave.of("Pit", DamageTypes.FALL, ModifierProvider.DEXTERITY_SAVE, 13, DICE);
+        assertEquals(Optional.empty(), save.id());
+        HazardSave withId = save.withId(id).withMode(RollMode.ADVANTAGE).withOnSuccess(SuccessDamage.NONE);
+        assertEquals(Optional.of(id), withId.id());
+        HazardAttack attack = HazardAttack.of("Darts", DamageTypes.ARROW, 5, DICE);
+        assertEquals(Optional.empty(), attack.id());
+        assertEquals(
+                Optional.of(id), attack.withId(id).withMode(RollMode.ADVANTAGE).id());
+    }
+
+    @Test
+    void constructorsWithoutAnIdStillWork() {
+        HazardSave save = new HazardSave("Pit", DamageTypes.FALL, "k", 13, DICE, SuccessDamage.HALF, RollMode.NORMAL);
+        assertEquals(Optional.empty(), save.id());
+        HazardAttack attack = new HazardAttack("Darts", DamageTypes.ARROW, 5, DICE, RollMode.NORMAL);
+        assertEquals(Optional.empty(), attack.id());
+    }
+
+    @Test
+    void onlyAFlatZeroDealsNoDamage() {
+        assertFalse(HazardSave.of("Gas", DamageTypes.MAGIC, "k", 13, HazardSave.NO_DAMAGE)
+                .dealsDamage());
+        assertFalse(HazardAttack.of("Needle", DamageTypes.ARROW, 5, DiceExpression.parse("0"))
+                .dealsDamage());
+        assertTrue(HazardSave.of("Gas", DamageTypes.MAGIC, "k", 13, DICE).dealsDamage());
+        assertTrue(HazardSave.of("Gas", DamageTypes.MAGIC, "k", 13, DiceExpression.parse("1"))
+                .dealsDamage());
+        assertTrue(HazardSave.of("Gas", DamageTypes.MAGIC, "k", 13, DiceExpression.parse("1d4-5"))
+                .dealsDamage());
     }
 }

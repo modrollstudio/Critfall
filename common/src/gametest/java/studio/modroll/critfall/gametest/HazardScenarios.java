@@ -3,6 +3,7 @@ package studio.modroll.critfall.gametest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Consumer;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -87,7 +88,7 @@ public final class HazardScenarios {
                         helper.fail("expected a failed save taking 7, got " + result);
                     }
                     expectHealth(helper, pig, pig.getMaxHealth() - 7);
-                    expectReadout(helper, sink, pig, "Spike trap: save d20 5+0=5 vs DC 13 — FAILED 2d6 = 7");
+                    expectReadout(helper, sink, pig, "Spike trap: DEX save d20 5+0=5 vs DC 13 — FAILED 2d6 = 7");
                 },
                 5,
                 3,
@@ -147,7 +148,8 @@ public final class HazardScenarios {
                     if (!dex.saved() || dex.save().saveBonus() != 4 || dex.damage() != 2) {
                         helper.fail("expected the provider's +4 to save the DEX save, got " + dex);
                     }
-                    expectReadout(helper, sink, pig, "Spike trap: save d20 10+4=14 vs DC 13 — SAVED, half damage 2");
+                    expectReadout(
+                            helper, sink, pig, "Spike trap: DEX save d20 10+4=14 vs DC 13 — SAVED, half damage 2");
                     // An ability the provider does not map keeps Critfall's own save bonus (+0): 10 fails.
                     HazardSave gas = HazardSave.of(
                             "Gas vent", DamageTypes.MAGIC, ModifierProvider.CONSTITUTION_SAVE, 13, TWO_D6);
@@ -356,7 +358,7 @@ public final class HazardScenarios {
                                 helper,
                                 sink,
                                 pig,
-                                "Poison gas: save d20 adv 4/15 → 15+0=15 vs DC 13 — SAVED, half damage 2");
+                                "Poison gas: CON save d20 adv 4/15 → 15+0=15 vs DC 13 — SAVED, half damage 2");
                         // The trait does not cover a DEX save: one die, 10 fails. 2d6 rolls 1 + 1.
                         HazardSaveResult spikes = RollService.performHazardSave(pig, spikes());
                         if (spikes.saved() || spikes.save().roll().mode() != RollMode.NORMAL) {
@@ -443,7 +445,7 @@ public final class HazardScenarios {
                                 || result.save().roll().hasTwoDice()) {
                             helper.fail("advantage and disadvantage must cancel to one die, got " + result);
                         }
-                        expectReadout(helper, sink, pig, "Poison gas: save d20 10+0=10 vs DC 13 — FAILED 2d6 = 2");
+                        expectReadout(helper, sink, pig, "Poison gas: CON save d20 10+0=10 vs DC 13 — FAILED 2d6 = 2");
                     },
                     10,
                     1,
@@ -451,6 +453,192 @@ public final class HazardScenarios {
             if (!finalModes.equals(List.of(RollMode.NORMAL))) {
                 helper.fail("a later listener must read the combined mode as NORMAL, read " + finalModes);
             }
+        } finally {
+            CritfallEvents.clearListeners();
+        }
+        helper.succeed();
+    }
+
+    /** A hazard's id reaches {@link HazardRollEvent}; a hazard without one reads empty, as before 0.2.14. */
+    public static void hazardIdReachesTheEvent(GameTestHelper helper) {
+        Pig pig = spawnPig(helper);
+        ResourceLocation spikesId = ResourceLocation.parse("crawl:trap/spikes");
+        List<Optional<ResourceLocation>> ids = new ArrayList<>();
+        CritfallEvents.onHazardRoll(event -> ids.add(event.id()));
+        try {
+            run(
+                    helper,
+                    null,
+                    sink -> {
+                        // d20 15 saves; 2d6 rolls 1 + 1, halved to 1. Then the darts miss on 2 + 5 = 7.
+                        RollService.performHazardSave(pig, spikes().withId(spikesId));
+                        RollService.performHazardAttack(pig, darts());
+                    },
+                    15,
+                    1,
+                    1,
+                    2);
+            if (!ids.equals(List.of(Optional.of(spikesId), Optional.empty()))) {
+                helper.fail("expected the save's id and an empty id for the darts, got " + ids);
+            }
+        } finally {
+            CritfallEvents.clearListeners();
+        }
+        helper.succeed();
+    }
+
+    /** A save that only decides an effect: a fail deals 0, not the minimum of 1, and shows no dice. */
+    public static void failedSaveWithoutDamageDealsNone(GameTestHelper helper) {
+        Pig pig = spawnPig(helper);
+        HazardSave needle = HazardSave.of(
+                "Poison needle", DamageTypes.MAGIC, ModifierProvider.CONSTITUTION_SAVE, 13, HazardSave.NO_DAMAGE);
+        run(
+                helper,
+                null,
+                sink -> {
+                    // d20 5 fails; no damage dice are rolled.
+                    HazardSaveResult result = RollService.performHazardSave(pig, needle);
+                    if (result.saved() || result.damage() != 0) {
+                        helper.fail("expected a failed save dealing 0, got " + result);
+                    }
+                    expectHealth(helper, pig, pig.getMaxHealth());
+                    expectExactReadout(helper, sink, "Poison needle: CON save d20 5+0=5 vs DC 13 — FAILED");
+                    // d20 15 saves: nothing to halve.
+                    HazardSaveResult saved = RollService.performHazardSave(pig, needle);
+                    if (!saved.saved() || saved.damage() != 0) {
+                        helper.fail("expected a save dealing 0, got " + saved);
+                    }
+                    expectExactReadout(helper, sink, "Poison needle: CON save d20 15+0=15 vs DC 13 — SAVED");
+                },
+                5,
+                15);
+        helper.succeed();
+    }
+
+    /** Damage dice that roll 0 or less still deal 1 on a failed save. */
+    public static void failedSaveWithDamageStillDealsAtLeastOne(GameTestHelper helper) {
+        Pig pig = spawnPig(helper);
+        HazardSave splinters = HazardSave.of(
+                "Splinters", DamageTypes.CACTUS, ModifierProvider.DEXTERITY_SAVE, 13, DiceExpression.parse("1d4-3"));
+        run(
+                helper,
+                null,
+                sink -> {
+                    // d20 5 fails; 1d4-3 rolls 1 - 3 = -2, floored to 1.
+                    HazardSaveResult result = RollService.performHazardSave(pig, splinters);
+                    if (result.saved() || result.damage() != 1) {
+                        helper.fail("expected a failed save dealing the minimum 1, got " + result);
+                    }
+                    expectHealth(helper, pig, pig.getMaxHealth() - 1);
+                },
+                5,
+                1);
+        helper.succeed();
+    }
+
+    /** A hit from a hazard with no damage deals none. */
+    public static void hazardAttackWithoutDamageHitsForNone(GameTestHelper helper) {
+        Pig pig = spawnPig(helper);
+        HazardAttack net = HazardAttack.of("Net", DamageTypes.ARROW, 5, HazardSave.NO_DAMAGE);
+        run(
+                helper,
+                null,
+                sink -> {
+                    AttackResult result = RollService.performHazardAttack(pig, net);
+                    if (!result.isHit() || result.damage() != 0) {
+                        helper.fail("expected a hit dealing 0, got " + result);
+                    }
+                    expectHealth(helper, pig, pig.getMaxHealth());
+                    expectExactReadout(helper, sink, "Net: d20 15+5=20 vs AC 10 — HIT");
+                },
+                15);
+        helper.succeed();
+    }
+
+    /** A listener's bonus raises the save total, and the readout's modifier shows it. */
+    public static void listenerBonusRaisesTheHazardSave(GameTestHelper helper) {
+        Pig pig = spawnPig(helper);
+        CritfallEvents.onHazardRoll(event -> event.addBonus(2));
+        CritfallEvents.onHazardRoll(event -> event.addBonus(1));
+        try {
+            run(
+                    helper,
+                    null,
+                    sink -> {
+                        // d20 10 + 0 + 3 = 13 saves DC 13 (10 alone fails); 2d6 rolls 2 + 2, halved to 2.
+                        HazardSaveResult result = RollService.performHazardSave(pig, spikes());
+                        if (!result.saved() || result.save().saveTotal() != 13) {
+                            helper.fail("the listeners' +3 must make the total 13 and save, got " + result);
+                        }
+                        expectExactReadout(
+                                helper, sink, "Spike trap: DEX save d20 10+3=13 vs DC 13 — SAVED, half damage 2");
+                    },
+                    10,
+                    2,
+                    2);
+        } finally {
+            CritfallEvents.clearListeners();
+        }
+        helper.succeed();
+    }
+
+    /** The halfling's Luck: a natural 1 on the save rolls again once, and the new roll stands. */
+    public static void listenerRerollsANaturalOneOnTheHazardSave(GameTestHelper helper) {
+        Pig pig = spawnPig(helper);
+        CritfallEvents.onHazardRoll(HazardRollEvent::rerollOnes);
+        try {
+            run(
+                    helper,
+                    null,
+                    sink -> {
+                        // 1 rerolls to 14 and saves; 2d6 rolls 2 + 2, halved to 2.
+                        HazardSaveResult result = RollService.performHazardSave(pig, spikes());
+                        if (!result.saved() || result.save().natural() != 14) {
+                            helper.fail("the natural 1 must reroll to 14 and save, got " + result);
+                        }
+                        expectExactReadout(
+                                helper, sink, "Spike trap: DEX save d20 14+0=14 vs DC 13 — SAVED, half damage 2");
+                        // 1 rerolls to another 1, which stands: no third die. 2d6 rolls 1 + 1.
+                        HazardSaveResult again = RollService.performHazardSave(pig, spikes());
+                        if (again.saved() || again.save().natural() != 1) {
+                            helper.fail("a second 1 must stand, got " + again);
+                        }
+                    },
+                    1,
+                    14,
+                    2,
+                    2,
+                    1,
+                    1,
+                    1,
+                    1);
+        } finally {
+            CritfallEvents.clearListeners();
+        }
+        helper.succeed();
+    }
+
+    /** Bonus and reroll on a hazard attack: the natural 1 rerolls to 8, and 8 + 5 + 2 = 15 hits AC 10. */
+    public static void listenerBonusAndRerollOnHazardAttack(GameTestHelper helper) {
+        Pig pig = spawnPig(helper);
+        CritfallEvents.onHazardRoll(event -> {
+            event.addBonus(2);
+            event.rerollOnes();
+        });
+        try {
+            run(
+                    helper,
+                    null,
+                    sink -> {
+                        AttackResult result = RollService.performHazardAttack(pig, darts());
+                        if (!result.isHit() || result.natural() != 8 || result.attackTotal() != 15) {
+                            helper.fail("expected the reroll to 8 and a total of 15, got " + result);
+                        }
+                        expectExactReadout(helper, sink, "Dart trap: d20 8+7=15 vs AC 10 — HIT 1d4 = 3");
+                    },
+                    1,
+                    8,
+                    3);
         } finally {
             CritfallEvents.clearListeners();
         }
@@ -491,6 +679,14 @@ public final class HazardScenarios {
         String readout = CombatText.actionBar(payload).getString();
         if (!readout.contains(fragment)) {
             helper.fail("the readout must contain \"" + fragment + "\", was \"" + readout + "\"");
+        }
+    }
+
+    private static void expectExactReadout(GameTestHelper helper, CapturingFeedbackSink sink, String expected) {
+        CheckFeedbackPayload payload = sink.lastCheck();
+        String readout = payload == null ? null : CombatText.actionBar(payload).getString();
+        if (!expected.equals(readout)) {
+            helper.fail("expected the readout \"" + expected + "\", was \"" + readout + "\"");
         }
     }
 

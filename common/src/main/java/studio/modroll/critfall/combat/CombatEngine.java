@@ -1,5 +1,6 @@
 package studio.modroll.critfall.combat;
 
+import java.util.OptionalInt;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
@@ -33,6 +34,7 @@ public final class CombatEngine {
      * @param fumbleSuppressed nat 1s downgrade to plain misses while true — set when a fumble
      *     triggered within {@code fumbles.cooldown_ticks} or the attacker is outside
      *     {@code fumbles.applies_to}
+     * @param rerollOnes a kept natural 1 on the attack d20 rolls again once (the halfling's Luck)
      */
     public record AttackInput(
             int attackBonus,
@@ -41,10 +43,22 @@ public final class CombatEngine {
             DiceExpression damageDice,
             int critRange,
             boolean fumbleSuppressed,
-            int defenderAcBonus) {
+            int defenderAcBonus,
+            boolean rerollOnes) {
 
         public AttackInput(int attackBonus, int armorClass, RollMode mode, DiceExpression damageDice) {
             this(attackBonus, armorClass, mode, damageDice, 20, false, 0);
+        }
+
+        public AttackInput(
+                int attackBonus,
+                int armorClass,
+                RollMode mode,
+                DiceExpression damageDice,
+                int critRange,
+                boolean fumbleSuppressed,
+                int defenderAcBonus) {
+            this(attackBonus, armorClass, mode, damageDice, critRange, fumbleSuppressed, defenderAcBonus, false);
         }
 
         int effectiveArmorClass() {
@@ -62,7 +76,7 @@ public final class CombatEngine {
      * otherwise {@code natural + attackBonus >= armorClass} hits.
      */
     public static AttackResult resolveAttack(DiceRoller roller, Rules rules, AttackInput input) {
-        RollDetail roll = d20(roller, input.mode());
+        RollDetail roll = d20(roller, input.mode(), input.rerollOnes());
         int natural = roll.kept();
         int attackTotal = natural + input.attackBonus();
         int armorClass = input.effectiveArmorClass();
@@ -99,7 +113,11 @@ public final class CombatEngine {
     }
 
     public static SaveResult resolveSave(DiceRoller roller, int saveBonus, int dc, RollMode mode) {
-        RollDetail roll = d20(roller, mode);
+        return resolveSave(roller, saveBonus, dc, mode, false);
+    }
+
+    public static SaveResult resolveSave(DiceRoller roller, int saveBonus, int dc, RollMode mode, boolean rerollOnes) {
+        RollDetail roll = d20(roller, mode, rerollOnes);
         return new SaveResult(roll.kept(), roll.kept() + saveBonus, dc, roll);
     }
 
@@ -119,6 +137,27 @@ public final class CombatEngine {
 
     private static RollDetail d20(DiceRoller roller, RollMode mode) {
         return RollDetail.of(mode, roller.d20(mode));
+    }
+
+    /**
+     * With {@code rerollOnes}, a kept 1 rolls again once and the new face replaces it, even another 1 (the
+     * halfling's Luck). Under advantage or disadvantage only the die that showed the kept 1 rolls again, and
+     * the pair is kept by the mode as usual; the reroll is drawn after the first dice.
+     */
+    static RollDetail d20(DiceRoller roller, RollMode mode, boolean rerollOnes) {
+        RollDetail roll = d20(roller, mode);
+        if (!rerollOnes || roll.kept() != 1) {
+            return roll;
+        }
+        int reroll = roller.d20(RollMode.NORMAL).total();
+        if (!roll.hasTwoDice()) {
+            return RollDetail.normal(reroll);
+        }
+        int other = roll.dropped().getAsInt();
+        boolean rerollKept = mode == RollMode.ADVANTAGE ? reroll >= other : reroll <= other;
+        return rerollKept
+                ? new RollDetail(mode, reroll, OptionalInt.of(other))
+                : new RollDetail(mode, other, OptionalInt.of(reroll));
     }
 
     /** The fumble is confirmed (consequences fire) when the second d20 rolls BELOW the DC. */

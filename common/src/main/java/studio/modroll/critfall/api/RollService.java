@@ -195,9 +195,9 @@ public final class RollService {
     }
 
     /**
-     * Shows a save or check ({@link CheckFeedbackPayload#save}, {@link CheckFeedbackPayload#check}) to
-     * {@code roller} when it is a player, in Critfall's readout, unless {@code roll_visibility} is off.
-     * Since 0.2.13.
+     * Shows a save or check ({@link CheckFeedbackPayload#save}, {@link CheckFeedbackPayload#check}, or since
+     * 0.2.14 {@link CheckFeedbackPayload#hiddenCheck}) to {@code roller} when it is a player, in Critfall's
+     * readout, unless {@code roll_visibility} is off. Since 0.2.13.
      */
     public static void sendCheckFeedback(LivingEntity roller, CheckFeedbackPayload payload) {
         FeedbackSink.get()
@@ -210,9 +210,10 @@ public final class RollService {
     /**
      * {@code target} rolls a saving throw against {@code hazard}: d20 plus the {@link ModifierProvider}'s
      * modifier for {@link HazardSave#saveKey()}, else the target's {@code save_bonus}, against the DC. A fail
-     * takes the rolled damage, a success half or none. {@link
-     * studio.modroll.critfall.api.event.HazardRollEvent} listeners may change the roll mode first. Applies the
-     * damage, shows the readout to the target, and returns both. Since 0.2.13.
+     * takes the rolled damage (at least 1), a success half or none; a hazard with {@link HazardSave#NO_DAMAGE}
+     * deals none either way (since 0.2.14). {@link studio.modroll.critfall.api.event.HazardRollEvent} listeners
+     * may change the roll mode, add a bonus or reroll a natural 1 first. Applies the damage, shows the readout
+     * (naming the save) to the target, and returns both. Since 0.2.13.
      */
     public static HazardSaveResult performHazardSave(LivingEntity target, HazardSave hazard) {
         return Hazards.save(
@@ -225,8 +226,8 @@ public final class RollService {
      * {@code hazard} rolls to hit {@code target}'s AC (with the {@link ModifierProvider}'s AC modifier,
      * asked with a null attacker). A hit applies the rolled damage, a crit the server's crit rule; a
      * natural 1 is a plain miss. {@link studio.modroll.critfall.api.event.HazardRollEvent} listeners may
-     * change the roll mode first. Shows the readout to the target. The result's {@code damage()} is what
-     * Critfall applied. Since 0.2.13.
+     * change the roll mode, add a bonus or reroll a natural 1 first. Shows the readout to the target. The
+     * result's {@code damage()} is what Critfall applied: none for a hazard with no damage. Since 0.2.13.
      */
     public static AttackResult performHazardAttack(LivingEntity target, HazardAttack hazard) {
         return Hazards.attack(

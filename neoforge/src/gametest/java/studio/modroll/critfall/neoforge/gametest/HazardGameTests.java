@@ -83,4 +83,39 @@ public class HazardGameTests {
     public void advantageAndDisadvantageListenersRollNormally(GameTestHelper helper) {
         HazardScenarios.advantageAndDisadvantageListenersRollNormally(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void hazardIdReachesTheEvent(GameTestHelper helper) {
+        HazardScenarios.hazardIdReachesTheEvent(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void failedSaveWithoutDamageDealsNone(GameTestHelper helper) {
+        HazardScenarios.failedSaveWithoutDamageDealsNone(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void failedSaveWithDamageStillDealsAtLeastOne(GameTestHelper helper) {
+        HazardScenarios.failedSaveWithDamageStillDealsAtLeastOne(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void hazardAttackWithoutDamageHitsForNone(GameTestHelper helper) {
+        HazardScenarios.hazardAttackWithoutDamageHitsForNone(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void listenerBonusRaisesTheHazardSave(GameTestHelper helper) {
+        HazardScenarios.listenerBonusRaisesTheHazardSave(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void listenerRerollsANaturalOneOnTheHazardSave(GameTestHelper helper) {
+        HazardScenarios.listenerRerollsANaturalOneOnTheHazardSave(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void listenerBonusAndRerollOnHazardAttack(GameTestHelper helper) {
+        HazardScenarios.listenerBonusAndRerollOnHazardAttack(helper);
+    }
 }

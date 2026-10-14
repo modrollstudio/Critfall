@@ -200,4 +200,15 @@ class FeedbackPayloadCodecTest {
         CheckFeedbackPayload.STREAM_CODEC.encode(buf, payload);
         assertEquals(payload, CheckFeedbackPayload.STREAM_CODEC.decode(buf));
     }
+
+    @Test
+    void checkPayloadRoundTripsSaveKeyAndHiddenOutcome() {
+        CheckFeedbackPayload named = CheckFeedbackPayload.save("Trap", "critfall:dexterity", new SaveResult(8, 10, 13));
+        CheckFeedbackPayload hidden = CheckFeedbackPayload.hiddenCheck("Search", new SaveResult(14, 17, 15));
+        for (CheckFeedbackPayload payload : List.of(named, hidden)) {
+            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            CheckFeedbackPayload.STREAM_CODEC.encode(buf, payload);
+            assertEquals(payload, CheckFeedbackPayload.STREAM_CODEC.decode(buf));
+        }
+    }
 }

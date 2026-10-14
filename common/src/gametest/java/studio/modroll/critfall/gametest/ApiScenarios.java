@@ -27,6 +27,7 @@ import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.event.CombatInteractionEvent;
 import studio.modroll.critfall.api.event.CritfallEvents;
+import studio.modroll.critfall.api.event.PreAttackRollEvent;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.combat.FumbleCooldowns;
@@ -684,6 +685,119 @@ public final class ApiScenarios {
                 12,
                 4);
         cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    /**
+     * Drives one husk-on-pig attack (husk +3, 1d6+1; pig AC 10) with {@code listener} on {@link
+     * PreAttackRollEvent}, and returns the result and the readout.
+     */
+    private static AttackResult attackWithListener(
+            GameTestHelper helper, Consumer<PreAttackRollEvent> listener, String[] readout, int... faces) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        CritfallEvents.onPreAttackRoll(listener);
+        AttackResult[] result = new AttackResult[1];
+        try {
+            withRolls(
+                    helper,
+                    () -> {
+                        AttackContext ctx = AttackContext.melee(
+                                helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem());
+                        result[0] = RollService.performAttack(husk, pig, ctx);
+                        RollFeedbackPayload payload = sink.lastRoll();
+                        readout[0] = payload == null
+                                ? ""
+                                : CombatText.actionBar(payload).getString();
+                    },
+                    faces);
+        } finally {
+            CritfallEvents.clearListeners();
+            FeedbackSink.set(previous);
+            cleanup(husk, pig);
+        }
+        return result[0];
+    }
+
+    /** One add-on grants advantage and another imposes disadvantage: 5e cancels them to one die. */
+    public static void attackAdvantageAndDisadvantageCancel(GameTestHelper helper) {
+        String[] readout = new String[1];
+        // One die: 12 + 3 = 15 hits; 1d6+1 rolls 4 -> 5.
+        AttackResult result = attackWithListener(
+                helper,
+                event -> {
+                    event.grantAdvantage();
+                    event.imposeDisadvantage();
+                },
+                readout,
+                12,
+                4);
+        if (result.roll().mode() != RollMode.NORMAL || result.roll().hasTwoDice() || result.natural() != 12) {
+            helper.fail("advantage and disadvantage must cancel to one die, got " + result);
+        }
+        helper.succeed();
+    }
+
+    /** Two sources of advantage are still advantage: two dice, the higher kept. */
+    public static void attackTwoAdvantagesAreStillAdvantage(GameTestHelper helper) {
+        String[] readout = new String[1];
+        // Advantage keeps 18 of 7/18; 21 hits, 1d6+1 rolls 4 -> 5.
+        AttackResult result = attackWithListener(
+                helper,
+                event -> {
+                    event.grantAdvantage();
+                    event.grantAdvantage();
+                },
+                readout,
+                7,
+                18,
+                4);
+        expectRollDetail(helper, result.roll(), RollMode.ADVANTAGE, 18, 7);
+        helper.succeed();
+    }
+
+    /** Replacing the mode, as before 0.2.14, still decides the roll. */
+    public static void attackModeReplacementStillWorks(GameTestHelper helper) {
+        String[] readout = new String[1];
+        // Disadvantage keeps 3 of 19/3; 6 misses AC 10.
+        AttackResult result = attackWithListener(helper, event -> event.mode(RollMode.DISADVANTAGE), readout, 19, 3);
+        expectRollDetail(helper, result.roll(), RollMode.DISADVANTAGE, 3, 19);
+        if (result.isHit()) {
+            helper.fail("the replaced disadvantage must keep 3 and miss, got " + result);
+        }
+        helper.succeed();
+    }
+
+    /** A listener's bonus raises the attack total, and the readout's modifier shows it. */
+    public static void attackBonusShowsInTheReadout(GameTestHelper helper) {
+        String[] readout = new String[1];
+        // 5 + 3 = 8 would miss AC 10; with +4 it is 12 and hits. 1d6+1 rolls 4 -> 5.
+        AttackResult result = attackWithListener(helper, event -> event.addBonus(4), readout, 5, 4);
+        if (!result.isHit() || result.attackTotal() != 12) {
+            helper.fail("the +4 must make the total 12 and hit, got " + result);
+        }
+        if (!readout[0].contains("d20 5+7=12 vs AC 10")) {
+            helper.fail("the readout must show the +4 in the modifier, was \"" + readout[0] + "\"");
+        }
+        helper.succeed();
+    }
+
+    /** The halfling's Luck on an attack: the natural 1 rolls again and the new roll stands. */
+    public static void attackRerollOnesRerollsANaturalOne(GameTestHelper helper) {
+        String[] readout = new String[1];
+        // The 1 rerolls to 15: 18 hits, 1d6+1 rolls 4 -> 5. No fumble confirmation is rolled.
+        AttackResult result = attackWithListener(helper, PreAttackRollEvent::rerollOnes, readout, 1, 15, 4);
+        if (!result.isHit() || result.natural() != 15) {
+            helper.fail("the natural 1 must reroll to 15 and hit, got " + result);
+        }
+        if (!readout[0].contains("d20 15+3=18")) {
+            helper.fail("the readout must show the rerolled 15, was \"" + readout[0] + "\"");
+        }
         helper.succeed();
     }
 

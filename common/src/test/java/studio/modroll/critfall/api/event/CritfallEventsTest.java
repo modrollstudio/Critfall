@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Optional;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.item.ItemStack;
 import org.junit.jupiter.api.AfterEach;
@@ -193,5 +195,84 @@ class CritfallEventsTest {
         CritfallEvents.onHazardRoll(HazardRollEvent::grantAdvantage);
         CritfallEvents.clearListeners();
         assertEquals(RollMode.NORMAL, fire(darts()));
+    }
+
+    private static PreAttackRollEvent firePreAttack(RollMode mode) {
+        return CritfallEvents.firePreAttackRoll(null, null, ctx(), 3, mode);
+    }
+
+    @Test
+    void preAttackAdvantageAndDisadvantageCancel() {
+        CritfallEvents.onPreAttackRoll(PreAttackRollEvent::grantAdvantage);
+        CritfallEvents.onPreAttackRoll(PreAttackRollEvent::imposeDisadvantage);
+        assertEquals(RollMode.NORMAL, firePreAttack(RollMode.NORMAL).mode());
+    }
+
+    @Test
+    void preAttackTwoAdvantagesAreStillAdvantage() {
+        CritfallEvents.onPreAttackRoll(PreAttackRollEvent::grantAdvantage);
+        CritfallEvents.onPreAttackRoll(PreAttackRollEvent::grantAdvantage);
+        assertEquals(RollMode.ADVANTAGE, firePreAttack(RollMode.NORMAL).mode());
+    }
+
+    @Test
+    void preAttackOwnModeCountsAsASource() {
+        CritfallEvents.onPreAttackRoll(PreAttackRollEvent::imposeDisadvantage);
+        assertEquals(RollMode.NORMAL, firePreAttack(RollMode.ADVANTAGE).mode());
+        assertEquals(RollMode.DISADVANTAGE, firePreAttack(RollMode.DISADVANTAGE).mode());
+    }
+
+    @Test
+    void preAttackReplacingTheModeDropsEarlierSources() {
+        CritfallEvents.onPreAttackRoll(PreAttackRollEvent::grantAdvantage);
+        CritfallEvents.onPreAttackRoll(e -> e.mode(RollMode.DISADVANTAGE));
+        assertEquals(RollMode.DISADVANTAGE, firePreAttack(RollMode.NORMAL).mode());
+    }
+
+    @Test
+    void preAttackSourcesAfterAReplacementCombineWithIt() {
+        CritfallEvents.onPreAttackRoll(e -> e.mode(RollMode.DISADVANTAGE));
+        CritfallEvents.onPreAttackRoll(PreAttackRollEvent::grantAdvantage);
+        assertEquals(RollMode.NORMAL, firePreAttack(RollMode.NORMAL).mode());
+    }
+
+    @Test
+    void preAttackBonusesAddUpAndReplacingKeepsWorking() {
+        CritfallEvents.onPreAttackRoll(e -> e.addBonus(2));
+        CritfallEvents.onPreAttackRoll(e -> e.addBonus(-1));
+        assertEquals(4, firePreAttack(RollMode.NORMAL).attackBonus());
+        CritfallEvents.onPreAttackRoll(e -> e.attackBonus(10));
+        assertEquals(10, firePreAttack(RollMode.NORMAL).attackBonus());
+    }
+
+    @Test
+    void preAttackRerollOnesIsOffUntilAsked() {
+        assertFalse(firePreAttack(RollMode.NORMAL).rerollsOnes());
+        CritfallEvents.onPreAttackRoll(PreAttackRollEvent::rerollOnes);
+        assertTrue(firePreAttack(RollMode.NORMAL).rerollsOnes());
+    }
+
+    @Test
+    void hazardRollEventCarriesTheHazardId() {
+        ResourceLocation id = ResourceLocation.parse("crawl:trap/darts");
+        HazardRollEvent withId = CritfallEvents.fireHazardRoll(new HazardRollEvent(null, darts().withId(id)));
+        assertEquals(Optional.of(id), withId.id());
+        HazardSave gas = HazardSave.of(
+                "Gas", DamageTypes.MAGIC, ModifierProvider.CONSTITUTION_SAVE, 12, DiceExpression.parse("1d6"));
+        assertEquals(
+                Optional.empty(),
+                CritfallEvents.fireHazardRoll(new HazardRollEvent(null, gas)).id());
+    }
+
+    @Test
+    void hazardRollBonusesAddUpAndRerollIsOffUntilAsked() {
+        CritfallEvents.onHazardRoll(e -> e.addBonus(2));
+        CritfallEvents.onHazardRoll(e -> e.addBonus(3));
+        HazardRollEvent event = CritfallEvents.fireHazardRoll(new HazardRollEvent(null, darts()));
+        assertEquals(5, event.bonus());
+        assertFalse(event.rerollsOnes());
+        CritfallEvents.onHazardRoll(HazardRollEvent::rerollOnes);
+        assertTrue(CritfallEvents.fireHazardRoll(new HazardRollEvent(null, darts()))
+                .rerollsOnes());
     }
 }

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
+import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
@@ -93,5 +94,51 @@ class CheckReadoutTest {
         assertEquals(2, payload.bonus());
         assertEquals(false, payload.success());
         assertEquals(false, payload.showsDamage());
+    }
+
+    @Test
+    void hiddenCheckShowsNoDcAndNoResult() {
+        assertEquals(
+                "Search: check d20 14+3=17",
+                text(CheckFeedbackPayload.hiddenCheck("Search", new SaveResult(14, 17, 15))));
+        SaveResult adv = new SaveResult(17, 19, 15, new RollDetail(RollMode.ADVANTAGE, 17, OptionalInt.of(4)));
+        assertEquals("Search: check d20 adv 4/17 → 17+2=19", text(CheckFeedbackPayload.hiddenCheck("Search", adv)));
+    }
+
+    @Test
+    void hiddenCheckCarriesNoDcOrSuccess() {
+        CheckFeedbackPayload payload = CheckFeedbackPayload.hiddenCheck("Search", new SaveResult(19, 22, 15));
+        assertEquals(0, payload.dc());
+        assertEquals(false, payload.success());
+        assertEquals(true, payload.outcomeHidden());
+        assertEquals(22, payload.total());
+    }
+
+    @Test
+    void saveReadoutNamesTheSave() {
+        SaveResult failed = new SaveResult(8, 10, 13);
+        assertEquals(
+                "Trap: DEX save d20 8+2=10 vs DC 13 — FAILED",
+                text(CheckFeedbackPayload.save("Trap", ModifierProvider.DEXTERITY_SAVE, failed)));
+        assertEquals(
+                "Trap: CON save d20 8+2=10 vs DC 13 — FAILED",
+                text(CheckFeedbackPayload.save("Trap", ModifierProvider.CONSTITUTION_SAVE, failed)));
+        assertEquals(
+                "Ward: Spell save d20 8+2=10 vs DC 13 — FAILED",
+                text(CheckFeedbackPayload.save("Ward", ModifierProvider.SPELL_SAVE, failed)));
+    }
+
+    @Test
+    void unknownSaveKeyShowsTheKey() {
+        assertEquals(
+                "Trap: checks:luck d20 8+2=10 vs DC 13 — FAILED",
+                text(CheckFeedbackPayload.save("Trap", "checks:luck", new SaveResult(8, 10, 13))));
+    }
+
+    @Test
+    void hazardSaveWithASaveKeyShowsItsName() {
+        assertEquals(
+                "Spike trap: DEX save d20 8+2=10 vs DC 13 — FAILED 2d6 = 7",
+                text(hazardSave(8, 10, false, 7).withSaveKey(ModifierProvider.DEXTERITY_SAVE)));
     }
 }
