@@ -338,25 +338,30 @@ public final class FeedbackScenarios {
             SpellScenarios.withSpellProfile(
                     "{\"matches\": [\"minecraft:mob_attack\"], \"resolution\": \"save\", \"damage\": \"2d6\","
                             + " \"save\": {\"dc\": 13}}",
-                    () -> CombatScenarios.withRolls(
-                            helper,
-                            Rules.DEFAULTS,
-                            () -> {
-                                // pig save 2 + 0 vs DC 13 fails; 2d6 rolls 6, 6 for 12 damage
-                                pig.hurt(bite, 6.0F);
-                                SaveFeedbackPayload payload = sink.lastSave();
-                                if (!pig.isDeadOrDying()) {
-                                    helper.fail("the pig should have died, payload " + payload);
-                                }
-                                if (payload == null
-                                        || payload.flavorKey().isEmpty()
-                                        || !payload.flavorKey().get().startsWith("critfall.flavor.natural.kill.")) {
-                                    helper.fail("an evoker-fang kill must read as a natural kill, was " + payload);
-                                }
-                            },
-                            2,
-                            6,
-                            6));
+                    () -> FlavorScenarios.withFlavorPick(
+                            false,
+                            () -> CombatScenarios.withRolls(
+                                    helper,
+                                    Rules.DEFAULTS,
+                                    () -> {
+                                        // pig save 2 + 0 vs DC 13 fails; 2d6 rolls 6, 6 for 12 damage
+                                        pig.hurt(bite, 6.0F);
+                                        SaveFeedbackPayload payload = sink.lastSave();
+                                        if (!pig.isDeadOrDying()) {
+                                            helper.fail("the pig should have died, payload " + payload);
+                                        }
+                                        if (payload == null
+                                                || payload.flavorKey().isEmpty()
+                                                || !payload.flavorKey()
+                                                        .get()
+                                                        .startsWith("critfall.flavor.natural.kill.")) {
+                                            helper.fail(
+                                                    "an evoker-fang kill must read as a natural kill, was " + payload);
+                                        }
+                                    },
+                                    2,
+                                    6,
+                                    6)));
             helper.succeed();
         } finally {
             FeedbackSink.set(previous);
@@ -375,22 +380,24 @@ public final class FeedbackScenarios {
             if (!attacker.getMainHandItem().isEmpty()) {
                 helper.fail("setup: the attacker must be empty-handed, held " + attacker.getMainHandItem());
             }
-            CombatScenarios.withRolls(
-                    helper,
-                    Rules.DEFAULTS,
-                    () -> {
-                        pig.hurt(helper.getLevel().damageSources().mobAttack(attacker), 3.0F);
-                        RollFeedbackPayload payload = sink.lastRoll();
-                        if (!pig.isDeadOrDying()) {
-                            helper.fail("the pig should have died, payload " + payload);
-                        }
-                        if (payload == null
-                                || payload.flavorKey().isEmpty()
-                                || !payload.flavorKey().get().startsWith(expectedPrefix)) {
-                            helper.fail("expected a " + expectedPrefix + "* kill line, was " + payload);
-                        }
-                    },
-                    faces);
+            FlavorScenarios.withFlavorPick(
+                    false,
+                    () -> CombatScenarios.withRolls(
+                            helper,
+                            Rules.DEFAULTS,
+                            () -> {
+                                pig.hurt(helper.getLevel().damageSources().mobAttack(attacker), 3.0F);
+                                RollFeedbackPayload payload = sink.lastRoll();
+                                if (!pig.isDeadOrDying()) {
+                                    helper.fail("the pig should have died, payload " + payload);
+                                }
+                                if (payload == null
+                                        || payload.flavorKey().isEmpty()
+                                        || !payload.flavorKey().get().startsWith(expectedPrefix)) {
+                                    helper.fail("expected a " + expectedPrefix + "* kill line, was " + payload);
+                                }
+                            },
+                            faces));
             helper.succeed();
         } finally {
             FeedbackSink.set(previous);

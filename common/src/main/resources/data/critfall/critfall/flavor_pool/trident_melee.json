@@ -4,8 +4,35 @@
   "delivery": ["melee"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.trident_melee.crit.0", "critfall.flavor.trident_melee.crit.1"],
-    "fumble": ["critfall.flavor.trident_melee.fumble.0", "critfall.flavor.trident_melee.fumble.1"],
-    "kill": ["critfall.flavor.trident_melee.kill.0", "critfall.flavor.trident_melee.kill.1"]
+    "crit": [
+      "critfall.flavor.trident_melee.crit.0",
+      "critfall.flavor.trident_melee.crit.1",
+      "critfall.flavor.trident_melee.crit.2",
+      "critfall.flavor.trident_melee.crit.3",
+      "critfall.flavor.trident_melee.crit.4",
+      "critfall.flavor.trident_melee.crit.5",
+      "critfall.flavor.trident_melee.crit.6",
+      "critfall.flavor.trident_melee.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.trident_melee.fumble.0",
+      "critfall.flavor.trident_melee.fumble.1",
+      "critfall.flavor.trident_melee.fumble.2",
+      "critfall.flavor.trident_melee.fumble.3",
+      "critfall.flavor.trident_melee.fumble.4",
+      "critfall.flavor.trident_melee.fumble.5",
+      "critfall.flavor.trident_melee.fumble.6",
+      "critfall.flavor.trident_melee.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.trident_melee.kill.0",
+      "critfall.flavor.trident_melee.kill.1",
+      "critfall.flavor.trident_melee.kill.2",
+      "critfall.flavor.trident_melee.kill.3",
+      "critfall.flavor.trident_melee.kill.4",
+      "critfall.flavor.trident_melee.kill.5",
+      "critfall.flavor.trident_melee.kill.6",
+      "critfall.flavor.trident_melee.kill.7"
+    ]
   }
 }

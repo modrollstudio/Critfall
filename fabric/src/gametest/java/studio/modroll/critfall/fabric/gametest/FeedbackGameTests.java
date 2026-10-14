@@ -4,6 +4,7 @@ import net.fabricmc.fabric.api.gametest.v1.FabricGameTest;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import studio.modroll.critfall.gametest.FeedbackScenarios;
+import studio.modroll.critfall.gametest.FlavorScenarios;
 
 /** Fabric registration shim: delegates to the shared {@link FeedbackScenarios} bodies (M8). */
 public class FeedbackGameTests implements FabricGameTest {
@@ -76,5 +77,20 @@ public class FeedbackGameTests implements FabricGameTest {
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void addOnSaveReadoutNamesTheSave(GameTestHelper helper) {
         FeedbackScenarios.addOnSaveReadoutNamesTheSave(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void dimensionLinesReplaceTheNormalPools(GameTestHelper helper) {
+        FlavorScenarios.dimensionLinesReplaceTheNormalPools(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void otherDimensionsUseTheBasePools(GameTestHelper helper) {
+        FlavorScenarios.otherDimensionsUseTheBasePools(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void everyShippedLineFillsItsPlaceholders(GameTestHelper helper) {
+        FlavorScenarios.everyShippedLineFillsItsPlaceholders(helper);
     }
 }

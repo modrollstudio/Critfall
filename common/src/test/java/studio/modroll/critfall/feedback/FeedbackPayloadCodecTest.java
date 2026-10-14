@@ -17,6 +17,7 @@ import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.FlavorName;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
@@ -39,6 +40,48 @@ class FeedbackPayloadCodecTest {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         RollFeedbackPayload.STREAM_CODEC.encode(buf, payload);
         assertEquals(payload, RollFeedbackPayload.STREAM_CODEC.decode(buf));
+    }
+
+    @Test
+    void flavorNamesRoundTrip() {
+        RollFeedbackPayload roll = new RollFeedbackPayload(
+                AttackOutcome.CRIT,
+                20,
+                24,
+                14,
+                12,
+                "1d8+2",
+                true,
+                Optional.of("critfall.flavor.base.crit.0"),
+                List.of(),
+                false,
+                RollMode.NORMAL,
+                OptionalInt.empty(),
+                0,
+                FlavorName.literal("Alex"),
+                new FlavorName("entity.minecraft.zombie", true));
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        RollFeedbackPayload.STREAM_CODEC.encode(buf, roll);
+        assertEquals(roll, RollFeedbackPayload.STREAM_CODEC.decode(buf));
+
+        SaveFeedbackPayload save = new SaveFeedbackPayload(
+                3,
+                5,
+                13,
+                false,
+                Rules.SaveOutcome.HALF,
+                "2d6",
+                9,
+                true,
+                Optional.of("critfall.flavor.base.kill.0"),
+                false,
+                RollMode.NORMAL,
+                OptionalInt.empty(),
+                new FlavorName("entity.minecraft.evoker", true),
+                FlavorName.literal("Steve"));
+        buf = new FriendlyByteBuf(Unpooled.buffer());
+        SaveFeedbackPayload.STREAM_CODEC.encode(buf, save);
+        assertEquals(save, SaveFeedbackPayload.STREAM_CODEC.decode(buf));
     }
 
     @Test

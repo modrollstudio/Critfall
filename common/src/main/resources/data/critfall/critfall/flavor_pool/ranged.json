@@ -3,8 +3,35 @@
   "matches": ["minecraft:bow", "minecraft:crossbow"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.ranged.crit.0", "critfall.flavor.ranged.crit.1"],
-    "fumble": ["critfall.flavor.ranged.fumble.0", "critfall.flavor.ranged.fumble.1"],
-    "kill": ["critfall.flavor.ranged.kill.0", "critfall.flavor.ranged.kill.1"]
+    "crit": [
+      "critfall.flavor.ranged.crit.0",
+      "critfall.flavor.ranged.crit.1",
+      "critfall.flavor.ranged.crit.2",
+      "critfall.flavor.ranged.crit.3",
+      "critfall.flavor.ranged.crit.4",
+      "critfall.flavor.ranged.crit.5",
+      "critfall.flavor.ranged.crit.6",
+      "critfall.flavor.ranged.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.ranged.fumble.0",
+      "critfall.flavor.ranged.fumble.1",
+      "critfall.flavor.ranged.fumble.2",
+      "critfall.flavor.ranged.fumble.3",
+      "critfall.flavor.ranged.fumble.4",
+      "critfall.flavor.ranged.fumble.5",
+      "critfall.flavor.ranged.fumble.6",
+      "critfall.flavor.ranged.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.ranged.kill.0",
+      "critfall.flavor.ranged.kill.1",
+      "critfall.flavor.ranged.kill.2",
+      "critfall.flavor.ranged.kill.3",
+      "critfall.flavor.ranged.kill.4",
+      "critfall.flavor.ranged.kill.5",
+      "critfall.flavor.ranged.kill.6",
+      "critfall.flavor.ranged.kill.7"
+    ]
   }
 }

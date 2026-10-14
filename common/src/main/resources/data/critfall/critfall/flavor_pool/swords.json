@@ -3,8 +3,35 @@
   "matches": ["#minecraft:swords"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.sword.crit.0", "critfall.flavor.sword.crit.1"],
-    "fumble": ["critfall.flavor.sword.fumble.0", "critfall.flavor.sword.fumble.1"],
-    "kill": ["critfall.flavor.sword.kill.0", "critfall.flavor.sword.kill.1"]
+    "crit": [
+      "critfall.flavor.sword.crit.0",
+      "critfall.flavor.sword.crit.1",
+      "critfall.flavor.sword.crit.2",
+      "critfall.flavor.sword.crit.3",
+      "critfall.flavor.sword.crit.4",
+      "critfall.flavor.sword.crit.5",
+      "critfall.flavor.sword.crit.6",
+      "critfall.flavor.sword.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.sword.fumble.0",
+      "critfall.flavor.sword.fumble.1",
+      "critfall.flavor.sword.fumble.2",
+      "critfall.flavor.sword.fumble.3",
+      "critfall.flavor.sword.fumble.4",
+      "critfall.flavor.sword.fumble.5",
+      "critfall.flavor.sword.fumble.6",
+      "critfall.flavor.sword.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.sword.kill.0",
+      "critfall.flavor.sword.kill.1",
+      "critfall.flavor.sword.kill.2",
+      "critfall.flavor.sword.kill.3",
+      "critfall.flavor.sword.kill.4",
+      "critfall.flavor.sword.kill.5",
+      "critfall.flavor.sword.kill.6",
+      "critfall.flavor.sword.kill.7"
+    ]
   }
 }

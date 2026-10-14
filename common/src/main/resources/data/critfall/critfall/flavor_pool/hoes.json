@@ -3,8 +3,35 @@
   "matches": ["#minecraft:hoes"],
   "priority": 1,
   "lines": {
-    "crit": ["critfall.flavor.hoe.crit.0", "critfall.flavor.hoe.crit.1"],
-    "fumble": ["critfall.flavor.hoe.fumble.0", "critfall.flavor.hoe.fumble.1"],
-    "kill": ["critfall.flavor.hoe.kill.0", "critfall.flavor.hoe.kill.1"]
+    "crit": [
+      "critfall.flavor.hoe.crit.0",
+      "critfall.flavor.hoe.crit.1",
+      "critfall.flavor.hoe.crit.2",
+      "critfall.flavor.hoe.crit.3",
+      "critfall.flavor.hoe.crit.4",
+      "critfall.flavor.hoe.crit.5",
+      "critfall.flavor.hoe.crit.6",
+      "critfall.flavor.hoe.crit.7"
+    ],
+    "fumble": [
+      "critfall.flavor.hoe.fumble.0",
+      "critfall.flavor.hoe.fumble.1",
+      "critfall.flavor.hoe.fumble.2",
+      "critfall.flavor.hoe.fumble.3",
+      "critfall.flavor.hoe.fumble.4",
+      "critfall.flavor.hoe.fumble.5",
+      "critfall.flavor.hoe.fumble.6",
+      "critfall.flavor.hoe.fumble.7"
+    ],
+    "kill": [
+      "critfall.flavor.hoe.kill.0",
+      "critfall.flavor.hoe.kill.1",
+      "critfall.flavor.hoe.kill.2",
+      "critfall.flavor.hoe.kill.3",
+      "critfall.flavor.hoe.kill.4",
+      "critfall.flavor.hoe.kill.5",
+      "critfall.flavor.hoe.kill.6",
+      "critfall.flavor.hoe.kill.7"
+    ]
   }
 }

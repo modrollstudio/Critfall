@@ -115,24 +115,26 @@ public final class TridentScenarios {
         FeedbackSink previous = FeedbackSink.get();
         FeedbackSink.set(sink);
         try {
-            withRolls(
-                    helper,
-                    Rules.DEFAULTS,
-                    () -> {
-                        // nat 20 -> crit (damage maximized, no damage-dice draw); the trident
-                        // profile's default_crit table picks d4, face 4 = nothing; the flavor pick
-                        // itself runs on the unscripted feedback roller, so assert the pool prefix
-                        attack.run();
-                        RollFeedbackPayload payload = sink.lastRoll();
-                        if (payload == null || payload.flavorKey().isEmpty()) {
-                            helper.fail("a crit must dispatch a payload with a flavor line, was " + payload);
-                        } else if (!payload.flavorKey().get().startsWith(prefix)) {
-                            helper.fail("crit flavor must come from the " + prefix + " pool, was "
-                                    + payload.flavorKey().get());
-                        }
-                    },
-                    20,
-                    4);
+            FlavorScenarios.withFlavorPick(
+                    false,
+                    () -> withRolls(
+                            helper,
+                            Rules.DEFAULTS,
+                            () -> {
+                                // nat 20 -> crit (damage maximized, no damage-dice draw); the trident
+                                // profile's default_crit table picks d4, face 4 = nothing; the flavor pick
+                                // takes the first line, which is the matched pool's own
+                                attack.run();
+                                RollFeedbackPayload payload = sink.lastRoll();
+                                if (payload == null || payload.flavorKey().isEmpty()) {
+                                    helper.fail("a crit must dispatch a payload with a flavor line, was " + payload);
+                                } else if (!payload.flavorKey().get().startsWith(prefix)) {
+                                    helper.fail("crit flavor must come from the " + prefix + " pool, was "
+                                            + payload.flavorKey().get());
+                                }
+                            },
+                            20,
+                            4));
             helper.succeed();
         } finally {
             FeedbackSink.set(previous);

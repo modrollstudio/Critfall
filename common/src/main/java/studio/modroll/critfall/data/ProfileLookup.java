@@ -106,18 +106,20 @@ public final class ProfileLookup {
     }
 
     /**
-     * The flavor pool matching this weapon item used with {@code delivery}. An empty stack is item
-     * minecraft:air (the unarmed pool) only for a melee attack by an {@code attacker} that fights with
-     * fists; any other empty-handed attack (a beast's, or a ranged or spell one) is
+     * The flavor keys for this weapon item used with {@code delivery}, in the attacker's dimension. An
+     * empty stack is item minecraft:air (the unarmed pool) only for a melee attack by an {@code attacker}
+     * that fights with fists; any other empty-handed attack (a beast's, or a ranged or spell one) is
      * {@link #NATURAL_ATTACK}.
      */
-    public static Optional<FlavorPool> forFlavor(Entity attacker, ItemStack stack, AttackDelivery delivery) {
+    public static FlavorLines forFlavor(Entity attacker, ItemStack stack, AttackDelivery delivery) {
+        ResourceLocation dimension = attacker.level().dimension().location();
         if (stack.isEmpty()
                 && (delivery != AttackDelivery.MELEE || !attacker.getType().is(CritfallTags.FIGHTS_WITH_FISTS))) {
-            return ProfileStore.findFlavorPool(NATURAL_ATTACK, tagId -> false, delivery);
+            return ProfileStore.findFlavorLines(NATURAL_ATTACK, tagId -> false, delivery, dimension);
         }
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        return ProfileStore.findFlavorPool(id, tagId -> stack.is(TagKey.create(Registries.ITEM, tagId)), delivery);
+        return ProfileStore.findFlavorLines(
+                id, tagId -> stack.is(TagKey.create(Registries.ITEM, tagId)), delivery, dimension);
     }
 
     /** The spell profile matching this source's DAMAGE TYPE (by id or tag). */

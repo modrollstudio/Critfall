@@ -23,6 +23,8 @@ See `docs/datapack-formats.md` for the full field reference.
   reference tables from any loaded pack.
 - The flavor lines (`example.flavor.blade.*`) are translation keys. Add matching entries to an
   `assets/example/lang/en_us.json` if you want custom text; without them a client shows the raw key.
+  The text can use `{attacker}` and `{target}`. The blade's lines are picked alongside Critfall's
+  shared base lines; add `"include_base": false` to the pool to show only the blade's own.
 
 ## Adapting it
 
