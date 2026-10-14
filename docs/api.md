@@ -14,8 +14,8 @@ The `api` subpackages:
 | Package | Types |
 |---------|-------|
 | `api.dice` | `DiceExpression`, `DiceRoller`, `RollResult`, `DieRoll`, `RollMode`, `RollDetail`, `DiceParseException` |
-| `api.combat` | `AttackResult`, `AttackOutcome`, `SaveResult`, `ContestResult`, `ContestSide` |
-| `api.feedback` | `RollFeedbackPayload`, `ConsequenceLine` |
+| `api.combat` | `AttackResult`, `AttackOutcome`, `SaveResult`, `ContestResult`, `ContestSide`, `HazardSaveResult`, `SuccessDamage` |
+| `api.feedback` | `RollFeedbackPayload`, `CheckFeedbackPayload`, `ConsequenceLine` |
 | `api.event` | the events below |
 
 ## `RollService`
@@ -69,6 +69,34 @@ These are Critfall's **own** values, as is [`/critfall inspect`](commands.md#cri
 [modifier provider](#modifier-provider) answers per attacker/target pair, which neither can name. The
 modifier and AC a roll actually used are on its result: `AttackResult.attackBonus()`,
 `AttackResult.armorClass()`, `SaveResult.saveBonus()`.
+
+### Per-entity profiles
+
+Since 0.2.13 one entity can have its own [entity profile](datapack-formats.md#entity-profile), ahead of
+the profile its type or tags match, so a "dungeon zombie" gets its own stats without changing every
+zombie.
+
+```java
+RollService.setEntityProfile(zombie, ResourceLocation.parse("crawl:dungeon_zombie"));
+Optional<ResourceLocation> id = RollService.entityProfile(zombie);   // the assigned id
+RollService.clearEntityProfile(zombie);                               // its type's profile again
+```
+
+- **Lookup order:** the entity's own profile first, then the type and tag match as before. Every
+  Critfall roll and query uses it: the automatic pipeline, `performAttack`, `effectiveEntity`, saves,
+  hazards and `/critfall inspect`.
+- **Saved with the entity** as the NBT string `CritfallProfile`, so it survives a chunk unload or a
+  restart. Packs set the same key with `/summon` (or `/data merge`), with no code:
+
+  ```mcfunction
+  summon minecraft:zombie ~ ~ ~ {CritfallProfile:"crawl:dungeon_zombie"}
+  ```
+
+- **Any loaded entity profile** can be assigned, whatever its `matches`. A profile with
+  `"matches": []` is used only by the entities it is assigned to.
+- **An id that is not loaded** (a typo, or a removed pack) keeps the assignment but uses the type's
+  profile, with one warning in the log per id.
+- Living entities only, and server-side: the client never needs it.
 
 ### Driven attacks
 
@@ -222,7 +250,88 @@ contests (Stealth vs Perception, a shove) want different presentation. Consumers
 themselves from the `ContestResult` fields (both naturals, both totals, and each side's
 [roll detail](#roll-detail-how-a-roll-was-made) are exposed for exactly this).
 
-### `AttackContext` and `AttackDelivery`
+#### Hazards
+
+Since 0.2.13 damage with no living attacker (a trap, a gas cloud, a falling block) rolls through
+Critfall too. Both calls roll on the combat roller (so the [RNG seam](#deterministic-testing-the-rng-seam)
+forces them), apply the damage, and show the readout to the target.
+
+**Hazard save.** The target rolls a saving throw; a fail takes the rolled damage, a success half
+(rounded down) or none.
+
+```java
+HazardSave spikes = HazardSave.of(
+                "crawl.trap.spikes",                 // label: a translation key, or plain text
+                DamageTypes.CACTUS,                  // damage type
+                ModifierProvider.DEXTERITY_SAVE,     // the save, by ability
+                13,                                  // DC
+                DiceExpression.parse("2d6"))         // damage
+        .withOnSuccess(SuccessDamage.NONE)           // default HALF
+        .withMode(RollMode.DISADVANTAGE)             // default NORMAL
+        .withId(ResourceLocation.parse("crawl:trap/spikes"));  // optional, since 0.2.14
+HazardSaveResult result = RollService.performHazardSave(player, spikes);
+result.saved(); result.damage(); result.save();      // save() is the SaveResult
+```
+
+**A save with no damage** (since 0.2.14) only decides an effect, such as poisoned on a fail. Give it
+`HazardSave.NO_DAMAGE` (a flat `0`): a failed save deals 0 instead of the usual minimum of 1, and the
+readout shows no dice. Apply the effect yourself from `result.saved()`.
+
+```java
+HazardSave needle = HazardSave.of("crawl.trap.needle", DamageTypes.MAGIC,
+        ModifierProvider.CONSTITUTION_SAVE, 13, HazardSave.NO_DAMAGE);
+if (!RollService.performHazardSave(player, needle).saved()) {
+    player.addEffect(new MobEffectInstance(MobEffects.POISON, 200));
+}
+// Poison needle: CON save d20 5+0=5 vs DC 13 — FAILED
+```
+
+**Hazard attack.** The hazard rolls d20 plus its bonus against the target's AC.
+
+```java
+HazardAttack darts = HazardAttack.of("crawl.trap.darts", DamageTypes.ARROW, 5, DiceExpression.parse("1d4"))
+        .withMode(RollMode.ADVANTAGE);
+AttackResult result = RollService.performHazardAttack(player, darts);
+```
+
+- **Save bonus:** the [modifier provider](#modifier-provider)'s `saveModifier(target, saveKey)`, else the
+  target's `save_bonus` (`0` without one). `saveKey` names the ability: `ModifierProvider.STRENGTH_SAVE`,
+  `DEXTERITY_SAVE`, `CONSTITUTION_SAVE`, `INTELLIGENCE_SAVE`, `WISDOM_SAVE`, `CHARISMA_SAVE`
+  (`"critfall:strength"` ...), or your own key. With Checks, map the key to an ability in its
+  `save_abilities`, e.g. `"critfall:dexterity": "dex"`.
+- **AC:** the target's AC as Critfall computes it, plus the provider's `acModifier(target, null)`. The
+  attacker is `null` for a hazard.
+- **Advantage and disadvantage:** `withMode` is the hazard's own source, and
+  [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls) listeners add theirs before the d20;
+  Critfall combines them the 5e way. Both dice show in the result's `roll()` and the readout.
+- **Id** (since 0.2.14): `withId(ResourceLocation)` names the hazard for
+  [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls) listeners (`event.id()`), so they can
+  match a hazard without parsing its label. Optional: without one, `id()` is empty and nothing else
+  changes. The id is not shown in the readout.
+- **Bonuses and rerolls** (since 0.2.14): listeners can `addBonus(int)` to the save or attack total and
+  `rerollOnes()`; see [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls).
+- **Crits and fumbles:** a natural 20 hits and uses the server's crit rule (`crits.rule`); a natural 1
+  is a plain miss. A hazard cannot fumble, and has no outcome tables.
+- **Damage:** a failed save or a hit deals at least 1 before resistances, unless the hazard's damage is
+  `HazardSave.NO_DAMAGE` (a flat `0`, since 0.2.14), which deals 0. `dealsDamage()` on either record
+  tells which. The target profile's
+  `damage_modifiers` for the damage type and `balance.global_damage_multiplier` apply; vanilla armor
+  does not (the AC or the save stood in for it), Resistance and absorption do. The dice roll even with
+  `damage_dice` off: a hazard has no vanilla amount. `HazardSaveResult.damage()` and the attack's
+  `AttackResult.damage()` are what Critfall applied.
+- **The hurt** is driven damage: it skips the target's hurt cooldown, never re-rolls, and
+  [`isDrivenDamage`](#detecting-driven-damage) is `true` during it. Hazards fire
+  [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls) and no attack events
+  (`PreAttackRollEvent`, `PostAttackRollEvent`, `CritEvent`, `FumbleEvent`, `CombatInteractionEvent`):
+  those describe one entity attacking another, and their listeners may expect an attacker.
+- **The damage type** must be registered (`minecraft:` or a datapack's); it decides resistances and the
+  death message.
+- **Readout,** to the target when it is a player, unless `roll_visibility` is `off`:
+  `Spike trap: DEX save d20 8+2=10 vs DC 13 — FAILED 2d6 = 7`, `... — SAVED, half damage 3`,
+  `Dart trap: d20 15+5=20 vs AC 14 — HIT 1d4 = 3`. Since 0.2.14 a save names its save key
+  (`DEX save`); see [save names](#save-names).
+
+## `AttackContext` and `AttackDelivery`
 
 `AttackContext` bundles the delivery method, the damage source, the weapon stack, the roll mode, and
 optional overrides. Factories: `AttackContext.melee/projectile/thrown/spell(source, weapon)`.
@@ -307,8 +416,12 @@ RollService.registerModifierProvider(new ModifierProvider() {
   listener's `finalDamage(0)` or an immunity still stands.
 - **`delivery`**: `delivery.isRanged()` is true for `PROJECTILE`/`THROWN`; spell attacks arrive as
   `SPELL`.
-- **Save keys** name where the save is rolled. The only one is `ModifierProvider.SPELL_SAVE`
-  (`"critfall:spell"`), the save against a `"resolution": "save"` spell profile.
+- **Save keys** name where the save is rolled: `ModifierProvider.SPELL_SAVE` (`"critfall:spell"`), the
+  save against a `"resolution": "save"` spell profile, and since 0.2.13 the key a
+  [hazard save](#hazards) names, usually one of the six ability keys (`ModifierProvider.DEXTERITY_SAVE`
+  is `"critfall:dexterity"`).
+- **A hazard attack has no attacker:** `acModifier(defender, null)`. A provider that reads the attacker
+  must allow `null`; one that throws keeps Critfall's AC and is logged once.
 - **Explicit API values win.** `AttackContext.withAttackBonus`, `withDamageDice` and the `saveBonus` of
   `RollService.savingThrow` are never sent to the provider.
 - **Events still apply.** `PreAttackRollEvent` starts from the provided attack bonus and can change it;
@@ -352,10 +465,11 @@ it, so a listener sees **every** attack from either path. A listener that throws
 | Event | When | Listener can |
 |-------|------|--------------|
 | `CombatInteractionEvent` | a damaging combat interaction is detected, before everything else (since 0.2.2) | observe |
-| `PreAttackRollEvent`  | before the d20 | change `attackBonus`, force `mode` (advantage/disadvantage), or `cancel()` |
+| `PreAttackRollEvent`  | before the d20 | change `attackBonus`, force `mode` (advantage/disadvantage), or `cancel()`; since 0.2.14 also `grantAdvantage()`, `imposeDisadvantage()`, `addBonus(int)`, `rerollOnes()` |
 | `PostAttackRollEvent` | after resolving, before damage | change `finalDamage`, or `veto()` |
 | `FumbleEvent`         | outcome is a fumble | observe |
 | `CritEvent`           | outcome is a crit | observe |
+| `HazardRollEvent`     | before the d20 of a [hazard](#hazards) save or attack (since 0.2.13) | `grantAdvantage()`, `imposeDisadvantage()`; since 0.2.14 also `addBonus(int)`, `rerollOnes()` |
 
 ```java
 import studio.modroll.critfall.api.*;
@@ -363,10 +477,10 @@ import studio.modroll.critfall.api.event.*;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 
-// Grant advantage when the attacker is sneaking:
+// Grant advantage when the attacker is sneaking (since 0.2.14; before, event.mode(RollMode.ADVANTAGE)):
 CritfallEvents.onPreAttackRoll(event -> {
     if (event.attacker() != null && event.attacker().isCrouching()) {
-        event.mode(RollMode.ADVANTAGE);
+        event.grantAdvantage();
     }
 });
 
@@ -384,8 +498,104 @@ that sets `DISADVANTAGE` gets a normal roll (5e: advantage and disadvantage canc
 `NORMAL` clears the advantage. Driven attacks (`performAttack`/`attackRoll`) start from the
 `AttackContext` mode, and the mode a listener sets is the mode rolled.
 
+### `PreAttackRollEvent` — advantage, bonuses and rerolls
+
+Since 0.2.14 attack rolls take the same sources as [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls),
+so add-ons no longer combine advantage and disadvantage themselves.
+
+```java
+CritfallEvents.onPreAttackRoll(event -> {
+    if (isFlanking(event.attacker(), event.target())) event.grantAdvantage();
+    if (isBlinded(event.attacker())) event.imposeDisadvantage();   // with the flank: a normal roll
+    if (isBlessed(event.attacker())) event.addBonus(2);
+    if (isHalfling(event.attacker())) event.rerollOnes();
+});
+```
+
+- **`grantAdvantage()`** and **`imposeDisadvantage()`** add a source, combined the 5e way (the table
+  under [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls)): several advantages count as one,
+  and any advantage with any disadvantage rolls normally. The attack's starting mode (the
+  `AttackContext` mode, or a jump attack's advantage) counts as one source.
+- **`mode()`** reads the combined result of every source so far.
+- **`mode(RollMode)`** still replaces the mode, as before 0.2.14: it drops every source so far, and
+  `mode()` then reads the value set. Sources later listeners add combine with it. A listener that only
+  ever uses `mode(...)` behaves exactly as it did.
+- **`addBonus(int)`** adds to `attackBonus()`; several add up, and a negative amount is a penalty.
+  `attackBonus(int)` still replaces the whole bonus, including what `addBonus` added. The bonus is part
+  of the attack total, so the readout's modifier shows it: `d20 5+7=12 vs AC 10` for a +3 attacker with
+  `addBonus(4)`.
+- **`rerollOnes()`** is the halfling's Luck: a natural 1 on the attack d20 is rolled again once, and the
+  new roll stands, even another 1. Under advantage or disadvantage it happens when the kept die is a 1,
+  and only that die rolls again (advantage with 1 and 1, disadvantage with 1 and 15). The new face is
+  what the result and readout show, and what the fumble rules see: only a reroll that lands on 1 again
+  can fumble.
+  `rerollsOnes()` reads whether any listener asked. It is not a general reroll: other faces and the
+  damage dice never reroll.
+
 A canceled `PreAttackRollEvent` means the attack does not happen (no damage, no outcome tables).
 A vetoed `PostAttackRollEvent` means it resolved but applies no damage and runs no outcome tables.
+
+### `HazardRollEvent` — adjusting hazard rolls
+
+Since 0.2.13, fired before the d20 of every `performHazardSave` and `performHazardAttack`. Hazards have no
+attacker, so they never fire the attack events above, and a listener there never sees a missing attacker.
+This is where an add-on adjusts them: a species trait with advantage on saves against poison, a cursed
+item with disadvantage on DEX saves.
+
+```java
+CritfallEvents.onHazardRoll(event -> {
+    boolean poisonSave = event.save().map(HazardSave::saveKey)
+                    .filter(ModifierProvider.CONSTITUTION_SAVE::equals).isPresent()
+            && event.damageType() == myPoisonDamageType;
+    if (poisonSave && hasPoisonResilience(event.target())) {
+        event.grantAdvantage();
+    }
+});
+
+CritfallEvents.onHazardRoll(event -> {
+    if (event.save().map(HazardSave::saveKey).filter(ModifierProvider.DEXTERITY_SAVE::equals).isPresent()
+            && isCursed(event.target())) {
+        event.imposeDisadvantage();   // with the advantage above on the same save: a normal roll
+    }
+});
+```
+
+**Carries** `target()` (the entity saving or being attacked), `kind()` (`SAVE` or `ATTACK`), `save()` or
+`attack()` (the `HazardSave` or `HazardAttack`, the other empty), `damageType()`, `label()`, `mode()`, and
+since 0.2.14 `id()`: the hazard's [id](#hazards), empty when it has none.
+
+```java
+ResourceLocation POISON_NEEDLE = ResourceLocation.parse("crawl:trap/poison_needle");
+CritfallEvents.onHazardRoll(event -> {
+    if (event.id().filter(POISON_NEEDLE::equals).isPresent() && hasPoisonResilience(event.target())) {
+        event.grantAdvantage();
+    }
+});
+```
+
+- **`grantAdvantage()`** and **`imposeDisadvantage()`** add a source. Listeners never set the mode
+  directly, so one add-on cannot overwrite another's. Critfall combines the sources the 5e way:
+
+  | Sources | Roll |
+  |---------|------|
+  | none | normal |
+  | advantage only (any number) | advantage |
+  | disadvantage only (any number) | disadvantage |
+  | at least one of each | normal |
+
+  Several advantages count as one, so two advantages and one disadvantage still roll normally.
+- **The hazard's own mode is a source too:** `withMode(RollMode.DISADVANTAGE)` plus a listener's
+  `grantAdvantage()` rolls normally.
+- **`mode()`** reads the combined result of every source so far: the hazard's own and earlier
+  listeners'. After the last listener it is the mode the d20 rolls with.
+- **`addBonus(int)`** (since 0.2.14) adds to the save total (on top of the save bonus) or the attack total
+  (on top of the hazard's attack bonus). Several add up, and a negative amount is a penalty; `bonus()`
+  reads the sum. It is part of the total, so the readout's modifier shows it: `DEX save d20 10+3=13`.
+- **`rerollOnes()`** (since 0.2.14) rerolls a natural 1 once, exactly as on
+  [`PreAttackRollEvent`](#preattackrollevent--advantage-bonuses-and-rerolls); `rerollsOnes()` reads it.
+- Everything else is read-only: the DC, save key, attack bonus and damage come from the hazard itself.
+- A listener that throws is caught and logged; the sources other listeners added still count.
+- Fires once per hazard roll, server-side, before any die is rolled.
 
 ### `CombatInteractionEvent` — detecting combat
 
@@ -430,8 +640,69 @@ API consumers emit the same packets the internal pipeline does via
 `RollService.sendRollFeedback(attacker, target, payload)` with an
 `api.feedback.RollFeedbackPayload`; headless contexts keep the no-op default sink.
 
+### Save and check readouts
+
+Since 0.2.13 an add-on shows its own save or check in Critfall's readout instead of building one.
+Roll it however you like (`RollService.savingThrow`, Checks), then:
+
+```java
+SaveResult perception = ChecksApi.check(player, perceptionSkill, 15).result();
+RollService.sendCheckFeedback(player, CheckFeedbackPayload.check("Perception", perception));
+// Perception: check d20 14+3=17 vs DC 15 — SUCCESS
+
+SaveResult save = RollService.savingThrow(player, 2, 13);
+RollService.sendCheckFeedback(player, CheckFeedbackPayload.save("Pressure plate", save));
+// Pressure plate: save d20 12+2=14 vs DC 13 — SAVED
+```
+
+- **Who sees it:** `roller`, when it is a player, unless `roll_visibility` is `off`.
+- **Label:** a translation key, or plain text (shown as is when no translation exists); `""` for none.
+- **Advantage/disadvantage** show both dice, from the `SaveResult`'s `roll()`.
+- `CheckFeedbackPayload` has a `kind` (`SAVE`, `CHECK`, `ATTACK`); the hazard calls send the same
+  payload with their damage. Build one by hand for anything the factories do not cover.
+- It rides its own optional channel, `critfall:check_feedback_v2` (`critfall:check_feedback` in 0.2.13).
+  A client without it (vanilla, or an older Critfall) gets the same text on the action bar, rendered
+  server-side.
+
+#### Hidden checks
+
+Since 0.2.14 `CheckFeedbackPayload.hiddenCheck(label, result)` shows a check whose outcome the caller
+keeps to itself, such as a search: the roll and total, with no DC and no SUCCESS or FAILED.
+
+```java
+SaveResult search = ChecksApi.check(player, investigation, 15).result();
+RollService.sendCheckFeedback(player, CheckFeedbackPayload.hiddenCheck("Search", search));
+// Search: check d20 14+3=17
+```
+
+The payload itself carries no DC and no success (`dc()` is `0`, `success()` is `false`,
+`outcomeHidden()` is `true`), so a modified client cannot read them either. Advantage still shows both
+dice.
+
+#### Save names
+
+Since 0.2.14 a save readout can name the save: `CheckFeedbackPayload.save(label, saveKey, result)`
+(or `withSaveKey(key)` on any payload) gives `Trap: DEX save d20 8+2=10 vs DC 13 — FAILED`. Hazard saves
+always name theirs. `save(label, result)` without a key reads `save`, as before.
+
+The name is the lang key `critfall.save.<namespace>.<path>` of the save key, so `"critfall:dexterity"`
+uses `critfall.save.critfall.dexterity`. Critfall ships names for its own keys:
+
+| Save key | Name |
+|----------|------|
+| `ModifierProvider.STRENGTH_SAVE` ... `CHARISMA_SAVE` | `STR save`, `DEX save`, `CON save`, `INT save`, `WIS save`, `CHA save` |
+| `ModifierProvider.SPELL_SAVE` | `Spell save` |
+
+An add-on with its own keys adds lang entries for them, such as `"critfall.save.checks.luck": "Luck save"`
+for `"checks:luck"`. A key with no lang entry shows the key itself: `Trap: checks:luck d20 8+2=10 ...`.
+
 ## KubeJS
 
 Critfall does **not** depend on KubeJS, and there is no separate KubeJS module. Modern KubeJS
 exposes public Java classes to scripts directly, so a **server script** calls the API above with
 `Java.loadClass(...)`. See runnable examples in [`/examples/kubejs/`](../examples/README.md).
+
+Because there are no separate bindings, everything above is available to scripts as soon as Critfall
+has it, including the 0.2.14 additions: `grantAdvantage()`, `imposeDisadvantage()`, `addBonus(n)` and
+`rerollOnes()` on both events, `event.id()` on `HazardRollEvent`, `HazardSave.NO_DAMAGE`, `withId(...)`,
+and `CheckFeedbackPayload.hiddenCheck(...)`.

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -12,11 +13,13 @@ import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
+import studio.modroll.critfall.api.combat.HazardSaveResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.dice.RollResult;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.AttackDice;
@@ -25,6 +28,7 @@ import studio.modroll.critfall.combat.CombatEngine;
 import studio.modroll.critfall.combat.DamageInterception;
 import studio.modroll.critfall.combat.Derivation;
 import studio.modroll.critfall.combat.EnchantmentDamage;
+import studio.modroll.critfall.combat.Hazards;
 import studio.modroll.critfall.combat.HurtFeedback;
 import studio.modroll.critfall.combat.Modifiers;
 import studio.modroll.critfall.combat.Rules;
@@ -116,6 +120,25 @@ public final class RollService {
         return RollRuntime.modifierProvider();
     }
 
+    /**
+     * Gives {@code entity} the entity profile {@code profileId}, ahead of any profile matching its type or
+     * tags. Saved with the entity (NBT {@code CritfallProfile}, which {@code /summon} also sets). While no
+     * profile with that id is loaded, the type's profile applies. Since 0.2.13.
+     */
+    public static void setEntityProfile(LivingEntity entity, ResourceLocation profileId) {
+        ProfileLookup.assignProfile(entity, Objects.requireNonNull(profileId, "profileId"));
+    }
+
+    /** Removes the profile {@link #setEntityProfile} gave {@code entity}; its type's profile applies again. */
+    public static void clearEntityProfile(LivingEntity entity) {
+        ProfileLookup.assignProfile(entity, null);
+    }
+
+    /** The profile id given to {@code entity} by {@link #setEntityProfile} or its NBT, loaded or not. */
+    public static Optional<ResourceLocation> entityProfile(LivingEntity entity) {
+        return ProfileLookup.assignedProfileId(entity);
+    }
+
     public static EffectiveEntityProfile effectiveEntity(LivingEntity entity) {
         return EffectiveEntityProfile.of(
                 ProfileLookup.forEntity(entity),
@@ -169,6 +192,48 @@ public final class RollService {
     public static void sendRollFeedback(LivingEntity attacker, LivingEntity target, RollFeedbackPayload payload) {
         FeedbackSink.get()
                 .roll(attacker, target, payload, RollRuntime.rules().feedback().visibility());
+    }
+
+    /**
+     * Shows a save or check ({@link CheckFeedbackPayload#save}, {@link CheckFeedbackPayload#check}, or since
+     * 0.2.14 {@link CheckFeedbackPayload#hiddenCheck}) to {@code roller} when it is a player, in Critfall's
+     * readout, unless {@code roll_visibility} is off. Since 0.2.13.
+     */
+    public static void sendCheckFeedback(LivingEntity roller, CheckFeedbackPayload payload) {
+        FeedbackSink.get()
+                .check(
+                        roller,
+                        Objects.requireNonNull(payload, "payload"),
+                        RollRuntime.rules().feedback().visibility());
+    }
+
+    /**
+     * {@code target} rolls a saving throw against {@code hazard}: d20 plus the {@link ModifierProvider}'s
+     * modifier for {@link HazardSave#saveKey()}, else the target's {@code save_bonus}, against the DC. A fail
+     * takes the rolled damage (at least 1), a success half or none; a hazard with {@link HazardSave#NO_DAMAGE}
+     * deals none either way (since 0.2.14). {@link studio.modroll.critfall.api.event.HazardRollEvent} listeners
+     * may change the roll mode, add a bonus or reroll a natural 1 first. Applies the damage, shows the readout
+     * (naming the save) to the target, and returns both. Since 0.2.13.
+     */
+    public static HazardSaveResult performHazardSave(LivingEntity target, HazardSave hazard) {
+        return Hazards.save(
+                target,
+                Objects.requireNonNull(hazard, "hazard"),
+                effectiveEntity(target).saveBonus());
+    }
+
+    /**
+     * {@code hazard} rolls to hit {@code target}'s AC (with the {@link ModifierProvider}'s AC modifier,
+     * asked with a null attacker). A hit applies the rolled damage, a crit the server's crit rule; a
+     * natural 1 is a plain miss. {@link studio.modroll.critfall.api.event.HazardRollEvent} listeners may
+     * change the roll mode, add a bonus or reroll a natural 1 first. Shows the readout to the target. The
+     * result's {@code damage()} is what Critfall applied: none for a hazard with no damage. Since 0.2.13.
+     */
+    public static AttackResult performHazardAttack(LivingEntity target, HazardAttack hazard) {
+        return Hazards.attack(
+                target,
+                Objects.requireNonNull(hazard, "hazard"),
+                effectiveEntity(target).armorClass());
     }
 
     /** Resolves an attack (fires the pre/post/crit/fumble events) WITHOUT applying damage or feedback. */

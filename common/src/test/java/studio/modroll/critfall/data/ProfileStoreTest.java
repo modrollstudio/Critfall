@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonParser;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import net.minecraft.resources.ResourceLocation;
@@ -226,6 +228,61 @@ class ProfileStoreTest {
                             .toString());
         } finally {
             ProfileStore.setEntityProfiles(java.util.Map.of());
+        }
+    }
+
+    @Test
+    void assignedProfileBeatsTheTypeMatch() {
+        EntityProfile zombies = profile("pack:zombies", 100, "minecraft:zombie");
+        EntityProfile boss = profile("crawl:dungeon_zombie", 0);
+        withEntityProfiles(List.of(zombies, boss), () -> {
+            assertEquals(
+                    "crawl:dungeon_zombie",
+                    ProfileStore.findEntityProfile(boss.id(), ZOMBIE, ZOMBIE_TAGS::contains)
+                            .orElseThrow()
+                            .id()
+                            .toString());
+            assertEquals(
+                    "pack:zombies",
+                    ProfileStore.findEntityProfile(null, ZOMBIE, ZOMBIE_TAGS::contains)
+                            .orElseThrow()
+                            .id()
+                            .toString());
+        });
+    }
+
+    @Test
+    void unloadedAssignedProfileFallsBackToTheTypeMatch() {
+        EntityProfile zombies = profile("pack:zombies", 0, "minecraft:zombie");
+        withEntityProfiles(
+                List.of(zombies),
+                () -> assertEquals(
+                        "pack:zombies",
+                        ProfileStore.findEntityProfile(
+                                        ResourceLocation.parse("crawl:removed"), ZOMBIE, ZOMBIE_TAGS::contains)
+                                .orElseThrow()
+                                .id()
+                                .toString()));
+    }
+
+    @Test
+    void assignedOnlyProfileNeverMatchesByType() {
+        EntityProfile boss = profile("crawl:dungeon_zombie", 0);
+        withEntityProfiles(
+                List.of(boss),
+                () -> assertTrue(ProfileStore.findEntityProfile(null, ZOMBIE, ZOMBIE_TAGS::contains)
+                        .isEmpty()));
+    }
+
+    private static void withEntityProfiles(List<EntityProfile> profiles, Runnable action) {
+        Map<ResourceLocation, EntityProfile> before = ProfileStore.entityProfiles();
+        Map<ResourceLocation, EntityProfile> byId = new HashMap<>();
+        profiles.forEach(p -> byId.put(p.id(), p));
+        ProfileStore.setEntityProfiles(byId);
+        try {
+            action.run();
+        } finally {
+            ProfileStore.setEntityProfiles(before);
         }
     }
 }

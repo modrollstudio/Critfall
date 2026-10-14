@@ -24,6 +24,7 @@ public final class CritfallEvents {
     private static final List<Consumer<PostAttackRollEvent>> postAttack = new CopyOnWriteArrayList<>();
     private static final List<Consumer<FumbleEvent>> fumble = new CopyOnWriteArrayList<>();
     private static final List<Consumer<CritEvent>> crit = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<HazardRollEvent>> hazardRoll = new CopyOnWriteArrayList<>();
 
     private CritfallEvents() {}
 
@@ -45,6 +46,11 @@ public final class CritfallEvents {
 
     public static void onCrit(Consumer<CritEvent> listener) {
         crit.add(listener);
+    }
+
+    /** Hazard saves and hazard attacks, before the d20. Since 0.2.13. */
+    public static void onHazardRoll(Consumer<HazardRollEvent> listener) {
+        hazardRoll.add(listener);
     }
 
     public static void fireCombatInteraction(
@@ -76,6 +82,11 @@ public final class CritfallEvents {
         dispatch(crit, new CritEvent(attacker, target, context, result));
     }
 
+    public static HazardRollEvent fireHazardRoll(HazardRollEvent event) {
+        dispatch(hazardRoll, event);
+        return event;
+    }
+
     private static <T> void dispatch(List<Consumer<T>> listeners, T event) {
         for (Consumer<T> listener : listeners) {
             try {
@@ -93,5 +104,6 @@ public final class CritfallEvents {
         postAttack.clear();
         fumble.clear();
         crit.clear();
+        hazardRoll.clear();
     }
 }

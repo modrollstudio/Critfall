@@ -127,8 +127,16 @@ public final class CritfallCommands {
         ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(living.getType());
         Optional<EntityProfile> profile = ProfileLookup.forEntity(living);
 
+        Optional<ResourceLocation> assigned = ProfileLookup.assignedProfileId(living);
+
         send(source, "Critfall inspect: " + living.getName().getString() + " (" + typeId + ")");
-        if (profile.isPresent()) {
+        if (assigned.isPresent()
+                && !profile.map(p -> p.id().equals(assigned.get())).orElse(false)) {
+            send(source, "  Assigned profile " + assigned.get() + " is not loaded — using the type's profile");
+        }
+        if (profile.isPresent() && assigned.isPresent() && profile.get().id().equals(assigned.get())) {
+            send(source, "  Profile: " + profile.get().id() + " (assigned to this entity)");
+        } else if (profile.isPresent()) {
             send(
                     source,
                     "  Profile: " + profile.get().id() + " (priority "

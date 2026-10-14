@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.SaveResult;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
@@ -31,5 +33,15 @@ class CapturingFeedbackSinkTest {
         sink.roll(null, null, roll(), Rules.FeedbackVisibility.EVERYONE);
         sink.reset();
         assertNull(sink.lastRoll());
+    }
+
+    @Test
+    void capturesLastCheckPayload() {
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        CheckFeedbackPayload payload = CheckFeedbackPayload.check("Perception", new SaveResult(14, 17, 15));
+        sink.check(null, payload, Rules.FeedbackVisibility.EVERYONE);
+        assertSame(payload, sink.lastCheck());
+        sink.reset();
+        assertNull(sink.lastCheck());
     }
 }

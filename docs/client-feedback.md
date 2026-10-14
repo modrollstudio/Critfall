@@ -6,7 +6,7 @@ with vanilla / non-Critfall clients, which fall back to a plain action-bar reado
 
 ## What crosses the wire
 
-Two server→client packets, both registered `optional()` so a client that doesn't understand them is
+Three server→client packets, all registered `optional()` so a client that doesn't understand them is
 never disconnected:
 
 - `critfall:roll_feedback` — one resolved attack roll: outcome, natural d20, attack total, AC,
@@ -15,6 +15,13 @@ never disconnected:
   situational defender-AC modifier (`roll()` and `baseArmorClass()` derive from them).
 - `critfall:save_feedback` — one resolved saving throw: natural, total, DC, saved/failed, half/negate,
   dice, damage, optional flavor key, and (0.2.6) the same roll mode and dropped face.
+- `critfall:check_feedback_v2` (0.2.14; `critfall:check_feedback` in 0.2.13) — one labelled save,
+  check, or hazard attack: kind, label, natural, total, DC (or AC), success, crit, roll mode and dropped
+  face, the damage dice and amount when it dealt damage, and since 0.2.14 the save key (for the save's
+  name) and whether the outcome is hidden (no DC or result shown, and none sent). Add-ons send it through
+  `RollService.sendCheckFeedback`; hazards send it too. A client without this channel gets the
+  action-bar text instead, so an older Critfall client keeps working: the 0.2.14 packet gained fields,
+  so it moved to a new channel name rather than reach a 0.2.13 client that cannot read it.
 
 The payloads carry only flat primitives + translation keys; the client builds all text from them.
 
@@ -28,6 +35,9 @@ The line stays terse when there is nothing extra to say, and spends characters o
 | Advantage / disadvantage | `d20 adv 7/18 → 18+4=22 vs AC 14 — HIT 1d8 = 6` |
 | Situational defender-AC modifier | `d20 13+3=16 vs AC 17 (10+7) — MISS` |
 | Saving throw with advantage | `save d20 adv 6/17 → 17+2=19 vs DC 13 — SAVED, no damage` |
+| Hazard save | `Spike trap: save d20 8+2=10 vs DC 13 — FAILED 2d6 = 7` |
+| Hazard attack | `Dart trap: d20 15+5=20 vs AC 14 — HIT 1d4 = 3` |
+| An add-on's check | `Perception: check d20 14+3=17 vs DC 15 — SUCCESS` |
 
 Both dice appear only when two were rolled, and the AC split only when the modifier is non-zero, so a
 plain attack renders exactly as it did before 0.2.6. There is no separate switch: the detail rides

@@ -63,4 +63,24 @@ public class FeedbackGameTests {
     public void evokerFangKillShowsNaturalLine(GameTestHelper helper) {
         FeedbackScenarios.evokerFangKillShowsNaturalLine(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void addOnSaveReadoutGoesToTheRoller(GameTestHelper helper) {
+        FeedbackScenarios.addOnSaveReadoutGoesToTheRoller(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void addOnCheckReadoutShowsAdvantage(GameTestHelper helper) {
+        FeedbackScenarios.addOnCheckReadoutShowsAdvantage(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void addOnHiddenCheckShowsNoDcOrResult(GameTestHelper helper) {
+        FeedbackScenarios.addOnHiddenCheckShowsNoDcOrResult(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void addOnSaveReadoutNamesTheSave(GameTestHelper helper) {
+        FeedbackScenarios.addOnSaveReadoutNamesTheSave(helper);
+    }
 }

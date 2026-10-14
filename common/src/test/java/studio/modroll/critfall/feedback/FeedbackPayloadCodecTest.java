@@ -12,8 +12,10 @@ import java.util.OptionalInt;
 import net.minecraft.network.FriendlyByteBuf;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.combat.AttackOutcome;
+import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
@@ -170,5 +172,43 @@ class FeedbackPayloadCodecTest {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         SaveFeedbackPayload.STREAM_CODEC.encode(buf, payload);
         assertEquals(payload, SaveFeedbackPayload.STREAM_CODEC.decode(buf));
+    }
+
+    @Test
+    void checkPayloadRoundTrips() {
+        CheckFeedbackPayload payload = new CheckFeedbackPayload(
+                CheckFeedbackPayload.Kind.ATTACK,
+                "crawl.trap.darts",
+                20,
+                25,
+                14,
+                true,
+                true,
+                RollMode.ADVANTAGE,
+                OptionalInt.of(3),
+                "1d4",
+                4);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        CheckFeedbackPayload.STREAM_CODEC.encode(buf, payload);
+        assertEquals(payload, CheckFeedbackPayload.STREAM_CODEC.decode(buf));
+    }
+
+    @Test
+    void checkPayloadRoundTripsWithoutDamageOrSecondDie() {
+        CheckFeedbackPayload payload = CheckFeedbackPayload.check("", new SaveResult(9, 7, 15));
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        CheckFeedbackPayload.STREAM_CODEC.encode(buf, payload);
+        assertEquals(payload, CheckFeedbackPayload.STREAM_CODEC.decode(buf));
+    }
+
+    @Test
+    void checkPayloadRoundTripsSaveKeyAndHiddenOutcome() {
+        CheckFeedbackPayload named = CheckFeedbackPayload.save("Trap", "critfall:dexterity", new SaveResult(8, 10, 13));
+        CheckFeedbackPayload hidden = CheckFeedbackPayload.hiddenCheck("Search", new SaveResult(14, 17, 15));
+        for (CheckFeedbackPayload payload : List.of(named, hidden)) {
+            FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+            CheckFeedbackPayload.STREAM_CODEC.encode(buf, payload);
+            assertEquals(payload, CheckFeedbackPayload.STREAM_CODEC.decode(buf));
+        }
     }
 }

@@ -57,9 +57,9 @@ public final class AttackPipeline {
             this(attackBonus, armorClass, damageDice, critRange, mode, fumbleSuppressed, defenderAcBonus, false);
         }
 
-        CombatEngine.AttackInput toInput(int bonus, RollMode rollMode) {
+        CombatEngine.AttackInput toInput(int bonus, RollMode rollMode, boolean rerollOnes) {
             return new CombatEngine.AttackInput(
-                    bonus, armorClass, rollMode, damageDice, critRange, fumbleSuppressed, defenderAcBonus);
+                    bonus, armorClass, rollMode, damageDice, critRange, fumbleSuppressed, defenderAcBonus, rerollOnes);
         }
     }
 
@@ -95,7 +95,8 @@ public final class AttackPipeline {
         }
 
         RollMode mode = params.jumpAttack() ? JumpAttacks.withJumpAdvantage(pre.mode()) : pre.mode();
-        AttackResult result = CombatEngine.resolveAttack(roller, rules, params.toInput(pre.attackBonus(), mode));
+        AttackResult result =
+                CombatEngine.resolveAttack(roller, rules, params.toInput(pre.attackBonus(), mode, pre.rerollsOnes()));
 
         PostAttackRollEvent post = CritfallEvents.firePostAttackRoll(attacker, target, ctx, result);
         if (post.isVetoed()) {

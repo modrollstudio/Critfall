@@ -81,7 +81,15 @@ class EntityProfileTest {
     @Test
     void missingMatchesRejectsFile() {
         assertThrows(IllegalArgumentException.class, () -> EntityProfile.parse(ID, json("{}"), w -> {}));
-        assertThrows(IllegalArgumentException.class, () -> EntityProfile.parse(ID, json("{\"matches\": []}"), w -> {}));
+        assertThrows(
+                IllegalArgumentException.class, () -> EntityProfile.parse(ID, json("{\"matches\": [7]}"), w -> {}));
+    }
+
+    @Test
+    void emptyMatchesIsAnAssignedOnlyProfile() {
+        EntityProfile profile = EntityProfile.parse(ID, json("{\"matches\": [], \"armor_class\": 15}"), w -> {});
+        assertTrue(profile.matches().isEmpty());
+        assertEquals(15, profile.armorClass().getAsInt());
     }
 
     @Test

@@ -51,6 +51,19 @@ are out first; among the rest the winner is chosen by:
    declaration),
 4. then the lexicographically smaller file id, so resolution is deterministic.
 
+**One entity's own profile.** Since 0.2.13 a single entity can use an entity profile by id, ahead of
+whatever its type and tags match: set the NBT string `CritfallProfile` when you summon it (a mod uses
+`RollService.setEntityProfile`, see [api.md](api.md#per-entity-profiles)):
+
+```mcfunction
+summon minecraft:zombie ~ ~ ~ {CritfallProfile:"mypack:dungeon_zombie"}
+```
+
+The id is the profile's file id (`data/mypack/critfall/entity_profile/dungeon_zombie.json`). Give that
+profile `"matches": []` and only entities it is assigned to use it; other zombies keep theirs. The
+assignment is saved with the entity. If no profile with that id is loaded, the entity uses its type's
+profile and the log warns once.
+
 Use `/critfall inspect [<entity>]` and `/critfall check [<item>]` (permission level 2) to see
 the effective stats and which file won. `inspect` without an argument inspects whatever your
 crosshair points at (up to 32 blocks, blocks occlude).

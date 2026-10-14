@@ -1,13 +1,18 @@
 package studio.modroll.critfall.data;
 
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.api.AttackDelivery;
@@ -28,12 +33,62 @@ public final class ProfileLookup {
     public static final ResourceLocation NATURAL_ATTACK =
             ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "natural_attack");
 
+    /** Assigned ids already warned about as not loaded. */
+    private static final Set<ResourceLocation> UNKNOWN_ASSIGNED = ConcurrentHashMap.newKeySet();
+
     private ProfileLookup() {}
 
+    /** The profile assigned to this entity when it is loaded, else the one matching its type or tags. */
     public static Optional<EntityProfile> forEntity(Entity entity) {
         ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        ResourceLocation assigned = assignedProfileId(entity).orElse(null);
+        if (assigned != null
+                && !ProfileStore.entityProfiles().containsKey(assigned)
+                && UNKNOWN_ASSIGNED.add(assigned)) {
+            Critfall.LOG.warn(
+                    "Entity profile {} is assigned to a {} but is not loaded; using its type's profile (logged once)",
+                    assigned,
+                    id);
+        }
         return ProfileStore.findEntityProfile(
-                id, tagId -> entity.getType().is(TagKey.create(Registries.ENTITY_TYPE, tagId)));
+                assigned, id, tagId -> entity.getType().is(TagKey.create(Registries.ENTITY_TYPE, tagId)));
+    }
+
+    /** The profile id assigned to this entity, whether or not a profile with that id is loaded. */
+    public static Optional<ResourceLocation> assignedProfileId(Entity entity) {
+        return entity instanceof EntityProfileHolder holder
+                ? Optional.ofNullable(holder.critfall$profileId())
+                : Optional.empty();
+    }
+
+    /** Assigns {@code id} to {@code entity}, or clears it when null. */
+    public static void assignProfile(LivingEntity entity, ResourceLocation id) {
+        ((EntityProfileHolder) entity).critfall$setProfileId(id);
+    }
+
+    /** Mixin hook at the end of {@code LivingEntity.addAdditionalSaveData}. */
+    public static void saveAssignedProfile(EntityProfileHolder holder, CompoundTag tag) {
+        ResourceLocation id = holder.critfall$profileId();
+        if (id != null) {
+            tag.putString(EntityProfileHolder.NBT_KEY, id.toString());
+        }
+    }
+
+    /**
+     * Mixin hook at the end of {@code LivingEntity.readAdditionalSaveData}. The tag is the entity's whole
+     * data ({@code /data merge} included), so an absent key clears the assignment.
+     */
+    public static void loadAssignedProfile(EntityProfileHolder holder, CompoundTag tag) {
+        if (!tag.contains(EntityProfileHolder.NBT_KEY, Tag.TAG_STRING)) {
+            holder.critfall$setProfileId(null);
+            return;
+        }
+        String text = tag.getString(EntityProfileHolder.NBT_KEY);
+        ResourceLocation id = ResourceLocation.tryParse(text);
+        if (id == null) {
+            Critfall.LOG.warn("Ignoring {} \"{}\": not a valid profile id", EntityProfileHolder.NBT_KEY, text);
+        }
+        holder.critfall$setProfileId(id);
     }
 
     /** Delivery-blind item lookup for no-context callers (commands, generic API queries). */

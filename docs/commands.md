@@ -38,7 +38,9 @@ profiled/fallback split.
 
 Shows the effective combat stats for a living entity and **which profile file won** (or that stats
 are derived). With no argument it inspects whatever your crosshair points at (32-block raycast,
-blocks occlude). Essential for debugging tag-priority collisions.
+blocks occlude). Essential for debugging tag-priority collisions. An entity with its own profile
+([`CritfallProfile`](datapack-formats.md#matching--priority)) shows `(assigned to this entity)`, or a
+line saying the assigned profile is not loaded.
 
 The bonuses and AC shown are **Critfall's own**, without a [modifier provider](api.md#modifier-provider)'s,
 which answers per attacker and target. The roll readout shows the modifier and AC a roll actually used.
