@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.16] - 2026-10-21
+
+Missed arrows fly on past their target.
+
+### Fixed
+
+- A missed arrow or crossbow bolt bounced back off its target, the way vanilla bounces an arrow that
+  does no damage, and could fly into the shooter and roll again against them. A missed shot now flies
+  on past the target and never strikes it again; it can still hit something farther along.
+
 ## [0.2.15] - 2026-10-14
 
 Better flavor lines, and flavor lines for one dimension.

@@ -575,9 +575,13 @@ public final class DamageInterception {
         }
 
         switch (result.outcome()) {
-            case MISS -> dmg.cancel();
+            case MISS -> {
+                dmg.cancel();
+                flyPast(rules, source, target);
+            }
             case FUMBLE -> {
                 dmg.cancel();
+                flyPast(rules, source, target);
                 FumbleCooldowns.record(
                         attacker.getUUID(), gameTime, rules.fumbles().cooldownTicks());
             }
@@ -617,6 +621,16 @@ public final class DamageInterception {
                         hurt.negated() ? withResisted(consequences) : consequences,
                         pool,
                         rules));
+    }
+
+    /**
+     * A missed arrow flies on past its target ({@link MissedShotHolder}) rather than bouncing back into
+     * the shooter. Dry-run leaves the vanilla hit standing, so there is no miss to fly past.
+     */
+    private static void flyPast(Rules rules, DamageSource source, LivingEntity target) {
+        if (!rules.dryRun().enabled() && source.getDirectEntity() instanceof MissedShotHolder arrow) {
+            arrow.critfall$addMissed(target);
+        }
     }
 
     /** A hit that took no health or absorption says so, rather than reading as damage taken. */

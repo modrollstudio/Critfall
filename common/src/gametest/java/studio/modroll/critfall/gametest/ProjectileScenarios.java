@@ -2,11 +2,15 @@ package studio.modroll.critfall.gametest;
 
 import com.google.gson.JsonParser;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.random.RandomGenerator;
+import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -14,11 +18,16 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.monster.Drowned;
 import net.minecraft.world.entity.monster.Skeleton;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.entity.projectile.Arrow;
 import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.entity.projectile.ThrownTrident;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.Vec3;
 import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.combat.FumbleCooldowns;
@@ -208,6 +217,187 @@ public final class ProjectileScenarios {
                 1,
                 1);
         helper.succeed();
+    }
+
+    // Real shots: a fake survival player draws and releases the weapon and the arrow flies over the
+    // following ticks. These swap the global roller for the whole flight, so the loader shims run
+    // each in its own batch, where no other test can restore the roller mid-flight.
+
+    public static void playerBowShotHitLandsOnTheTarget(GameTestHelper helper) {
+        realShot(helper, Items.BOW, new int[] {15}, 3.5, (player, pig, arrow, shots) -> {
+            // 15 + the bonus derived from the arrow damage beats pig AC 10
+            if (shots.d20Rolls() != 1) {
+                helper.fail("one shot must roll once, rolled " + shots.d20Rolls() + flight(helper, arrow, pig));
+            }
+            if (pig.getHealth() >= pig.getMaxHealth()) {
+                helper.fail("a hit arrow must damage the pig", pig);
+            }
+            if (!arrow.isRemoved()) {
+                helper.fail("an arrow that hit must be used up", arrow);
+            }
+        });
+    }
+
+    public static void missedBowShotFliesPastTheTarget(GameTestHelper helper) {
+        realShot(
+                helper,
+                Items.BOW,
+                new int[] {2},
+                3.5,
+                (player, pig, arrow, shots) -> expectFlewPast(helper, player, pig, arrow, shots));
+    }
+
+    public static void missedCrossbowShotFliesPastTheTarget(GameTestHelper helper) {
+        realShot(
+                helper,
+                Items.CROSSBOW,
+                new int[] {2},
+                3.5,
+                (player, pig, arrow, shots) -> expectFlewPast(helper, player, pig, arrow, shots));
+    }
+
+    public static void missedShotCanStillHitWhatIsBehindTheTarget(GameTestHelper helper) {
+        // a tick of flight (~3 blocks) apart: an arrow takes one entity hit per tick
+        Pig behind = spawnShotTarget(helper, 4.5);
+        realShot(helper, Items.BOW, new int[] {2, 15}, 1.5, (player, pig, arrow, shots) -> {
+            // misses the near pig, flies on, and rolls fresh against the one behind it
+            if (shots.d20Rolls() != 2) {
+                helper.fail("expected one roll per pig, rolled " + shots.d20Rolls() + flight(helper, arrow, pig));
+            }
+            expectHealth(helper, pig, pig.getMaxHealth());
+            if (behind.getHealth() >= behind.getMaxHealth()) {
+                helper.fail("the arrow that missed must still hit the pig behind", behind);
+            }
+        });
+    }
+
+    private static void expectFlewPast(
+            GameTestHelper helper, Player player, Pig pig, AbstractArrow arrow, ShotRandom shots) {
+        // 2 + at most +5 misses pig AC 10. Vanilla bounces an arrow whose hurt failed back the way
+        // it came, so a miss used to fly back into the shooter and roll again against them.
+        if (shots.d20Rolls() != 1) {
+            helper.fail("a missed shot must roll once and never again, rolled " + shots.d20Rolls()
+                    + flight(helper, arrow, pig));
+        }
+        expectHealth(helper, pig, pig.getMaxHealth());
+        expectHealth(helper, player, player.getMaxHealth());
+        if (helper.relativeVec(arrow.position()).z <= helper.relativeVec(pig.position()).z) {
+            helper.fail("a missed arrow must fly on past the target" + flight(helper, arrow, pig), arrow);
+        }
+    }
+
+    /** Where the arrow ended up relative to the target, for failure messages. */
+    private static String flight(GameTestHelper helper, AbstractArrow arrow, Pig pig) {
+        return " (arrow at " + helper.relativeVec(arrow.position()) + (arrow.isRemoved() ? ", removed" : "")
+                + " in " + helper.getLevel().getBlockState(arrow.blockPosition()) + " above "
+                + helper.getLevel().getBlockState(arrow.blockPosition().below()) + " v=" + arrow.getDeltaMovement()
+                + ", target at " + helper.relativeVec(pig.position()) + ")";
+    }
+
+    private interface ShotCheck {
+        void check(Player player, Pig pig, AbstractArrow arrow, ShotRandom shots);
+    }
+
+    /**
+     * A survival fake player fires {@code weapon} for real, full draw, at a still pig at {@code targetZ};
+     * the d20 shows {@code d20Faces} in order (the last repeats), every other die its max face.
+     */
+    private static void realShot(GameTestHelper helper, Item weapon, int[] d20Faces, double targetZ, ShotCheck check) {
+        Pig pig = spawnShotTarget(helper, targetZ);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        Vec3 position = helper.absoluteVec(new Vec3(1.5, SHOT_Y, 0.5));
+        player.moveTo(position.x, position.y, position.z, 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(player);
+        player.lookAt(EntityAnchorArgument.Anchor.EYES, pig.getBoundingBox().getCenter());
+        ItemStack stack = new ItemStack(weapon);
+        player.setItemInHand(InteractionHand.MAIN_HAND, stack);
+        player.getInventory().add(new ItemStack(Items.ARROW, 16));
+
+        ShotRandom shots = new ShotRandom(d20Faces);
+        Rules before = RollRuntime.rules();
+        RollRuntime.setRoller(new DiceRoller(shots));
+        RollRuntime.setRules(Rules.DEFAULTS);
+        FumbleCooldowns.clear();
+
+        player.startUsingItem(InteractionHand.MAIN_HAND);
+        if (stack.is(Items.CROSSBOW)) {
+            stack.releaseUsing(helper.getLevel(), player, stack.getUseDuration(player) - 40); // fully charged
+            player.stopUsingItem();
+            stack.use(helper.getLevel(), player, InteractionHand.MAIN_HAND); // fires the loaded bolt
+        } else {
+            stack.releaseUsing(helper.getLevel(), player, stack.getUseDuration(player) - 25); // full draw
+            player.stopUsingItem();
+        }
+        List<AbstractArrow> fired = helper.getLevel()
+                .getEntitiesOfClass(
+                        AbstractArrow.class, player.getBoundingBox().inflate(3), a -> a.getOwner() == player);
+        if (fired.size() != 1) {
+            restoreRolls(before);
+            helper.fail("the " + weapon + " must fire exactly one arrow, fired " + fired.size());
+            return;
+        }
+        AbstractArrow arrow = fired.get(0);
+        helper.runAfterDelay(30, () -> {
+            try {
+                check.check(player, pig, arrow, shots);
+            } finally {
+                restoreRolls(before);
+                player.discard();
+                arrow.discard();
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * The shooter stands at y 2, on the NeoForge template's floor (y 1), and every shot stays inside the
+     * template's 5x5 footprint. Targets hang level with the arrow's launch height (a no-AI pig stays
+     * where it is put), so a shot flies flat instead of into the floor.
+     */
+    private static final int SHOT_Y = 2;
+
+    private static final double TARGET_Y = SHOT_Y + 1.07;
+
+    private static Pig spawnShotTarget(GameTestHelper helper, double z) {
+        Pig pig = helper.spawn(EntityType.PIG, new Vec3(1.5, TARGET_Y, z));
+        pig.setNoAi(true);
+        return pig;
+    }
+
+    private static void restoreRolls(Rules before) {
+        RollRuntime.setRoller(new DiceRoller(new Random()));
+        RollRuntime.setRules(before);
+        FumbleCooldowns.clear();
+    }
+
+    /** Scripted d20 faces (the last repeats) that counts its d20 draws; every other die shows its max. */
+    private static final class ShotRandom implements RandomGenerator {
+
+        private final int[] d20Faces;
+        private int d20Rolls;
+
+        ShotRandom(int[] d20Faces) {
+            this.d20Faces = d20Faces;
+        }
+
+        @Override
+        public int nextInt(int bound) {
+            if (bound != 20) {
+                return bound - 1;
+            }
+            int face = d20Faces[Math.min(d20Rolls, d20Faces.length - 1)];
+            d20Rolls++;
+            return face - 1;
+        }
+
+        @Override
+        public long nextLong() {
+            throw new IllegalStateException("dice rolling must go through nextInt(bound)");
+        }
+
+        int d20Rolls() {
+            return d20Rolls;
+        }
     }
 
     /** An arrow carrying the firing-weapon stack, the way bow/crossbow shots record it. */
