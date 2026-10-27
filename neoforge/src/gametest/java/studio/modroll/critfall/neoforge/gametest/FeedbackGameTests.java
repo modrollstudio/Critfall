@@ -96,6 +96,16 @@ public class FeedbackGameTests {
     }
 
     @GameTest(template = TEMPLATE)
+    public void ordinaryKillsGetALineAtTheKillChance(GameTestHelper helper) {
+        FlavorScenarios.ordinaryKillsGetALineAtTheKillChance(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void namedMobsAndBossesAlwaysGetAKillLine(GameTestHelper helper) {
+        FlavorScenarios.namedMobsAndBossesAlwaysGetAKillLine(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
     public void everyShippedLineFillsItsPlaceholders(GameTestHelper helper) {
         FlavorScenarios.everyShippedLineFillsItsPlaceholders(helper);
     }

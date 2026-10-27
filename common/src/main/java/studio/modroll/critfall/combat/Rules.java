@@ -154,6 +154,8 @@ public record Rules(
      * @param confirmationRoll a nat 1 only triggers consequences if a second d20 rolls below
      *     {@code confirmationDc} — roughly halves real-time fumble frequency
      * @param cooldownTicks after a triggered fumble, further nat 1s are plain misses this long
+     * @param durabilityBreak gates the {@code critfall:damage_durability} outcome effect; off by
+     *     default since 0.2.17, so a fumble never wears gear down unless the server opts in
      * @param dropWeapon gates the {@code critfall:drop_weapon} outcome effect
      */
     public record Fumbles(
@@ -176,7 +178,7 @@ public record Rules(
                 true,
                 10,
                 200,
-                true,
+                false,
                 DurabilityMode.SET_TO_1,
                 25,
                 HitNearestAlly.DEFAULTS,
@@ -239,9 +241,17 @@ public record Rules(
         /**
          * @param enabled server master switch for sending flavor lines
          * @param cooldownTicks per-target minimum ticks between non-priority flavor lines
+         * @param killChancePercent how likely an ordinary kill is to get a line, 0 to 100; a named mob
+         *     or a boss ({@code #c:bosses}) always gets one
          */
-        public record Flavor(boolean enabled, int cooldownTicks) {
-            public static final Flavor DEFAULTS = new Flavor(true, 20);
+        public record Flavor(boolean enabled, int cooldownTicks, int killChancePercent) {
+            public static final int DEFAULT_KILL_CHANCE = 25;
+            public static final Flavor DEFAULTS = new Flavor(true, 20, DEFAULT_KILL_CHANCE);
+
+            /** For call sites that predate the kill chance, which defaults to 1 in 4. */
+            public Flavor(boolean enabled, int cooldownTicks) {
+                this(enabled, cooldownTicks, DEFAULT_KILL_CHANCE);
+            }
         }
 
         public static final Feedback DEFAULTS = new Feedback(FeedbackVisibility.EVERYONE, Flavor.DEFAULTS);

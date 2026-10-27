@@ -11,6 +11,23 @@ sourceSets {
         runtimeClasspath += sourceSets.main.runtimeClasspath
         runtimeClasspath += sourceSets.main.output
     }
+    // The screenshot driver, for the same reason: only the uiShots run puts it on the classpath.
+    uishots {
+        compileClasspath += sourceSets.main.compileClasspath
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
+def uiShotsOutput = rootProject.file('build/uishots/fabric')
+
+repositories {
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
+    }
 }
 
 dependencies {
@@ -23,6 +40,13 @@ dependencies {
     implementation project(':common')
 
     gametestImplementation project(':common').sourceSets.gametest.output
+    uishotsImplementation project(':common').sourceSets.uishots.output
+
+    // Optional: Mod Menu's mod list opens the rules screen when it is installed. Compiled against
+    // only; modLocalRuntime puts it in dev runs (a client-only mod, so server runs skip it) and
+    // keeps it out of the jar and the published metadata.
+    modCompileOnly "maven.modrinth:modmenu:${modmenu_modrinth_id}"
+    modLocalRuntime "maven.modrinth:modmenu:${modmenu_modrinth_id}"
 }
 
 loom {
@@ -42,8 +66,26 @@ loom {
             property 'fabric-api.gametest.report-file', "${project.buildDir}/junit.xml"
             ideConfigGenerated = true
         }
+        // Screenshots of the rules screen at fixed 1920x1080, into build/uishots/fabric.
+        uiShots {
+            client()
+            name = 'UI Shots'
+            runDir = 'run-uishots'
+            source sourceSets.uishots
+            programArgs '--username', 'Dev1', '--width', '1920', '--height', '1080'
+            property 'critfall.uishots.dir', uiShotsOutput.absolutePath
+        }
     }
 }
+
+// No stale screenshots on every run.
+def wipeUiShots = tasks.register('wipeUiShots', Delete) {
+    delete uiShotsOutput
+}
+tasks.matching { it.name == 'runUiShots' }.configureEach { dependsOn wipeUiShots }
+
+// Nothing in the build graph compiles the uishots source set otherwise; keep `check` catching it.
+tasks.named('check') { dependsOn tasks.named('uishotsClasses') }
 
 jar {
     from project(':common').sourceSets.main.output.classesDirs

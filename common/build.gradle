@@ -10,6 +10,11 @@ sourceSets {
         compileClasspath += sourceSets.main.output
         runtimeClasspath += sourceSets.main.output
     }
+    // The dev-only screenshot run's driver (runUiShots on each loader): kept out of the jar like gametest.
+    uishots {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
 }
 
 // Vanilla Minecraft (Mojang mappings) without any loader — code here must stay loader-agnostic.
@@ -19,6 +24,7 @@ neoForge {
     // GameTest bodies use the Minecraft GameTest framework + entities.
     addModdingDependenciesTo sourceSets.test
     addModdingDependenciesTo sourceSets.gametest
+    addModdingDependenciesTo sourceSets.uishots
 }
 
 processResources {

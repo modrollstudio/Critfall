@@ -38,6 +38,7 @@ import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.feedback.FeedbackBuilder;
 import studio.modroll.critfall.feedback.FeedbackSink;
+import studio.modroll.critfall.feedback.FlavorKills;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
@@ -280,7 +281,9 @@ public final class RollService {
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
-                target.level().getGameTime());
+                target.level().getGameTime(),
+                1.0F,
+                FlavorKills.alwaysFlavored(target));
         FeedbackSink.get().roll(attacker, target, payload, rules.feedback().visibility());
         return result;
     }

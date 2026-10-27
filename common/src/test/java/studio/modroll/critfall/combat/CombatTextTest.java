@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
+import studio.modroll.critfall.api.feedback.FlavorName;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
@@ -168,6 +169,34 @@ class CombatTextTest {
         assertTrue(text.contains("16"), text);
         assertTrue(text.contains("HIT"), text);
         assertTrue(text.contains("5"), text);
+    }
+
+    @Test
+    void carriedCritMultiplierFollowsTheDice() {
+        assertTrue(CombatText.actionBar(hit(1.5F)).getString().endsWith("HIT 1d8 = 7 ×1.5"));
+        assertTrue(CombatText.actionBar(hit(2.0F)).getString().endsWith("HIT 1d8 = 7 ×2"));
+        assertTrue(CombatText.actionBar(hit(1.0F)).getString().endsWith("HIT 1d8 = 7"));
+        assertTrue(CombatText.actionBar(hit(1.25F)).getString().endsWith("×1.25"));
+    }
+
+    private static RollFeedbackPayload hit(float critMultiplier) {
+        return new RollFeedbackPayload(
+                AttackOutcome.HIT,
+                15,
+                17,
+                10,
+                7,
+                "1d8",
+                true,
+                Optional.empty(),
+                List.of(),
+                false,
+                RollMode.NORMAL,
+                OptionalInt.empty(),
+                0,
+                FlavorName.NONE,
+                FlavorName.NONE,
+                critMultiplier);
     }
 
     /** New in 0.2.11: a client or fallback render without the lang entry still reads in English. */

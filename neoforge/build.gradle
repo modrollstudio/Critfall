@@ -5,7 +5,12 @@ plugins {
 // GameTest shims and compat-verification GameTests (docs/compat.md): dev runs only, never shipped.
 sourceSets {
     gametest
+    // The screenshot driver's loader hook: dev runs only, never shipped.
+    uishots
 }
+
+def uiShotsDir = file('run-uishots')
+def uiShotsOutput = rootProject.file('build/uishots/neoforge')
 
 // Runtime-only mods for dev runs: on runtimeClasspath (so FML loads jars with a
 // neoforge.mods.toml as mods) but not in any published/consumed configuration. This is what
@@ -27,6 +32,7 @@ neoForge {
     version = neoforge_version
 
     addModdingDependenciesTo sourceSets.gametest
+    addModdingDependenciesTo sourceSets.uishots
 
     runs {
         client {
@@ -39,6 +45,13 @@ neoForge {
             type = 'gameTestServer'
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
         }
+        // Screenshots of the rules screen at fixed 1920x1080, into build/uishots/neoforge.
+        uiShots {
+            client()
+            programArguments.addAll '--username', 'Dev1', '--width', '1920', '--height', '1080'
+            gameDirectory = uiShotsDir
+            systemProperty 'critfall.uishots.dir', uiShotsOutput.absolutePath
+        }
     }
 
     mods {
@@ -49,6 +62,9 @@ neoForge {
             sourceSet project(':common').sourceSets.gametest
             // NeoForge-only compat GameTests (reference Iron's Spells / Ars Nouveau classes).
             sourceSet sourceSets.gametest
+            // The screenshot driver — dev runs only, not shipped in the jar.
+            sourceSet project(':common').sourceSets.uishots
+            sourceSet sourceSets.uishots
         }
     }
 }
@@ -69,7 +85,19 @@ dependencies {
     gametestCompileOnly project(':common').sourceSets.gametest.output
     gametestCompileOnly "maven.modrinth:irons-spells-n-spellbooks:${irons_spellbooks_version}"
     gametestCompileOnly "maven.modrinth:ars-nouveau:${ars_nouveau_version}"
+
+    uishotsCompileOnly project(':common')
+    uishotsCompileOnly project(':common').sourceSets.uishots.output
 }
+
+// No stale screenshots on every run.
+def wipeUiShots = tasks.register('wipeUiShots', Delete) {
+    delete uiShotsOutput
+}
+tasks.matching { it.name == 'runUiShots' }.configureEach { dependsOn wipeUiShots }
+
+// Nothing in the build graph compiles the uishots source sets otherwise; keep `check` catching them.
+tasks.named('check') { dependsOn tasks.named('uishotsClasses'), project(':common').tasks.named('uishotsClasses') }
 
 // Bundle common's compiled classes into the NeoForge jar. Common's resources come through
 // processResources below (with property expansion) — bundling output too would duplicate them,

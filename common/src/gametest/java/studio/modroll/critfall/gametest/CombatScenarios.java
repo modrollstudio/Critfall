@@ -271,13 +271,37 @@ public final class CombatScenarios {
         husk.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
         withRolls(
                 helper,
-                Rules.DEFAULTS,
+                WEAPON_DAMAGE,
                 () -> {
                     // nat 1, confirmation 5 < 10 fails -> fumble confirmed, table pick 1 = durability
                     pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
                     ItemStack weapon = husk.getMainHandItem();
                     if (weapon.getDamageValue() != weapon.getMaxDamage() - 1) {
                         helper.fail("confirmed fumble must set durability to 1");
+                    }
+                },
+                1,
+                5,
+                1);
+        helper.succeed();
+    }
+
+    public static void defaultFumbleLeavesWeaponAlone(GameTestHelper helper) {
+        Husk husk = spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = spawnCalm(helper, EntityType.PIG, 3, 3);
+        husk.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+        withRolls(
+                helper,
+                Rules.DEFAULTS,
+                () -> {
+                    // nat 1, confirmation 5 < 10 fails -> fumble confirmed, table pick 1 = durability,
+                    // which ships off: the pick is a no-op
+                    boolean hurt = pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
+                    if (hurt) {
+                        helper.fail("a fumble must still miss");
+                    }
+                    if (husk.getMainHandItem().getDamageValue() != 0) {
+                        helper.fail("weapon damage is opt-in: a default fumble must leave the weapon whole");
                     }
                 },
                 1,
@@ -392,6 +416,63 @@ public final class CombatScenarios {
         T mob = helper.spawn(type, new BlockPos(x, 1, z));
         mob.setNoAi(true);
         return mob;
+    }
+
+    /** The shipped defaults with fumble weapon damage turned on, which ships off since 0.2.17. */
+    static final Rules WEAPON_DAMAGE = withWeaponDamage(Rules.DEFAULTS);
+
+    static Rules withWeaponDamage(Rules rules) {
+        Rules.Fumbles f = rules.fumbles();
+        return new Rules(
+                rules.attackRolls(),
+                rules.damageDice(),
+                rules.crits(),
+                new Rules.Fumbles(
+                        f.enabled(),
+                        f.nat1AlwaysMisses(),
+                        f.confirmationRoll(),
+                        f.confirmationDc(),
+                        f.cooldownTicks(),
+                        true,
+                        f.durabilityMode(),
+                        f.durabilityPercent(),
+                        f.hitNearestAlly(),
+                        f.selfDamage(),
+                        f.dropWeapon(),
+                        f.stumble(),
+                        f.appliesTo()),
+                rules.spells(),
+                rules.fallbacks(),
+                rules.feedback(),
+                rules.balance(),
+                rules.dryRun(),
+                rules.modifierProviders(),
+                rules.advantageSources());
+    }
+
+    /**
+     * The shipped defaults with a flavor line on every kill: for tests of which line a kill gets, not
+     * how often. At 100 the kill chance draws no die, so the cosmetic roller only picks the line.
+     */
+    static final Rules EVERY_KILL_LINE = withKillChance(Rules.DEFAULTS, 100);
+
+    static Rules withKillChance(Rules rules, int percent) {
+        Rules.Feedback feedback = rules.feedback();
+        return new Rules(
+                rules.attackRolls(),
+                rules.damageDice(),
+                rules.crits(),
+                rules.fumbles(),
+                rules.spells(),
+                rules.fallbacks(),
+                new Rules.Feedback(
+                        feedback.visibility(),
+                        new Rules.Feedback.Flavor(
+                                feedback.flavor().enabled(), feedback.flavor().cooldownTicks(), percent)),
+                rules.balance(),
+                rules.dryRun(),
+                rules.modifierProviders(),
+                rules.advantageSources());
     }
 
     /** Runs {@code action} under the given rules and scripted roller, then restores everything. */

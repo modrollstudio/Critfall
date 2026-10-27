@@ -85,6 +85,11 @@ public class CombatGameTests {
     }
 
     @GameTest(template = TEMPLATE)
+    public void defaultFumbleLeavesWeaponAlone(GameTestHelper helper) {
+        CombatScenarios.defaultFumbleLeavesWeaponAlone(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
     public void fumbleCooldownDowngradesTheSecondNatOne(GameTestHelper helper) {
         CombatScenarios.fumbleCooldownDowngradesTheSecondNatOne(helper);
     }

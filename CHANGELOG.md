@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.17] - 2026-10-27
+
+An in-game rules screen, weapon damage from fumbles made opt-in, and crits left to other mods when
+Critfall's are off.
+
+### Added
+
+- A config screen for `rules.json`: Mods → Critfall → Config on NeoForge, Mod Menu on Fabric (an
+  optional dependency). The main page has the three presets and nine switches: attack rolls, damage
+  dice, crits, fumbles, fumbles damage weapons, fumbles hit bystanders, jump attack advantage, who
+  sees roll readouts, and flavor lines. **All settings** opens every rule, grouped by section, with a tooltip each; a
+  value the file loader would reject turns red and blocks Save. Saving writes the same file
+  and loads it like `/reload`, so no restart is needed. On a server it shows no rules, only a line
+  saying the server sets them, since the server's own file applies and never reaches the client.
+
+### Changed
+
+- Fumbles no longer damage weapons by default (`fumbles.durability_break.enabled` is now `false`).
+  Existing configs keep what they have: files written by earlier versions say `true` and stay on. The
+  Tempered and Lite presets turn it off; Classic keeps it on.
+- With `crits.enabled` off, Critfall leaves crits to vanilla and other mods: a jump crit keeps vanilla's
+  multiplier instead of becoming an advantage roll, another mod's crit (NeoForge `CriticalHitEvent`)
+  keeps its multiplier, and a hit Critfall rolls carries that multiplier onto its dice damage. The
+  readout shows it after the dice (`1d8 = 7 ×1.5`), so the number matches the damage dealt.
+  Previously the multiplier was dropped or replaced by the dice even with Critfall's crits off.
+- Killing-blow flavor lines show on about 1 in 4 ordinary kills instead of every one
+  (`feedback.flavor.kill_chance_percent`, default 25). A named mob, such as a Depths elite or boss, and
+  any boss in `#c:bosses` always get one. Crit and fumble lines are unchanged.
+- The roll readout packet gained the crit multiplier and moved to `critfall:roll_feedback_v3`. Clients
+  on 0.2.16 or older get the action-bar readout instead, which shows the multiplier too.
+
+## [0.2.16] - 2026-10-21
+
+Missed arrows fly on past their target.
+
+### Fixed
+
+- A missed arrow or crossbow bolt bounced back off its target, the way vanilla bounces an arrow that
+  does no damage, and could fly into the shooter and roll again against them. A missed shot now flies
+  on past the target and never strikes it again; it can still hit something farther along.
+
 ## [0.2.15] - 2026-10-14
 
 Better flavor lines, and flavor lines for one dimension.
