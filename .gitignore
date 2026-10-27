@@ -17,6 +17,7 @@ bin/
 run/
 runs/
 run-data/
+run-uishots/
 logs/
 
 # OS

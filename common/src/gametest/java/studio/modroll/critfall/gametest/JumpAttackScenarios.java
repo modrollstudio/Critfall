@@ -8,10 +8,13 @@ import java.util.function.Consumer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.combat.AttackOutcome;
@@ -34,6 +37,8 @@ public final class JumpAttackScenarios {
 
     private static final float ATTACK_DAMAGE = 4.0F;
     private static final float VANILLA_CRIT = ATTACK_DAMAGE * 1.5F;
+
+    private static final Rules CRITS_OFF = critsOff(true);
 
     private static final Rules JUMP_OFF =
             rules(Rules.DEFAULTS.attackRolls(), true, Rules.DryRun.DEFAULTS, new Rules.AdvantageSources(false));
@@ -195,6 +200,120 @@ public final class JumpAttackScenarios {
         helper.succeed();
     }
 
+    public static void critsOffLeavesJumpCritToVanilla(GameTestHelper helper) {
+        Player player = attacker(helper, true);
+        Pig rolled = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        Pig vanillaAmount = CombatScenarios.spawnCalm(helper, EntityType.PIG, 5, 5);
+        run(
+                helper,
+                CRITS_OFF,
+                sink -> {
+                    // no advantage: one d20, and dice derived from the crit's 6 (1d12), which carry it
+                    // already, so the readout shows no multiplier
+                    player.attack(rolled);
+                    expectHealth(helper, rolled, rolled.getMaxHealth() - 7.0F);
+                    expectRoll(helper, sink.lastRoll(), RollMode.NORMAL, AttackOutcome.HIT);
+                    expectReadout(helper, sink.lastRoll(), "d20 15+2=17", "1d12 = 7");
+                    expectNoMultiplier(helper, sink.lastRoll());
+                },
+                15,
+                7);
+        run(
+                helper,
+                critsOff(false),
+                sink -> {
+                    // damage dice off apply the vanilla amount, crit multiplier included
+                    player.attack(vanillaAmount);
+                    expectHealth(helper, vanillaAmount, vanillaAmount.getMaxHealth() - VANILLA_CRIT);
+                    expectRoll(helper, sink.lastRoll(), RollMode.NORMAL, AttackOutcome.HIT);
+                },
+                15);
+        helper.succeed();
+    }
+
+    public static void critsOffCarriesJumpCritOntoProfileDice(GameTestHelper helper) {
+        Player grounded = attacker(helper, false);
+        Player jumping = attacker(helper, true);
+        grounded.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+        jumping.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+        Pig plain = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        Pig crit = CombatScenarios.spawnCalm(helper, EntityType.PIG, 5, 5);
+        run(
+                helper,
+                CRITS_OFF,
+                sink -> {
+                    // the sword profile's dice ignore the vanilla amount, so the crit is carried over:
+                    // the same rolls deal 1.5x on the jump swing
+                    grounded.attack(plain);
+                    expectNoMultiplier(helper, sink.lastRoll());
+                    jumping.attack(crit);
+                    // the readout shows the carried multiplier, so its number matches the damage dealt
+                    expectReadout(helper, sink.lastRoll(), "1d8", "×1.5");
+                    float plainLoss = plain.getMaxHealth() - plain.getHealth();
+                    float critLoss = crit.getMaxHealth() - crit.getHealth();
+                    if (plainLoss <= 0 || Math.abs(critLoss - plainLoss * 1.5F) > 0.001F) {
+                        helper.fail("a crit with crits off must keep vanilla's 1.5x on rolled dice, took " + plainLoss
+                                + " then " + critLoss);
+                    }
+                    expectRoll(helper, sink.lastRoll(), RollMode.NORMAL, AttackOutcome.HIT);
+                },
+                // 15 hits AC 10 and 1d8 rolls 1, for each swing
+                15,
+                1,
+                15,
+                1);
+        helper.succeed();
+    }
+
+    /**
+     * Another mod makes a grounded swing a crit with its own 2x multiplier ({@code forceCrit} sets it
+     * for the swings that follow, 0 clears it). With Critfall's crits off the rolled hit carries that
+     * multiplier; with them on, only Critfall's natural 20s crit. NeoForge only: Fabric has no crit
+     * event for another mod to use.
+     */
+    public static void otherModsCritSurvivesCritsOff(GameTestHelper helper, Consumer<Float> forceCrit) {
+        Player player = attacker(helper, false);
+        player.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
+        Pig plain = CombatScenarios.spawnCalm(helper, EntityType.PIG, 1, 5);
+        Pig critsOff = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 5);
+        Pig critsOn = CombatScenarios.spawnCalm(helper, EntityType.PIG, 5, 5);
+        try {
+            run(helper, CRITS_OFF, sink -> player.attack(plain), 15, 1);
+            forceCrit.accept(2.0F);
+            run(
+                    helper,
+                    CRITS_OFF,
+                    sink -> {
+                        player.attack(critsOff);
+                        expectReadout(helper, sink.lastRoll(), "×2");
+                    },
+                    15,
+                    1);
+            run(
+                    helper,
+                    Rules.DEFAULTS,
+                    sink -> {
+                        player.attack(critsOn);
+                        expectNoMultiplier(helper, sink.lastRoll());
+                    },
+                    15,
+                    1);
+        } finally {
+            forceCrit.accept(0.0F);
+        }
+        float plainLoss = plain.getMaxHealth() - plain.getHealth();
+        float offLoss = critsOff.getMaxHealth() - critsOff.getHealth();
+        float onLoss = critsOn.getMaxHealth() - critsOn.getHealth();
+        if (plainLoss <= 0 || Math.abs(offLoss - plainLoss * 2.0F) > 0.001F) {
+            helper.fail("with crits off another mod's 2x crit must double the rolled damage, took " + plainLoss
+                    + " then " + offLoss);
+        }
+        if (Math.abs(onLoss - plainLoss) > 0.001F) {
+            helper.fail("with crits on only a natural 20 crits, took " + plainLoss + " then " + onLoss);
+        }
+        helper.succeed();
+    }
+
     public static void drivenAttacksIgnoreJumping(GameTestHelper helper) {
         Player player = attacker(helper, true);
         Pig performed = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
@@ -295,6 +414,24 @@ public final class JumpAttackScenarios {
                 advantageSources);
     }
 
+    /** Critfall's crits off, jump attack advantage left at its default (on). */
+    static Rules critsOff(boolean damageDice) {
+        Rules base = Rules.DEFAULTS;
+        Rules.Crits crits = base.crits();
+        return new Rules(
+                base.attackRolls(),
+                damageDice,
+                new Rules.Crits(false, crits.rule(), crits.nat20AlwaysHits(), crits.applyEffect(), crits.knockback()),
+                base.fumbles(),
+                base.spells(),
+                base.fallbacks(),
+                base.feedback(),
+                base.balance(),
+                base.dryRun(),
+                base.modifierProviders(),
+                base.advantageSources());
+    }
+
     /** Runs {@code action} with feedback captured under the given rules and scripted rolls. */
     private static void run(GameTestHelper helper, Rules rules, Consumer<CapturingFeedbackSink> action, int... faces) {
         CapturingFeedbackSink sink = new CapturingFeedbackSink();
@@ -328,6 +465,17 @@ public final class JumpAttackScenarios {
             if (!readout.contains(fragment)) {
                 helper.fail("the readout must contain \"" + fragment + "\", was \"" + readout + "\"");
             }
+        }
+    }
+
+    private static void expectNoMultiplier(GameTestHelper helper, RollFeedbackPayload payload) {
+        if (payload == null || payload.critMultiplier() != 1.0F) {
+            helper.fail("this hit must carry no crit multiplier, payload was " + payload);
+            return;
+        }
+        String readout = CombatText.actionBar(payload).getString();
+        if (readout.contains("×")) {
+            helper.fail("the readout must show no multiplier, was \"" + readout + "\"");
         }
     }
 

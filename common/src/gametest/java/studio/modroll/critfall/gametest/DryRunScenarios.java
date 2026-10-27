@@ -31,7 +31,8 @@ public final class DryRunScenarios {
         Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
         husk.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
 
-        Rules base = Rules.DEFAULTS;
+        // Weapon damage on, so the whole weapon below shows dry-run suppressed it, not the default.
+        Rules base = CombatScenarios.WEAPON_DAMAGE;
         Rules dryRun = new Rules(
                 base.attackRolls(),
                 base.damageDice(),

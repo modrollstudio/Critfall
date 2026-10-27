@@ -16,7 +16,8 @@
   "environment": "*",
   "entrypoints": {
     "main": ["studio.modroll.critfall.fabric.CritfallFabric"],
-    "client": ["studio.modroll.critfall.fabric.client.CritfallFabricClient"]
+    "client": ["studio.modroll.critfall.fabric.client.CritfallFabricClient"],
+    "modmenu": ["studio.modroll.critfall.fabric.client.CritfallModMenu"]
   },
   "mixins": ["critfall.mixins.json"],
   "depends": {
@@ -24,5 +25,8 @@
     "minecraft": "${minecraft_version}",
     "java": ">=21",
     "fabric-api": "*"
+  },
+  "suggests": {
+    "modmenu": "*"
   }
 }

@@ -1,7 +1,8 @@
 # Rules presets
 
 Three complete `rules.json` files ship in [`examples/presets/`](../examples/presets/). Copy one over
-`config/critfall/rules.json` and `/reload`. They differ only in how crits and fumbles behave — every
+`config/critfall/rules.json` and `/reload`, or pick one at the top of the in-game config screen
+(see [rules-config.md](rules-config.md#in-game-config-screen)). They differ only in how crits and fumbles behave — every
 other mechanic stays at the shipped default. From any preset you can then toggle individual flags;
 see [rules-config.md](rules-config.md) for the full flag reference.
 
@@ -14,6 +15,8 @@ minute (a raw 5% nat-1 rate fires constantly):
   fails — roughly halving real-time fumbles.
 - Fumble **cooldown 200 ticks** (10s): after a triggered fumble, further nat 1s are plain misses for
   10 seconds.
+- Fumble **weapon damage off** (since 0.2.17): a fumble can still hit a bystander, but never wears
+  down the weapon unless you turn `durability_break` on.
 
 Pick this if you want tabletop flavor without fumbles dominating fast-paced combat.
 
@@ -23,6 +26,7 @@ The unfiltered tabletop feel:
 
 - Confirmation roll **off**.
 - Fumble cooldown **0**.
+- Fumble **weapon damage on**: a fumble can drop the weapon to 1 durability.
 
 Every nat 1 that is not saved by other rules can immediately fumble. Great for slower, deliberate
 combat or servers that lean into the chaos. Expect more dropped/damaged weapons and friendly-fire

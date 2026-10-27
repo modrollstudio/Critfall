@@ -39,6 +39,16 @@ public class JumpAttackGameTests implements FabricGameTest {
     }
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void critsOffLeavesJumpCritToVanilla(GameTestHelper helper) {
+        JumpAttackScenarios.critsOffLeavesJumpCritToVanilla(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void critsOffCarriesJumpCritOntoProfileDice(GameTestHelper helper) {
+        JumpAttackScenarios.critsOffCarriesJumpCritOntoProfileDice(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void drivenAttacksIgnoreJumping(GameTestHelper helper) {
         JumpAttackScenarios.drivenAttacksIgnoreJumping(helper);
     }

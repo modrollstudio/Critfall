@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "critfall_uishots",
+  "version": "1.0.0",
+  "name": "Critfall UI Shots",
+  "description": "Dev-only screenshot run for Critfall; never shipped.",
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["studio.modroll.critfall.fabric.uishots.FabricUiShots"]
+  },
+  "depends": {
+    "critfall": "*"
+  }
+}

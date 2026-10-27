@@ -109,7 +109,9 @@ class OutcomeSelectorTest {
     void everyEffectMapsToItsOwnRulesFlag() {
         Rules defaults = Rules.DEFAULTS;
         assertTrue(OutcomeSelector.enabled(new OutcomeEffect.Nothing(), defaults));
-        assertTrue(OutcomeSelector.enabled(new OutcomeEffect.DamageDurability(), defaults));
+        assertFalse(
+                OutcomeSelector.enabled(new OutcomeEffect.DamageDurability(), defaults),
+                "durability_break ships disabled since 0.2.17");
         assertTrue(OutcomeSelector.enabled(new OutcomeEffect.HitNearestAlly(OptionalInt.empty()), defaults));
         assertFalse(
                 OutcomeSelector.enabled(new OutcomeEffect.SelfDamage(Optional.empty()), defaults),

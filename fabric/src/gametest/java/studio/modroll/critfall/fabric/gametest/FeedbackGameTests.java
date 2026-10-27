@@ -90,6 +90,16 @@ public class FeedbackGameTests implements FabricGameTest {
     }
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void ordinaryKillsGetALineAtTheKillChance(GameTestHelper helper) {
+        FlavorScenarios.ordinaryKillsGetALineAtTheKillChance(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void namedMobsAndBossesAlwaysGetAKillLine(GameTestHelper helper) {
+        FlavorScenarios.namedMobsAndBossesAlwaysGetAKillLine(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void everyShippedLineFillsItsPlaceholders(GameTestHelper helper) {
         FlavorScenarios.everyShippedLineFillsItsPlaceholders(helper);
     }

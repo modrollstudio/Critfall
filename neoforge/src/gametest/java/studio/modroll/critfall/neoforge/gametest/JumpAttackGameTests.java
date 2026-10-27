@@ -2,6 +2,8 @@ package studio.modroll.critfall.neoforge.gametest;
 
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.CriticalHitEvent;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import studio.modroll.critfall.Critfall;
@@ -45,7 +47,34 @@ public class JumpAttackGameTests {
     }
 
     @GameTest(template = TEMPLATE)
+    public void critsOffLeavesJumpCritToVanilla(GameTestHelper helper) {
+        JumpAttackScenarios.critsOffLeavesJumpCritToVanilla(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void critsOffCarriesJumpCritOntoProfileDice(GameTestHelper helper) {
+        JumpAttackScenarios.critsOffCarriesJumpCritOntoProfileDice(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
     public void drivenAttacksIgnoreJumping(GameTestHelper helper) {
         JumpAttackScenarios.drivenAttacksIgnoreJumping(helper);
+    }
+
+    /** Stands in for another crit mod: makes the next swings crits at this multiplier; 0 is off. */
+    private static volatile float otherModCrit;
+
+    static {
+        NeoForge.EVENT_BUS.addListener((CriticalHitEvent event) -> {
+            if (otherModCrit > 0) {
+                event.setCriticalHit(true);
+                event.setDamageMultiplier(otherModCrit);
+            }
+        });
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void otherModsCritSurvivesCritsOff(GameTestHelper helper) {
+        JumpAttackScenarios.otherModsCritSurvivesCritsOff(helper, multiplier -> otherModCrit = multiplier);
     }
 }

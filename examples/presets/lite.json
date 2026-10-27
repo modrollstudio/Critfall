@@ -14,7 +14,7 @@
     "nat1_always_misses": true,
     "confirmation_roll": { "enabled": true, "dc": 10 },
     "cooldown_ticks": 200,
-    "durability_break": { "enabled": true, "mode": "set_to_1", "percent": 25 },
+    "durability_break": { "enabled": false, "mode": "set_to_1", "percent": 25 },
     "hit_nearest_ally": { "enabled": true, "radius": 4, "can_hit_players": true, "respect_pvp_rules": true },
     "self_damage": { "enabled": false, "dice": "1d4" },
     "drop_weapon": { "enabled": false },

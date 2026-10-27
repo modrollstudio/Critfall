@@ -368,7 +368,7 @@ public final class OutcomeScenarios {
         husk.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
         withRolls(
                 helper,
-                Rules.DEFAULTS,
+                CombatScenarios.WEAPON_DAMAGE,
                 () -> {
                     // nat 1 (miss) then confirmation d20 = 2 (< DC 10) -> confirmed fumble
                     AttackResult result = new AttackResult(AttackOutcome.FUMBLE, 1, 4, 10, 0);
@@ -377,7 +377,7 @@ public final class OutcomeScenarios {
                             pig,
                             result,
                             DiceExpression.parse("1d8"),
-                            Rules.DEFAULTS,
+                            CombatScenarios.WEAPON_DAMAGE,
                             RollRuntime.roller(),
                             husk.getMainHandItem(),
                             ProfileLookup.forItem(husk.getMainHandItem()),

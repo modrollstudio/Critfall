@@ -53,7 +53,7 @@ public final class FeedbackScenarios {
             husk.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.IRON_SWORD));
             CombatScenarios.withRolls(
                     helper,
-                    Rules.DEFAULTS,
+                    CombatScenarios.WEAPON_DAMAGE,
                     () -> {
                         // nat 1, confirmation 2 < DC 10 fails -> fumble confirmed, table pick 1 = durability
                         pig.hurt(helper.getLevel().damageSources().mobAttack(husk), 3.0F);
@@ -342,7 +342,7 @@ public final class FeedbackScenarios {
                             false,
                             () -> CombatScenarios.withRolls(
                                     helper,
-                                    Rules.DEFAULTS,
+                                    CombatScenarios.EVERY_KILL_LINE,
                                     () -> {
                                         // pig save 2 + 0 vs DC 13 fails; 2d6 rolls 6, 6 for 12 damage
                                         pig.hurt(bite, 6.0F);
@@ -384,7 +384,7 @@ public final class FeedbackScenarios {
                     false,
                     () -> CombatScenarios.withRolls(
                             helper,
-                            Rules.DEFAULTS,
+                            CombatScenarios.EVERY_KILL_LINE,
                             () -> {
                                 pig.hurt(helper.getLevel().damageSources().mobAttack(attacker), 3.0F);
                                 RollFeedbackPayload payload = sink.lastRoll();
@@ -425,7 +425,7 @@ public final class FeedbackScenarios {
             protect.accept(pig);
             CombatScenarios.withRolls(
                     helper,
-                    Rules.DEFAULTS,
+                    CombatScenarios.EVERY_KILL_LINE,
                     () -> {
                         pig.hurt(helper.getLevel().damageSources().mobAttack(husk), 3.0F);
                         RollFeedbackPayload payload = sink.lastRoll();

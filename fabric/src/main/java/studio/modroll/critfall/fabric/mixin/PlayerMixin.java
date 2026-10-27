@@ -14,7 +14,9 @@ import studio.modroll.critfall.combat.JumpAttacks;
  * Fabric side of {@link JumpAttacks}; Fabric has no equivalent of NeoForge's
  * {@code CriticalHitEvent}. Vanilla's {@code Player.attack} loads its {@code 1.5F} crit multiplier
  * only inside the branch its own crit check guards, so that constant marks a jump attack without
- * re-implementing the check.
+ * re-implementing the check. A mod that changes that same constant ahead of us reaches us chained
+ * in; one that scales crit damage some other way is not seen, so a hit Critfall rolls with profile
+ * dice drops that extra damage.
  */
 @Mixin(Player.class)
 public abstract class PlayerMixin {
@@ -26,6 +28,6 @@ public abstract class PlayerMixin {
 
     @ModifyConstant(method = "attack", constant = @Constant(floatValue = 1.5F))
     private float critfall$jumpAttack(float multiplier, Entity target) {
-        return JumpAttacks.onVanillaCrit((Player) (Object) this, target, multiplier);
+        return JumpAttacks.onCrit((Player) (Object) this, target, multiplier, true);
     }
 }

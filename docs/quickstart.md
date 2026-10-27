@@ -12,7 +12,8 @@ is optional (feedback only).
 
 ## 2. Pick a feel
 
-Copy one of the presets over `config/critfall/rules.json` and `/reload`:
+Pick a preset at the top of the in-game config screen (Mods → Critfall → Config on NeoForge, Mod
+Menu on Fabric), or copy one over `config/critfall/rules.json` and `/reload`:
 
 - **Tempered** (the default) — fumble confirmation on, 10-second cooldown. Conservative about how
   often fumbles fire in real-time combat.

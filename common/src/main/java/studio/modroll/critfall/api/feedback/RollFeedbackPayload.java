@@ -22,7 +22,9 @@ import studio.modroll.critfall.api.dice.RollMode;
  * the outcome-table consequences that actually fired. {@code natural} is the kept d20 face, which
  * {@code rollMode} and {@code droppedNatural} complete into the {@link #roll()} detail.
  * {@code flavorAttacker} and {@code flavorTarget} fill the flavor line's placeholders; both are
- * {@link FlavorName#NONE} when there is no flavor line.
+ * {@link FlavorName#NONE} when there is no flavor line. {@code critMultiplier} is the crit multiplier a
+ * hit's dice damage carried (vanilla's or another mod's, while Critfall's own crits are off), 1 when
+ * none did; the readout shows it after the dice so the number matches the damage dealt.
  */
 public record RollFeedbackPayload(
         AttackOutcome outcome,
@@ -39,8 +41,45 @@ public record RollFeedbackPayload(
         OptionalInt droppedNatural,
         int defenderAcBonus,
         FlavorName flavorAttacker,
-        FlavorName flavorTarget)
+        FlavorName flavorTarget,
+        float critMultiplier)
         implements CustomPacketPayload {
+
+    /** Convenience without a carried crit multiplier (pre-0.2.17 callers). */
+    public RollFeedbackPayload(
+            AttackOutcome outcome,
+            int natural,
+            int attackTotal,
+            int armorClass,
+            int damage,
+            String diceNotation,
+            boolean showDamage,
+            Optional<String> flavorKey,
+            List<ConsequenceLine> consequences,
+            boolean dryRun,
+            RollMode rollMode,
+            OptionalInt droppedNatural,
+            int defenderAcBonus,
+            FlavorName flavorAttacker,
+            FlavorName flavorTarget) {
+        this(
+                outcome,
+                natural,
+                attackTotal,
+                armorClass,
+                damage,
+                diceNotation,
+                showDamage,
+                flavorKey,
+                consequences,
+                dryRun,
+                rollMode,
+                droppedNatural,
+                defenderAcBonus,
+                flavorAttacker,
+                flavorTarget,
+                1.0F);
+    }
 
     /** Convenience without flavor names (pre-0.2.15 callers). */
     public RollFeedbackPayload(
@@ -145,12 +184,12 @@ public record RollFeedbackPayload(
     private static final int MAX_CONSEQUENCES = 64;
 
     /**
-     * {@code critfall:roll_feedback_v2} since 0.2.15, which added the flavor line's names to the packet. A
-     * 0.2.14 client only has {@code critfall:roll_feedback}, so it gets the action bar instead of a packet it
-     * cannot read.
+     * {@code critfall:roll_feedback_v3} since 0.2.17, which added the carried crit multiplier
+     * ({@code _v2} since 0.2.15 added the flavor line's names). An older client only has an older channel,
+     * so it gets the action bar instead of a packet it cannot read.
      */
     public static final Type<RollFeedbackPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "roll_feedback_v2"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "roll_feedback_v3"));
 
     public static final StreamCodec<FriendlyByteBuf, RollFeedbackPayload> STREAM_CODEC =
             StreamCodec.of(RollFeedbackPayload::encode, RollFeedbackPayload::decode);
@@ -179,6 +218,7 @@ public record RollFeedbackPayload(
         buf.writeInt(p.defenderAcBonus);
         FlavorName.write(buf, p.flavorAttacker);
         FlavorName.write(buf, p.flavorTarget);
+        buf.writeFloat(p.critMultiplier);
     }
 
     private static RollFeedbackPayload decode(FriendlyByteBuf buf) {
@@ -205,6 +245,7 @@ public record RollFeedbackPayload(
         int defenderAcBonus = buf.readInt();
         FlavorName flavorAttacker = FlavorName.read(buf);
         FlavorName flavorTarget = FlavorName.read(buf);
+        float critMultiplier = buf.readFloat();
         return new RollFeedbackPayload(
                 outcome,
                 natural,
@@ -220,7 +261,8 @@ public record RollFeedbackPayload(
                 dropped,
                 defenderAcBonus,
                 flavorAttacker,
-                flavorTarget);
+                flavorTarget,
+                critMultiplier);
     }
 
     static void writeLine(FriendlyByteBuf buf, ConsequenceLine line) {

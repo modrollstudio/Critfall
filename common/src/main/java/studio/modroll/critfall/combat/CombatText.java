@@ -1,5 +1,6 @@
 package studio.modroll.critfall.combat;
 
+import java.math.BigDecimal;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import studio.modroll.critfall.api.ModifierProvider;
@@ -189,8 +190,20 @@ public final class CombatText {
 
     private static void appendDamage(MutableComponent line, RollFeedbackPayload p) {
         if (p.showDamage()) {
-            line.append(Component.literal(" " + p.diceNotation() + " = " + p.damage()));
+            line.append(
+                    Component.literal(" " + p.diceNotation() + " = " + p.damage() + multiplier(p.critMultiplier())));
         }
+    }
+
+    /** {@code " ×1.5"} for a carried crit multiplier, nothing for 1; at most two decimals, no trailing zeros. */
+    static String multiplier(float multiplier) {
+        if (multiplier == 1.0F) {
+            return "";
+        }
+        String text = BigDecimal.valueOf(Math.round(multiplier * 100) / 100.0)
+                .stripTrailingZeros()
+                .toPlainString();
+        return " ×" + text;
     }
 
     private static Component translate(ConsequenceLine consequence) {

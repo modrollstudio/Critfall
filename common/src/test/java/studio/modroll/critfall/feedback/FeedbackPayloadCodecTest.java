@@ -85,6 +85,35 @@ class FeedbackPayloadCodecTest {
     }
 
     @Test
+    void critMultiplierRoundTrips() {
+        RollFeedbackPayload payload = new RollFeedbackPayload(
+                AttackOutcome.HIT,
+                15,
+                17,
+                10,
+                7,
+                "1d8",
+                true,
+                Optional.empty(),
+                List.of(),
+                false,
+                RollMode.NORMAL,
+                OptionalInt.empty(),
+                0,
+                FlavorName.NONE,
+                FlavorName.NONE,
+                1.5F);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        RollFeedbackPayload.STREAM_CODEC.encode(buf, payload);
+        assertEquals(payload, RollFeedbackPayload.STREAM_CODEC.decode(buf));
+        assertEquals(
+                1.0F,
+                new RollFeedbackPayload(AttackOutcome.HIT, 13, 16, 10, 5, "1d6", true, Optional.empty(), List.of())
+                        .critMultiplier(),
+                "callers that predate the field carry no multiplier");
+    }
+
+    @Test
     void rollPayloadRoundTripsWithoutFlavorOrConsequences() {
         RollFeedbackPayload payload =
                 new RollFeedbackPayload(AttackOutcome.HIT, 13, 16, 10, 5, "1d6+1", true, Optional.empty(), List.of());
