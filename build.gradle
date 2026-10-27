@@ -30,6 +30,14 @@ subprojects {
         testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     }
 
+    // The rules presets (docs/presets.md) ship in every jar for the config screen's preset picker,
+    // from the one copy in examples/presets that the docs point players at.
+    processResources {
+        from(rootProject.file('examples/presets')) {
+            into 'assets/critfall/presets'
+        }
+    }
+
     tasks.withType(JavaCompile).configureEach {
         options.encoding = 'UTF-8'
     }
@@ -67,26 +75,29 @@ subprojects {
                 plugins.hasPlugin('fabric-loom') ? tasks.remapJar : tasks.jar)
 
         // Initiative M0 caught a shipped Fabric gametest entrypoint with no body in the jar,
-        // breaking every consumer's gametest run — this guard fails the build if it happens again.
+        // breaking every consumer's gametest run — this guard fails the build if it happens again,
+        // and keeps the dev-only screenshot driver (uishots) out the same way.
         def releaseJar = plugins.hasPlugin('fabric-loom') ? tasks.remapJar : tasks.jar
         def guard = tasks.register('verifyNoGametestInReleaseJar') {
             dependsOn releaseJar
             def jarFile = releaseJar.archiveFile
+            def devOnly = ['gametest', 'uishots']
             doLast {
                 def offenders = []
                 new java.util.zip.ZipFile(jarFile.get().asFile).withCloseable { zip ->
                     zip.entries().each { entry ->
-                        if (entry.name.toLowerCase().contains('gametest')) {
+                        if (devOnly.any { entry.name.toLowerCase().contains(it) }) {
                             offenders << entry.name
                         }
                     }
                     def modJson = zip.getEntry('fabric.mod.json')
-                    if (modJson != null && zip.getInputStream(modJson).getText('UTF-8').contains('gametest')) {
-                        offenders << 'fabric.mod.json declares a gametest entrypoint'
+                    def modJsonText = modJson == null ? '' : zip.getInputStream(modJson).getText('UTF-8')
+                    devOnly.findAll { modJsonText.contains(it) }.each {
+                        offenders << "fabric.mod.json declares a ${it} entrypoint"
                     }
                 }
                 if (!offenders.isEmpty()) {
-                    throw new GradleException("gametest leaked into ${jarFile.get().asFile.name}: ${offenders}")
+                    throw new GradleException("dev-only code leaked into ${jarFile.get().asFile.name}: ${offenders}")
                 }
             }
         }

@@ -23,7 +23,7 @@ import studio.modroll.critfall.combat.Rules;
 public final class RulesLoader {
 
     /** Written verbatim when no config exists. Keep in sync with {@link Rules#DEFAULTS}. */
-    static final String DEFAULT_FILE = """
+    public static final String DEFAULT_FILE = """
             {
               "format_version": 1,
               "attack_rolls": { "enabled": true, "players": true, "mobs": true, "projectiles": true, "spells": true },
@@ -40,7 +40,7 @@ public final class RulesLoader {
                 "nat1_always_misses": true,
                 "confirmation_roll": { "enabled": true, "dc": 10 },
                 "cooldown_ticks": 200,
-                "durability_break": { "enabled": true, "mode": "set_to_1", "percent": 25 },
+                "durability_break": { "enabled": false, "mode": "set_to_1", "percent": 25 },
                 "hit_nearest_ally": { "enabled": true, "radius": 4, "can_hit_players": true, "respect_pvp_rules": true },
                 "self_damage": { "enabled": false, "dice": "1d4" },
                 "drop_weapon": { "enabled": false },
@@ -51,7 +51,7 @@ public final class RulesLoader {
                 "saves": { "enabled": true, "default_dc": 13, "on_success": "half" }
               },
               "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
-              "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20 } },
+              "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20, "kill_chance_percent": 25 } },
               "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true },
               "dry_run": { "enabled": false },
               "modifier_providers": { "enabled": true },
@@ -122,7 +122,7 @@ public final class RulesLoader {
                 confirmation.getBool("enabled", true),
                 intInRange(confirmation, "dc", 10, 2, 20, warn),
                 intInRange(fumbles, "cooldown_ticks", 200, 0, Integer.MAX_VALUE, warn),
-                durability.getBool("enabled", true),
+                durability.getBool("enabled", false),
                 durabilityMode,
                 intInRange(durability, "percent", defaultPercent, 1, 100, warn),
                 new Rules.HitNearestAlly(
@@ -158,7 +158,9 @@ public final class RulesLoader {
                 feedback, "roll_visibility", Rules.FeedbackVisibility.class, Rules.FeedbackVisibility.EVERYONE, warn);
         LenientJson flavor = feedback.object("flavor");
         Rules.Feedback.Flavor flavorRules = new Rules.Feedback.Flavor(
-                flavor.getBool("enabled", true), intInRange(flavor, "cooldown_ticks", 20, 0, Integer.MAX_VALUE, warn));
+                flavor.getBool("enabled", true),
+                intInRange(flavor, "cooldown_ticks", 20, 0, Integer.MAX_VALUE, warn),
+                intInRange(flavor, "kill_chance_percent", Rules.Feedback.Flavor.DEFAULT_KILL_CHANCE, 0, 100, warn));
         Rules.Feedback feedbackRules = new Rules.Feedback(visibility, flavorRules);
 
         LenientJson balance = j.object("balance");

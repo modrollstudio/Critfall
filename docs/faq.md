@@ -25,9 +25,17 @@ protection, the Resistance effect, and absorption still apply. See
 ### Fumbles fire too often in fast combat.
 
 Real-time Minecraft rolls far more often than a tabletop. Use the config safeguards (all on in the
-Tempered preset): the confirmation roll, the fumble cooldown, and `percent_loss` durability instead
-of `set_to_1`. Or switch fumbles off entirely with the Lite preset. These are config changes, not
-code.
+Tempered preset): the confirmation roll and the fumble cooldown. Fumbles no longer damage weapons
+by default; if you turn that on, prefer `percent_loss` durability to `set_to_1`. Or switch fumbles
+off entirely with the Lite preset. These are config changes, not code, and the in-game config
+screen covers them all.
+
+### I use another crit mod. Does Critfall get in its way?
+
+Not with `crits.enabled` off (since 0.2.17). Critfall then leaves vanilla's jump crits and other
+mods' crits alone, and a hit it rolls keeps the crit's damage multiplier on top of its dice. With
+Critfall's crits on, only natural 20s crit: vanilla's jump crit becomes an advantage roll, and
+another mod's crit multiplier is replaced by Critfall's dice.
 
 ### My mobs feel spongey now — everything takes longer to kill.
 

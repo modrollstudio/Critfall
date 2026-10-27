@@ -9,8 +9,10 @@ import java.util.Random;
 import java.util.random.RandomGenerator;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.locale.Language;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.monster.Husk;
 import studio.modroll.critfall.RollRuntime;
@@ -23,6 +25,7 @@ import studio.modroll.critfall.data.ProfileStore;
 import studio.modroll.critfall.feedback.CapturingFeedbackSink;
 import studio.modroll.critfall.feedback.FeedbackSink;
 import studio.modroll.critfall.feedback.FlavorCooldowns;
+import studio.modroll.critfall.feedback.FlavorKills;
 import studio.modroll.critfall.feedback.FlavorText;
 
 /**
@@ -91,6 +94,87 @@ public final class FlavorScenarios {
     }
 
     /** Every loaded line, filled with real entity names, has no placeholder, brace or raw key left. */
+    /**
+     * About 1 in 4 ordinary kills get a line ({@code kill_chance_percent} 25): the cosmetic d100 decides
+     * before the line is picked, and the combat dice are never touched.
+     */
+    public static void ordinaryKillsGetALineAtTheKillChance(GameTestHelper helper) {
+        RollFeedbackPayload missed = scriptedKill(helper, Rules.DEFAULTS, null, 26);
+        if (missed.flavorKey().isPresent()) {
+            helper.fail("a d100 of 26 is outside the 25% kill chance, but the kill got " + missed.flavorKey());
+        }
+        RollFeedbackPayload shown = scriptedKill(helper, Rules.DEFAULTS, null, 25, 1);
+        if (shown.flavorKey().isEmpty() || !shown.flavorKey().get().contains(".kill.")) {
+            helper.fail("a d100 of 25 is inside the 25% kill chance, but the kill got " + shown);
+        }
+        helper.succeed();
+    }
+
+    /** A named mob (a name tag, a Depths elite or boss) and a boss always get their killing-blow line. */
+    public static void namedMobsAndBossesAlwaysGetAKillLine(GameTestHelper helper) {
+        // chance 0: an ordinary kill never gets a line, and no d100 is drawn for a named one
+        RollFeedbackPayload named =
+                scriptedKill(helper, CombatScenarios.withKillChance(Rules.DEFAULTS, 0), "Varkas, the Unbroken", 1);
+        if (named.flavorKey().isEmpty()) {
+            helper.fail("a named mob's killing blow must always get a line, was " + named);
+        }
+        RollFeedbackPayload ordinary = scriptedKill(helper, CombatScenarios.withKillChance(Rules.DEFAULTS, 0), null);
+        if (ordinary.flavorKey().isPresent()) {
+            helper.fail("with the chance at 0 an ordinary kill gets no line, was " + ordinary.flavorKey());
+        }
+        for (EntityType<?> boss : List.of(EntityType.WITHER, EntityType.ENDER_DRAGON)) {
+            if (!(boss.create(helper.getLevel()) instanceof LivingEntity living)
+                    || !FlavorKills.alwaysFlavored(living)) {
+                helper.fail(boss.getDescriptionId() + " must be in #c:bosses and always get a kill line");
+            }
+        }
+        if (FlavorKills.alwaysFlavored(EntityType.PIG.create(helper.getLevel()))) {
+            helper.fail("an unnamed pig is an ordinary kill");
+        }
+        helper.succeed();
+    }
+
+    /**
+     * A husk's lethal unarmed hit on a pig, named {@code name} unless null, with the cosmetic roller
+     * scripted to {@code flavorFaces} (the d100 kill chance, then the line pick).
+     */
+    private static RollFeedbackPayload scriptedKill(
+            GameTestHelper helper, Rules rules, String name, int... flavorFaces) {
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        FlavorCooldowns.clear();
+        ScriptedRandom flavor = ScriptedRandom.ofDieFaces(flavorFaces);
+        RollRuntime.setFeedbackRoller(new DiceRoller(flavor));
+        try {
+            Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+            Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+            if (name != null) {
+                pig.setCustomName(Component.literal(name));
+            }
+            pig.setHealth(3.0F);
+            // d20 13 + 3 vs AC 10 hits, 1d6+1 rolls 6 for 7 damage
+            CombatScenarios.withRolls(
+                    helper,
+                    rules,
+                    () -> pig.hurt(helper.getLevel().damageSources().mobAttack(husk), 3.0F),
+                    13,
+                    6);
+            RollFeedbackPayload payload = sink.lastRoll();
+            if (payload == null || !pig.isDeadOrDying()) {
+                helper.fail("the husk should have killed the pig, payload " + payload);
+            }
+            if (!flavor.isExhausted()) {
+                helper.fail("fewer cosmetic dice were drawn than scripted");
+            }
+            husk.discard();
+            return payload;
+        } finally {
+            RollRuntime.setFeedbackRoller(new DiceRoller(new Random()));
+            FeedbackSink.set(previous);
+        }
+    }
+
     public static void everyShippedLineFillsItsPlaceholders(GameTestHelper helper) {
         Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
         Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
@@ -150,7 +234,7 @@ public final class FlavorScenarios {
                     // d20 13 + 3 vs AC 10 hits, 1d6+1 rolls 6 for 7 damage
                     () -> CombatScenarios.withRolls(
                             helper,
-                            Rules.DEFAULTS,
+                            CombatScenarios.EVERY_KILL_LINE,
                             () -> {
                                 pig.hurt(helper.getLevel().damageSources().mobAttack(husk), 3.0F);
                                 dispatched[0] = sink.lastRoll();

@@ -31,6 +31,13 @@ public final class CritfallTags {
     public static final TagKey<EntityType<?>> FIGHTS_WITH_FISTS = TagKey.create(
             Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "fights_with_fists"));
 
+    /**
+     * The shared convention tag for bosses (the Ender Dragon and the Wither, plus whatever packs add),
+     * filled by NeoForge and Fabric API alike. A boss's killing blow always gets a flavor line.
+     */
+    public static final TagKey<EntityType<?>> BOSSES =
+            TagKey.create(Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath("c", "bosses"));
+
     private CritfallTags() {}
 
     private static TagKey<DamageType> create(String name) {

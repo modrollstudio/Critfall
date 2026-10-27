@@ -34,7 +34,19 @@ class FeedbackBuilderTest {
                 FlavorPool.KILL, List.of("kill.line")));
     }
 
-    private RollFeedbackPayload build(AttackOutcome outcome, int natural, boolean isKill, long gameTime) {
+    /** {@code faces}: the cosmetic dice, the d100 kill chance first when a kill draws one. */
+    private RollFeedbackPayload build(AttackOutcome outcome, int natural, boolean isKill, long gameTime, int... faces) {
+        return build(outcome, natural, isKill, false, Rules.DEFAULTS, gameTime, faces);
+    }
+
+    private RollFeedbackPayload build(
+            AttackOutcome outcome,
+            int natural,
+            boolean isKill,
+            boolean alwaysFlavorKill,
+            Rules rules,
+            long gameTime,
+            int... faces) {
         AttackResult result = new AttackResult(outcome, natural, natural, 10, 0);
         return FeedbackBuilder.buildAttack(
                 result,
@@ -45,13 +57,20 @@ class FeedbackBuilderTest {
                 pool(),
                 ATTACKER,
                 TARGET,
-                Rules.DEFAULTS,
-                new DiceRoller(SequenceRandom.ofDieFaces()),
+                rules,
+                new DiceRoller(SequenceRandom.ofDieFaces(faces)),
                 target,
-                gameTime);
+                gameTime,
+                1.0F,
+                alwaysFlavorKill);
     }
 
-    private SaveFeedbackPayload buildSave(boolean isKill, Rules rules, long gameTime) {
+    private SaveFeedbackPayload buildSave(boolean isKill, Rules rules, long gameTime, int... faces) {
+        return buildSave(isKill, false, rules, gameTime, faces);
+    }
+
+    private SaveFeedbackPayload buildSave(
+            boolean isKill, boolean alwaysFlavorKill, Rules rules, long gameTime, int... faces) {
         SaveResult save = new SaveResult(13, 15, 13);
         return FeedbackBuilder.buildSave(
                 save,
@@ -64,9 +83,22 @@ class FeedbackBuilderTest {
                 ATTACKER,
                 TARGET,
                 rules,
-                new DiceRoller(SequenceRandom.ofDieFaces()),
+                new DiceRoller(SequenceRandom.ofDieFaces(faces)),
                 target,
-                gameTime);
+                gameTime,
+                alwaysFlavorKill);
+    }
+
+    private static Rules killChance(int percent) {
+        return new Rules(
+                Rules.AttackRolls.DEFAULTS,
+                true,
+                Rules.Crits.DEFAULTS,
+                Rules.Fumbles.DEFAULTS,
+                Rules.Spells.DEFAULTS,
+                Rules.Fallbacks.DEFAULTS,
+                new Rules.Feedback(Rules.FeedbackVisibility.EVERYONE, new Rules.Feedback.Flavor(true, 20, percent)),
+                Rules.Balance.DEFAULTS);
     }
 
     private static Rules noFlavorRules() {
@@ -104,8 +136,46 @@ class FeedbackBuilderTest {
     }
 
     @Test
-    void nonCritKillGetsFlavorWhenNotOnCooldown() {
-        assertTrue(build(AttackOutcome.HIT, 13, true, 100).flavorKey().isPresent());
+    void ordinaryKillGetsALineAtTheKillChance() {
+        assertEquals(25, Rules.DEFAULTS.feedback().flavor().killChancePercent(), "1 in 4 by default");
+        assertTrue(build(AttackOutcome.HIT, 13, true, 100, 25).flavorKey().isPresent(), "d100 25 is within 25%");
+        FlavorCooldowns.clear();
+        assertTrue(build(AttackOutcome.HIT, 13, true, 100, 26).flavorKey().isEmpty(), "d100 26 is not");
+        assertFalse(FlavorCooldowns.isOnCooldown(target, 100, 20), "a kill without a line records no cooldown");
+    }
+
+    @Test
+    void namedMobOrBossKillAlwaysGetsALine() {
+        // no die at all: no d100, and the pool's one line needs no pick
+        assertTrue(build(AttackOutcome.HIT, 13, true, true, Rules.DEFAULTS, 100)
+                .flavorKey()
+                .isPresent());
+        FlavorCooldowns.clear();
+        assertTrue(buildSave(true, true, Rules.DEFAULTS, 100).flavorKey().isPresent());
+        FlavorCooldowns.clear();
+        assertTrue(
+                build(AttackOutcome.HIT, 13, true, true, killChance(0), 100)
+                        .flavorKey()
+                        .isPresent(),
+                "even with the chance at 0");
+    }
+
+    @Test
+    void killChanceAtItsEndsDrawsNoDie() {
+        assertTrue(build(AttackOutcome.HIT, 13, true, false, killChance(0), 100)
+                .flavorKey()
+                .isEmpty());
+        assertTrue(build(AttackOutcome.HIT, 13, true, false, killChance(100), 100)
+                .flavorKey()
+                .isPresent());
+    }
+
+    @Test
+    void namedMobStillWaitsOutTheCooldown() {
+        FlavorCooldowns.record(target, 100, 20);
+        assertTrue(build(AttackOutcome.HIT, 13, true, true, Rules.DEFAULTS, 105)
+                .flavorKey()
+                .isEmpty());
     }
 
     @Test
@@ -146,9 +216,11 @@ class FeedbackBuilderTest {
                 ATTACKER,
                 TARGET,
                 Rules.DEFAULTS,
-                new DiceRoller(SequenceRandom.ofDieFaces()),
+                new DiceRoller(SequenceRandom.ofDieFaces(1)), // the kill chance passes, the pool is empty
                 target,
-                100);
+                100,
+                1.0F,
+                false);
         assertTrue(payload.flavorKey().isEmpty());
         assertFalse(FlavorCooldowns.isOnCooldown(target, 100, 20));
     }
@@ -159,7 +231,7 @@ class FeedbackBuilderTest {
         assertEquals(ATTACKER, payload.flavorAttacker());
         assertEquals(TARGET, payload.flavorTarget());
         FlavorCooldowns.clear(); // the crit's line put the target on cooldown
-        SaveFeedbackPayload save = buildSave(true, Rules.DEFAULTS, 100);
+        SaveFeedbackPayload save = buildSave(true, Rules.DEFAULTS, 100, 1);
         assertEquals(ATTACKER, save.flavorAttacker());
         assertEquals(TARGET, save.flavorTarget());
     }
@@ -172,8 +244,10 @@ class FeedbackBuilderTest {
     }
 
     @Test
-    void saveKillOffCooldownGetsFlavor() {
-        assertTrue(buildSave(true, Rules.DEFAULTS, 100).flavorKey().isPresent());
+    void saveKillOffCooldownGetsFlavorAtTheKillChance() {
+        assertTrue(buildSave(true, Rules.DEFAULTS, 100, 1).flavorKey().isPresent());
+        FlavorCooldowns.clear();
+        assertTrue(buildSave(true, Rules.DEFAULTS, 100, 90).flavorKey().isEmpty());
     }
 
     @Test

@@ -9,20 +9,24 @@ with vanilla / non-Critfall clients, which fall back to a plain action-bar reado
 Three server→client packets, all registered `optional()` so a client that doesn't understand them is
 never disconnected:
 
-- `critfall:roll_feedback_v2` (0.2.15; `critfall:roll_feedback` before) — one resolved attack roll:
+- `critfall:roll_feedback_v3` (0.2.17; `_v2` from 0.2.15, `critfall:roll_feedback` before) — one
+  resolved attack roll:
   outcome, natural d20, attack total, AC, damage, dice notation, an optional flavor-line key, and the
   list of consequences that fired. Since 0.2.6 it also carries the roll mode, the dropped d20 face
   under advantage/disadvantage, and the situational defender-AC modifier (`roll()` and
   `baseArmorClass()` derive from them). Since 0.2.15 it carries the attacker's and the target's names
   for the flavor line's placeholders (`FlavorName`: a mob's type name as its translation key, any
-  other name as text).
+  other name as text). Since 0.2.17 it carries `critMultiplier`, the crit multiplier a hit's dice
+  damage carried while Critfall's crits are off (1 otherwise); the readout shows it after the dice,
+  `1d8 = 7 ×1.5`, so the number matches the damage dealt.
 - `critfall:save_feedback_v2` (0.2.15; `critfall:save_feedback` before) — one resolved saving throw:
   natural, total, DC, saved/failed, half/negate, dice, damage, optional flavor key, (0.2.6) the same
   roll mode and dropped face, and (0.2.15) the two flavor names.
 
 The 0.2.15 roll and save packets gained fields, so they moved to new channel names, as the check
-packet did in 0.2.14. A server only sends a packet on a channel the client has, so a 0.2.14 client
-gets the action-bar text instead of a packet it cannot read.
+packet did in 0.2.14, and the 0.2.17 roll packet moved again for the same reason. A server only sends
+a packet on a channel the client has, so an older client gets the action-bar text (which shows the
+multiplier too) instead of a packet it cannot read.
 - `critfall:check_feedback_v2` (0.2.14; `critfall:check_feedback` in 0.2.13) — one labelled save,
   check, or hazard attack: kind, label, natural, total, DC (or AC), success, crit, roll mode and dropped
   face, the damage dice and amount when it dealt damage, and since 0.2.14 the save key (for the save's
@@ -113,6 +117,8 @@ Anti-spam (server-authoritative, so it also throttles packets):
   flavor line per target per window.
 - **Priority:** a nat-20 crit or nat-1 fumble always sends its flavor line (bypassing and resetting the
   cooldown); a plain kill is gated by the cooldown.
+- **Kill chance** (`feedback.flavor.kill_chance_percent`, default 25, since 0.2.17): an ordinary
+  killing blow gets a line about 1 in 4 times; a named mob or a boss (`#c:bosses`) always does.
 
 Flavor selection uses a **separate feedback RNG** (`RollService.feedbackRoller()`), not the combat
 roller, so a multi-line pool's random pick never perturbs the server-authoritative combat rolls (this

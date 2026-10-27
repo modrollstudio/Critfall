@@ -79,6 +79,11 @@ public class CombatGameTests implements FabricGameTest {
     }
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void defaultFumbleLeavesWeaponAlone(GameTestHelper helper) {
+        CombatScenarios.defaultFumbleLeavesWeaponAlone(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
     public void fumbleCooldownDowngradesTheSecondNatOne(GameTestHelper helper) {
         CombatScenarios.fumbleCooldownDowngradesTheSecondNatOne(helper);
     }

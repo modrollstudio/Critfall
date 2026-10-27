@@ -32,6 +32,7 @@ import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.data.SpellProfile;
 import studio.modroll.critfall.feedback.FeedbackBuilder;
 import studio.modroll.critfall.feedback.FeedbackSink;
+import studio.modroll.critfall.feedback.FlavorKills;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
@@ -206,6 +207,7 @@ public final class DamageInterception {
             critRange = AttackDice.entityCritRange(attackerProfile);
         }
 
+        JumpAttacks.Swing swing = JumpAttacks.consume(attacker, target);
         rollAndApply(
                 dmg,
                 rules,
@@ -221,7 +223,9 @@ public final class DamageInterception {
                 attackBonus,
                 damageDice,
                 critRange,
-                JumpAttacks.consume(attacker, target));
+                swing.advantage(),
+                // Dice derived from the vanilla amount already carry its crit multiplier.
+                resolved.isPresent() ? swing.critMultiplier() : 1.0F);
     }
 
     private static void rollProjectile(IncomingDamage dmg, Rules rules, DamageSource source, LivingEntity target) {
@@ -277,7 +281,8 @@ public final class DamageInterception {
                 attackBonus,
                 damageDice,
                 critRange,
-                false);
+                false,
+                1.0F);
     }
 
     /**
@@ -404,7 +409,8 @@ public final class DamageInterception {
                 attackBonus,
                 damageDice,
                 critRange,
-                false);
+                false,
+                1.0F);
     }
 
     /**
@@ -510,7 +516,8 @@ public final class DamageInterception {
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
-                target.level().getGameTime());
+                target.level().getGameTime(),
+                FlavorKills.alwaysFlavored(target));
         FeedbackSink.get().save(attacker, target, payload, rules.feedback().visibility());
     }
 
@@ -519,6 +526,8 @@ public final class DamageInterception {
      *     hand) — drives event context and flavor matching
      * @param heldStack the stack fumble weapon-effects act on (empty when the weapon is gone)
      * @param jumpAttack the hit is a player's jump attack ({@link JumpAttacks}): it rolls with advantage
+     * @param critMultiplier scales a hit's dice damage: the crit multiplier of a player's swing that
+     *     Critfall leaves to vanilla and other mods while its own crits are off, else 1
      */
     private static void rollAndApply(
             IncomingDamage dmg,
@@ -535,7 +544,8 @@ public final class DamageInterception {
             int ownAttackBonus,
             DiceExpression ownDamageDice,
             int critRange,
-            boolean jumpAttack) {
+            boolean jumpAttack,
+            float critMultiplier) {
         int attackBonus = Modifiers.attackBonus(rules, attacker, target, delivery, ownAttackBonus);
         DiceExpression damageDice = Modifiers.damageDice(rules, attacker, delivery, ownDamageDice);
         int armorClass = Modifiers.armorClass(
@@ -587,7 +597,7 @@ public final class DamageInterception {
             }
             case HIT, CRIT -> {
                 if (rules.damageDice()) {
-                    float damage = result.damage();
+                    float damage = result.damage() * critMultiplier;
                     damage *= targetProfile
                             .map(profile -> ProfileLookup.damageMultiplier(profile, source))
                             .orElse(1.0f);
@@ -605,7 +615,7 @@ public final class DamageInterception {
         String notation = damageDice.toString();
         FlavorLines pool = ProfileLookup.forFlavor(attacker, weaponStack, delivery);
         if (!result.isHit()) {
-            emitAttack(attacker, target, result, false, notation, consequences, pool, rules);
+            emitAttack(attacker, target, result, false, notation, consequences, pool, rules, 1.0F);
             return;
         }
         // The kill is read once the hurt has resolved: Resistance, absorption, a totem or another
@@ -620,7 +630,8 @@ public final class DamageInterception {
                         notation,
                         hurt.negated() ? withResisted(consequences) : consequences,
                         pool,
-                        rules));
+                        rules,
+                        critMultiplier));
     }
 
     /**
@@ -648,7 +659,8 @@ public final class DamageInterception {
             String notation,
             List<ConsequenceLine> consequences,
             FlavorLines pool,
-            Rules rules) {
+            Rules rules,
+            float critMultiplier) {
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
                 result,
                 isKill,
@@ -661,7 +673,9 @@ public final class DamageInterception {
                 rules,
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
-                target.level().getGameTime());
+                target.level().getGameTime(),
+                critMultiplier,
+                FlavorKills.alwaysFlavored(target));
         FeedbackSink.get().roll(attacker, target, payload, rules.feedback().visibility());
     }
 
