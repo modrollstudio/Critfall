@@ -109,4 +109,29 @@ public class FeedbackGameTests {
     public void everyShippedLineFillsItsPlaceholders(GameTestHelper helper) {
         FlavorScenarios.everyShippedLineFillsItsPlaceholders(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void readoutShowsDamageTakenAfterResistance(GameTestHelper helper) {
+        FeedbackScenarios.readoutShowsDamageTakenAfterResistance(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void readoutShowsAnUnchangedHitOnce(GameTestHelper helper) {
+        FeedbackScenarios.readoutShowsAnUnchangedHitOnce(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void readoutShowsTheWholeKillingBlow(GameTestHelper helper) {
+        FeedbackScenarios.readoutShowsTheWholeKillingBlow(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void readoutShowsDifficultyScaledDamageTaken(GameTestHelper helper) {
+        FeedbackScenarios.readoutShowsDifficultyScaledDamageTaken(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void saveReadoutShowsDamageTaken(GameTestHelper helper) {
+        FeedbackScenarios.saveReadoutShowsDamageTaken(helper);
+    }
 }

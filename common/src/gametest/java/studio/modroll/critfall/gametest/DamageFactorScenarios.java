@@ -27,14 +27,14 @@ import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.RollService;
-import studio.modroll.critfall.combat.Rules;
 
 /**
  * The weapon and buff factors Critfall folds into its damage dice, with and without a modifier provider.
  * Hits go through vanilla's own code ({@code Mob.doHurtTarget}, {@code Arrow.tick}), so each factor
  * arrives the way it does in play. Every hit rolls d20 13 (husk +3 / skeleton +4 vs pig AC 10, zombie AC
- * 9, spider AC 13) and a d8 of 4. Swords and the bow roll 1d8 plus {@code round(vanilla damage - 4.5)}, clamped to 0..12. Targets
- * get 100 health so no hit is capped by a kill. Everything fits NeoForge's 5x5 {@code empty} structure.
+ * 9, spider AC 13) and a d8 of 4. Swords and the bow roll 1d8 plus {@code round(vanilla damage - 4.5)}, clamped to -12..12. Targets
+ * get 100 health so no hit is capped by a kill, and armor reduction is skipped so a zombie's natural armor leaves
+ * the dice as rolled. Everything fits NeoForge's 5x5 {@code empty} structure.
  */
 public final class DamageFactorScenarios {
 
@@ -167,9 +167,9 @@ public final class DamageFactorScenarios {
                 6 + bonus(provider));
         expectDamage(
                 helper,
-                "half draw",
+                "half draw", // vanilla 3 rolls 1d8-1 since 0.2.18, below the die's average
                 arrow(helper, provider, skeleton, new ItemStack(Items.BOW), 1.5, 1),
-                4 + bonus(provider));
+                3 + bonus(provider));
         helper.succeed();
     }
 
@@ -245,7 +245,7 @@ public final class DamageFactorScenarios {
             RollService.registerModifierProvider(provider);
         }
         try {
-            CombatScenarios.withRolls(helper, Rules.DEFAULTS, attack, 13, 4);
+            CombatScenarios.withRolls(helper, CombatScenarios.BYPASS_ARMOR, attack, 13, 4);
         } finally {
             RollService.clearModifierProvider();
         }

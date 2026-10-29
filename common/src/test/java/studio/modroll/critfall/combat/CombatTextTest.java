@@ -179,6 +179,109 @@ class CombatTextTest {
         assertTrue(CombatText.actionBar(hit(1.25F)).getString().endsWith("×1.25"));
     }
 
+    @Test
+    void damageTakenFollowsTheRollWhenItDiffers() {
+        assertTrue(CombatText.actionBar(taken(12, 1.0F, 7.0F, List.of()))
+                .getString()
+                .endsWith("HIT 1d10+4 = 12 → 7"));
+        assertTrue(CombatText.actionBar(taken(12, 1.0F, 6.8000002F, List.of()))
+                .getString()
+                .endsWith("= 12 → 6.8"));
+        assertTrue(CombatText.actionBar(taken(5, 1.0F, 7.5F, List.of()))
+                .getString()
+                .endsWith("= 5 → 7.5"));
+        assertTrue(CombatText.actionBar(taken(7, 1.5F, 6.0F, List.of()))
+                .getString()
+                .endsWith("= 7 ×1.5 → 6"));
+    }
+
+    @Test
+    void damageTakenEqualToTheRollIsNotRepeated() {
+        assertTrue(CombatText.actionBar(taken(12, 1.0F, 12.0F, List.of()))
+                .getString()
+                .endsWith("HIT 1d10+4 = 12"));
+        assertTrue(CombatText.actionBar(taken(7, 1.5F, 10.5F, List.of()))
+                .getString()
+                .endsWith("= 7 ×1.5"));
+    }
+
+    @Test
+    void unknownDamageTakenIsNotShown() {
+        String text = CombatText.actionBar(taken(12, 1.0F, RollFeedbackPayload.TAKEN_UNKNOWN, List.of()))
+                .getString();
+        assertTrue(text.endsWith("HIT 1d10+4 = 12"), text);
+    }
+
+    @Test
+    void absorbedHitShowsNothingTaken() {
+        assertTrue(CombatText.actionBar(taken(12, 1.0F, 0.0F, List.of()))
+                .getString()
+                .endsWith("= 12 → 0"));
+    }
+
+    @Test
+    void resistedHitLeavesItToTheConsequenceLine() {
+        String text = CombatText.actionBar(taken(12, 1.0F, 0.0F, List.of(ConsequenceLine.of(ConsequenceLine.RESISTED))))
+                .getString();
+        assertTrue(text.endsWith("HIT 1d10+4 = 12 — no damage taken"), text);
+    }
+
+    @Test
+    void failedSaveShowsTheDamageTakenWhenItDiffers() {
+        assertTrue(CombatText.actionBar(save(false, 7, 3.0F)).getString().endsWith("FAILED 2d6 = 7 → 3"));
+        assertTrue(CombatText.actionBar(save(false, 7, 7.0F)).getString().endsWith("FAILED 2d6 = 7"));
+        assertTrue(CombatText.actionBar(save(false, 7, RollFeedbackPayload.TAKEN_UNKNOWN))
+                .getString()
+                .endsWith("FAILED 2d6 = 7"));
+    }
+
+    @Test
+    void halvedSaveShowsTheDamageTakenWhenItDiffers() {
+        assertTrue(CombatText.actionBar(save(true, 3, 1.2F)).getString().endsWith("SAVED, half damage 3 → 1.2"));
+        assertTrue(CombatText.actionBar(save(true, 3, 3.0F)).getString().endsWith("SAVED, half damage 3"));
+    }
+
+    private static SaveFeedbackPayload save(boolean saved, int damage, float taken) {
+        return new SaveFeedbackPayload(
+                8,
+                10,
+                13,
+                saved,
+                Rules.SaveOutcome.HALF,
+                "2d6",
+                damage,
+                true,
+                Optional.empty(),
+                false,
+                RollMode.NORMAL,
+                OptionalInt.empty(),
+                FlavorName.NONE,
+                FlavorName.NONE,
+                taken);
+    }
+
+    private static RollFeedbackPayload taken(
+            int damage, float critMultiplier, float taken, List<ConsequenceLine> consequences) {
+        return new RollFeedbackPayload(
+                AttackOutcome.HIT,
+                15,
+                17,
+                10,
+                damage,
+                "1d10+4",
+                true,
+                Optional.empty(),
+                consequences,
+                false,
+                RollMode.NORMAL,
+                OptionalInt.empty(),
+                0,
+                FlavorName.NONE,
+                FlavorName.NONE,
+                critMultiplier,
+                taken);
+    }
+
     private static RollFeedbackPayload hit(float critMultiplier) {
         return new RollFeedbackPayload(
                 AttackOutcome.HIT,

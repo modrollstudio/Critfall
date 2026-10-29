@@ -13,7 +13,10 @@ import studio.modroll.critfall.api.feedback.FlavorName;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
-/** S2C feedback for one resolved saving throw (M6). Flat primitives only; see {@link RollFeedbackPayload}. */
+/**
+ * S2C feedback for one resolved saving throw (M6). Flat primitives only; see {@link RollFeedbackPayload}, whose
+ * {@code taken} this shares: the health the damage actually took, shown after the damage when it differs.
+ */
 public record SaveFeedbackPayload(
         int natural,
         int saveTotal,
@@ -28,8 +31,43 @@ public record SaveFeedbackPayload(
         RollMode rollMode,
         OptionalInt droppedNatural,
         FlavorName flavorAttacker,
-        FlavorName flavorTarget)
+        FlavorName flavorTarget,
+        float taken)
         implements CustomPacketPayload {
+
+    /** Convenience without the damage taken (pre-0.2.18 callers). */
+    public SaveFeedbackPayload(
+            int natural,
+            int saveTotal,
+            int dc,
+            boolean saved,
+            Rules.SaveOutcome onSuccess,
+            String diceNotation,
+            int damage,
+            boolean showDamage,
+            Optional<String> flavorKey,
+            boolean dryRun,
+            RollMode rollMode,
+            OptionalInt droppedNatural,
+            FlavorName flavorAttacker,
+            FlavorName flavorTarget) {
+        this(
+                natural,
+                saveTotal,
+                dc,
+                saved,
+                onSuccess,
+                diceNotation,
+                damage,
+                showDamage,
+                flavorKey,
+                dryRun,
+                rollMode,
+                droppedNatural,
+                flavorAttacker,
+                flavorTarget,
+                RollFeedbackPayload.TAKEN_UNKNOWN);
+    }
 
     /** Convenience without flavor names (pre-0.2.15 callers). */
     public SaveFeedbackPayload(
@@ -107,9 +145,12 @@ public record SaveFeedbackPayload(
         return new RollDetail(rollMode, natural, droppedNatural);
     }
 
-    /** {@code critfall:save_feedback_v2} since 0.2.15, for the same reason as {@link RollFeedbackPayload#TYPE}. */
+    /**
+     * {@code critfall:save_feedback_v3} since 0.2.18, which added the damage taken ({@code _v2} since 0.2.15),
+     * for the same reason as {@link RollFeedbackPayload#TYPE}.
+     */
     public static final Type<SaveFeedbackPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "save_feedback_v2"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "save_feedback_v3"));
 
     public static final StreamCodec<FriendlyByteBuf, SaveFeedbackPayload> STREAM_CODEC =
             StreamCodec.of(SaveFeedbackPayload::encode, SaveFeedbackPayload::decode);
@@ -137,6 +178,7 @@ public record SaveFeedbackPayload(
         }
         FlavorName.write(buf, p.flavorAttacker);
         FlavorName.write(buf, p.flavorTarget);
+        buf.writeFloat(p.taken);
     }
 
     private static SaveFeedbackPayload decode(FriendlyByteBuf buf) {
@@ -154,6 +196,7 @@ public record SaveFeedbackPayload(
         OptionalInt dropped = buf.readBoolean() ? OptionalInt.of(buf.readVarInt()) : OptionalInt.empty();
         FlavorName flavorAttacker = FlavorName.read(buf);
         FlavorName flavorTarget = FlavorName.read(buf);
+        float taken = buf.readFloat();
         return new SaveFeedbackPayload(
                 natural,
                 saveTotal,
@@ -168,6 +211,7 @@ public record SaveFeedbackPayload(
                 rollMode,
                 dropped,
                 flavorAttacker,
-                flavorTarget);
+                flavorTarget,
+                taken);
     }
 }

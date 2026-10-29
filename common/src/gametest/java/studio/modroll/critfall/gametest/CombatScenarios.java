@@ -3,6 +3,8 @@ package studio.modroll.critfall.gametest;
 import java.util.Random;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -10,21 +12,26 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.animal.Wolf;
+import net.minecraft.world.entity.monster.Creeper;
 import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Derivation;
 import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
+import studio.modroll.critfall.feedback.CapturingFeedbackSink;
+import studio.modroll.critfall.feedback.FeedbackSink;
 
 /**
  * End-to-end tests of the damage interception: real entities, real {@code LivingEntity.hurt},
  * scripted RNG (PLAN.md §6). Stats come from the shipped default datapack: husk (zombies profile)
- * attacks with +3 and 1d6+1 melee dice; pig (livestock profile) has AC 10; wolf has AC 12.
+ * attacks with +3 and 1d4+1 melee dice; pig (livestock profile) has AC 10; wolf has AC 12.
  * Every rules.json flag has a test proving that turning it off restores vanilla behavior for
  * that mechanic only.
  */
@@ -57,7 +64,7 @@ public final class CombatScenarios {
                 helper,
                 Rules.DEFAULTS,
                 () -> {
-                    // 13 + 3 = 16 vs AC 10 -> hit, then profile dice 1d6+1 roll a 4 -> 5 damage
+                    // 13 + 3 = 16 vs AC 10 -> hit, then profile dice 1d4+1 roll a 4 -> 5 damage
                     pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
                     expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
                 },
@@ -73,9 +80,9 @@ public final class CombatScenarios {
                 helper,
                 Rules.DEFAULTS,
                 () -> {
-                    // nat 20 -> crit: 1d6+1 maximized to 7, no damage dice drawn from the RNG
+                    // nat 20 -> crit: 1d4+1 maximized to 5, no damage dice drawn from the RNG
                     pig.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
-                    expectHealth(helper, pig, pig.getMaxHealth() - 7.0F);
+                    expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
                 },
                 20);
         helper.succeed();
@@ -97,7 +104,7 @@ public final class CombatScenarios {
                 helper,
                 Rules.DEFAULTS,
                 () -> {
-                    // 9 + 3 = 12 vs AC 12 -> exact hit, 1d6+1 rolls a 3 -> 4 damage
+                    // 9 + 3 = 12 vs AC 12 -> exact hit, 1d4+1 rolls a 3 -> 4 damage
                     wolf.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
                     expectHealth(helper, wolf, wolf.getMaxHealth() - 4.0F);
                 },
@@ -346,12 +353,12 @@ public final class CombatScenarios {
         float before = armored.getHealth();
         withRolls(
                 helper,
-                Rules.DEFAULTS,
+                BYPASS_ARMOR,
                 () -> {
-                    // nat 20 -> crit for exactly 7 (1d6+1 maxed); with vanilla armor reduction
+                    // nat 20 -> crit for exactly 5 (1d4+1 maxed); with vanilla armor reduction
                     // active the armored husk would take noticeably less.
                     armored.hurt(helper.getLevel().damageSources().mobAttack(attacker), VANILLA_HIT);
-                    expectHealth(helper, armored, before - 7.0F);
+                    expectHealth(helper, armored, before - 5.0F);
                 },
                 20);
         helper.succeed();
@@ -362,24 +369,14 @@ public final class CombatScenarios {
         Husk armored = spawnCalm(helper, EntityType.HUSK, 3, 3);
         armored.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
         float before = armored.getHealth();
-        Rules base = Rules.DEFAULTS;
-        Rules rules = new Rules(
-                base.attackRolls(),
-                base.damageDice(),
-                base.crits(),
-                base.fumbles(),
-                base.spells(),
-                base.fallbacks(),
-                base.feedback(),
-                new Rules.Balance(1.0, false));
         withRolls(
                 helper,
-                rules,
+                Rules.DEFAULTS, // the flag ships off since 0.2.18
                 () -> {
                     armored.hurt(helper.getLevel().damageSources().mobAttack(attacker), VANILLA_HIT);
                     float lost = before - armored.getHealth();
-                    if (lost <= 0.0F || lost >= 7.0F) {
-                        helper.fail("vanilla armor must reduce the 7-damage crit, but " + lost + " was lost");
+                    if (lost <= 0.0F || lost >= 5.0F) {
+                        helper.fail("vanilla armor must reduce the 5-damage crit, but " + lost + " was lost");
                     }
                 },
                 20);
@@ -412,10 +409,159 @@ public final class CombatScenarios {
         helper.succeed();
     }
 
+    /**
+     * A husk's rolled hit on a player scales with difficulty like vanilla's mob damage does: d20 13 + 3
+     * vs AC 10 hits, 1d4+1 rolls 4 for 5, then Easy halves it plus 1 and Hard adds half.
+     */
+    public static void mobHitOnPlayerScalesOnEasy(GameTestHelper helper) {
+        mobHitOnPlayerScales(helper, Difficulty.EASY, 3.5F);
+    }
+
+    public static void mobHitOnPlayerScalesOnNormal(GameTestHelper helper) {
+        mobHitOnPlayerScales(helper, Difficulty.NORMAL, 5.0F);
+    }
+
+    public static void mobHitOnPlayerScalesOnHard(GameTestHelper helper) {
+        mobHitOnPlayerScales(helper, Difficulty.HARD, 7.5F);
+    }
+
+    private static void mobHitOnPlayerScales(GameTestHelper helper, Difficulty difficulty, float expectedLoss) {
+        Husk husk = spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        withDifficulty(
+                helper,
+                difficulty,
+                () -> withRolls(
+                        helper,
+                        Rules.DEFAULTS,
+                        () -> {
+                            player.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
+                            expectHealth(helper, player, player.getMaxHealth() - expectedLoss);
+                        },
+                        13,
+                        4));
+        helper.succeed();
+    }
+
+    /**
+     * Dice derived from the vanilla amount come from the amount before difficulty, so Hard scales the
+     * roll once, not twice: a creeper's profile has no melee dice, so its vanilla 3 derives 1d6 (not
+     * the 1d10 that Hard's 4.5 would), d20 13 + 2 vs AC 10 hits, 1d6 rolls 6, and Hard makes it 9.
+     */
+    public static void derivedDiceOnPlayerScaleOnceOnHard(GameTestHelper helper) {
+        Creeper creeper = spawnCalm(helper, EntityType.CREEPER, 1, 1);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        try {
+            withDifficulty(
+                    helper,
+                    Difficulty.HARD,
+                    () -> withRolls(
+                            helper,
+                            Rules.DEFAULTS,
+                            () -> {
+                                player.hurt(helper.getLevel().damageSources().mobAttack(creeper), VANILLA_HIT);
+                                expectHealth(helper, player, player.getMaxHealth() - 9.0F);
+                                RollFeedbackPayload payload = sink.lastRoll();
+                                if (payload == null || !payload.diceNotation().equals("1d6")) {
+                                    helper.fail("expected dice derived from the vanilla 3, was " + payload);
+                                }
+                            },
+                            13,
+                            6));
+        } finally {
+            FeedbackSink.set(previous);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Full iron (armor 15) is AC 13 since 0.2.18, not 17, and armor reduces the hit like vanilla: d20 10 + 3
+     * hits, 1d4+1 rolls 4 for 5, and armor 15 takes half of a 5-point hit, so 2.5 is lost.
+     */
+    public static void armoredPlayerIsEasierToHitButTakesLess(GameTestHelper helper) {
+        Husk husk = spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        // A mock player never ticks, so its equipment would never reach its attributes: set the armor itself.
+        player.getAttribute(Attributes.ARMOR).setBaseValue(15.0);
+        withRolls(
+                helper,
+                Rules.DEFAULTS,
+                () -> {
+                    player.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
+                    expectHealth(helper, player, player.getMaxHealth() - 2.5F);
+                },
+                10,
+                4);
+        helper.succeed();
+    }
+
+    /**
+     * A player's derived attack bonus gets {@code balance.player_attack_bonus}: attack damage 6 derives +3, plus
+     * 5 is +8, so d20 4 reaches the wolf's AC 12. Without the bonus 4 + 3 would miss.
+     */
+    public static void playerAttackBonusAddsToTheDerivedBonus(GameTestHelper helper) {
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.getAttribute(Attributes.ATTACK_DAMAGE).setBaseValue(6.0);
+        Wolf wolf = spawnCalm(helper, EntityType.WOLF, 3, 3);
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        try {
+            withRolls(
+                    helper,
+                    Rules.DEFAULTS,
+                    () -> {
+                        wolf.hurt(helper.getLevel().damageSources().playerAttack(player), 6.0F);
+                        RollFeedbackPayload payload = sink.lastRoll();
+                        if (payload == null || payload.attackTotal() != 12 || payload.outcome() != AttackOutcome.HIT) {
+                            helper.fail("expected d20 4 + 8 = 12 to hit AC 12, was " + payload);
+                        }
+                    },
+                    4,
+                    5);
+        } finally {
+            FeedbackSink.set(previous);
+        }
+        helper.succeed();
+    }
+
+    /** Runs {@code action} at {@code difficulty}, then puts the server's difficulty back. */
+    static void withDifficulty(GameTestHelper helper, Difficulty difficulty, Runnable action) {
+        MinecraftServer server = helper.getLevel().getServer();
+        Difficulty before = server.getWorldData().getDifficulty();
+        server.setDifficulty(difficulty, true);
+        try {
+            action.run();
+        } finally {
+            server.setDifficulty(before, true);
+        }
+    }
+
     static <T extends Mob> T spawnCalm(GameTestHelper helper, EntityType<T> type, int x, int z) {
         T mob = helper.spawn(type, new BlockPos(x, 1, z));
         mob.setNoAi(true);
         return mob;
+    }
+
+    /** The shipped defaults with rolled hits skipping vanilla armor reduction, the rule before 0.2.18. */
+    static final Rules BYPASS_ARMOR = withBalance(Rules.DEFAULTS, new Rules.Balance(1.0, true));
+
+    static Rules withBalance(Rules rules, Rules.Balance balance) {
+        return new Rules(
+                rules.attackRolls(),
+                rules.damageDice(),
+                rules.crits(),
+                rules.fumbles(),
+                rules.spells(),
+                rules.fallbacks(),
+                rules.feedback(),
+                balance,
+                rules.dryRun(),
+                rules.modifierProviders(),
+                rules.advantageSources());
     }
 
     /** The shipped defaults with fumble weapon damage turned on, which ships off since 0.2.17. */

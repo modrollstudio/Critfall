@@ -12,16 +12,28 @@ class DerivationTest {
 
     @ParameterizedTest
     @CsvSource({
-        // armor, toughness, expected AC   (vanilla reference points)
+        // armor, toughness, expected AC   (vanilla reference points, default divisors 4 and 4)
         "0,  0,  10", // pig, unarmored player
-        "2,  0,  11", // zombie
-        "4,  0,  12", // skeleton wither / leather-ish
-        "15, 0,  17", // full iron player
-        "20, 8,  22", // full diamond player
-        "20, 12, 23", // full netherite player
+        "2,  0,  10", // zombie
+        "7,  0,  11", // full leather player
+        "15, 0,  13", // full iron player
+        "20, 8,  17", // full diamond player
+        "20, 12, 18", // full netherite player
     })
     void armorClassFromVanillaAttributes(double armor, double toughness, int expected) {
         assertEquals(expected, Derivation.armorClass(armor, toughness));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // armor, toughness, armor divisor, toughness divisor, expected AC
+        "15, 0,  2, 4, 17", // the pre-0.2.18 rule: full iron
+        "20, 12, 2, 4, 23", // the pre-0.2.18 rule: full netherite
+        "20, 12, 5, 6, 16",
+    })
+    void armorClassDivisorsComeFromTheRules(
+            double armor, double toughness, int armorDivisor, int toughnessDivisor, int expected) {
+        assertEquals(expected, Derivation.armorClass(armor, toughness, armorDivisor, toughnessDivisor));
     }
 
     @Test

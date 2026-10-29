@@ -63,6 +63,13 @@ Optional<DiceExpression> ranged = eff.rangedDamage();
 int critRange = eff.critRange();
 
 EffectiveItemProfile item = RollService.effectiveItem(itemStack);
+
+// How the AC adds up (since 0.2.18), instead of copying the formula and its rules.json divisors:
+ArmorClassBreakdown ac = RollService.armorClassBreakdown(livingEntity);
+ac.derived();       // true: base 10 + armorPart + toughnessPart; false: the profile's armor_class
+ac.armorPart();     // floor(armor / balance.armor_ac_divisor), 0 for a profile AC
+ac.toughnessPart(); // floor(toughness / balance.toughness_ac_divisor)
+ac.total();         // equals eff.armorClass()
 ```
 
 These are Critfall's **own** values, as is [`/critfall inspect`](commands.md#critfall-inspect-entity): a
@@ -77,7 +84,7 @@ the profile its type or tags match, so a "dungeon zombie" gets its own stats wit
 zombie.
 
 ```java
-RollService.setEntityProfile(zombie, ResourceLocation.parse("crawl:dungeon_zombie"));
+RollService.setEntityProfile(zombie, ResourceLocation.parse("critfall_depths:dungeon_zombie"));
 Optional<ResourceLocation> id = RollService.entityProfile(zombie);   // the assigned id
 RollService.clearEntityProfile(zombie);                               // its type's profile again
 ```
@@ -89,7 +96,7 @@ RollService.clearEntityProfile(zombie);                               // its typ
   restart. Packs set the same key with `/summon` (or `/data merge`), with no code:
 
   ```mcfunction
-  summon minecraft:zombie ~ ~ ~ {CritfallProfile:"crawl:dungeon_zombie"}
+  summon minecraft:zombie ~ ~ ~ {CritfallProfile:"critfall_depths:dungeon_zombie"}
   ```
 
 - **Any loaded entity profile** can be assigned, whatever its `matches`. A profile with
@@ -121,11 +128,11 @@ was applied (see [Defender AC modifier](#defender-ac-modifier)), and `baseArmorC
 [provided AC modifier](#modifier-provider). With no modifier set they are equal and `defenderAcBonus()`
 is `0`.
 
-> **Armor note.** `performAttack` applies damage exactly like the automatic pipeline: the attack
-> roll's AC already stood in for armor, so vanilla armor reduction is bypassed on the resulting
-> `hurt` (governed by the same `balance.disable_vanilla_armor_reduction` flag — turn it off and
-> both paths armor-reduce again). No armor-bypassing damage source is needed; API-driven and
-> automatic attacks deal identical final damage to an armored target.
+> **Armor note.** `performAttack` applies damage exactly like the automatic pipeline: vanilla armor
+> reduces the resulting `hurt` by default, and is bypassed on both paths when
+> `balance.disable_vanilla_armor_reduction` is on. No armor-bypassing damage source is needed; API-driven
+> and automatic attacks deal identical final damage to an armored target. A player's derived attack
+> bonus in `effectiveEntity` includes `balance.player_attack_bonus` (since 0.2.18).
 
 > **Suppression.** The `hurt` inside `performAttack` never re-rolls through the automatic
 > interception, suppressed or not. Still call `RollService.suppress(...)` when an orchestrator
@@ -261,14 +268,14 @@ forces them), apply the damage, and show the readout to the target.
 
 ```java
 HazardSave spikes = HazardSave.of(
-                "crawl.trap.spikes",                 // label: a translation key, or plain text
+                "critfall_depths.trap.spikes",       // label: a translation key, or plain text
                 DamageTypes.CACTUS,                  // damage type
                 ModifierProvider.DEXTERITY_SAVE,     // the save, by ability
                 13,                                  // DC
                 DiceExpression.parse("2d6"))         // damage
         .withOnSuccess(SuccessDamage.NONE)           // default HALF
         .withMode(RollMode.DISADVANTAGE)             // default NORMAL
-        .withId(ResourceLocation.parse("crawl:trap/spikes"));  // optional, since 0.2.14
+        .withId(ResourceLocation.parse("critfall_depths:trap/spikes"));  // optional, since 0.2.14
 HazardSaveResult result = RollService.performHazardSave(player, spikes);
 result.saved(); result.damage(); result.save();      // save() is the SaveResult
 ```
@@ -278,7 +285,7 @@ result.saved(); result.damage(); result.save();      // save() is the SaveResult
 readout shows no dice. Apply the effect yourself from `result.saved()`.
 
 ```java
-HazardSave needle = HazardSave.of("crawl.trap.needle", DamageTypes.MAGIC,
+HazardSave needle = HazardSave.of("critfall_depths.trap.needle", DamageTypes.MAGIC,
         ModifierProvider.CONSTITUTION_SAVE, 13, HazardSave.NO_DAMAGE);
 if (!RollService.performHazardSave(player, needle).saved()) {
     player.addEffect(new MobEffectInstance(MobEffects.POISON, 200));
@@ -289,7 +296,7 @@ if (!RollService.performHazardSave(player, needle).saved()) {
 **Hazard attack.** The hazard rolls d20 plus its bonus against the target's AC.
 
 ```java
-HazardAttack darts = HazardAttack.of("crawl.trap.darts", DamageTypes.ARROW, 5, DiceExpression.parse("1d4"))
+HazardAttack darts = HazardAttack.of("critfall_depths.trap.darts", DamageTypes.ARROW, 5, DiceExpression.parse("1d4"))
         .withMode(RollMode.ADVANTAGE);
 AttackResult result = RollService.performHazardAttack(player, darts);
 ```
@@ -565,7 +572,7 @@ CritfallEvents.onHazardRoll(event -> {
 since 0.2.14 `id()`: the hazard's [id](#hazards), empty when it has none.
 
 ```java
-ResourceLocation POISON_NEEDLE = ResourceLocation.parse("crawl:trap/poison_needle");
+ResourceLocation POISON_NEEDLE = ResourceLocation.parse("critfall_depths:trap/poison_needle");
 CritfallEvents.onHazardRoll(event -> {
     if (event.id().filter(POISON_NEEDLE::equals).isPresent() && hasPoisonResilience(event.target())) {
         event.grantAdvantage();

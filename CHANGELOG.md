@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.18] - 2026-10-29
+
+Armor reduces damage again, mob damage close to vanilla, players hit more often, difficulty scaling for
+mob hits, and readouts that show the damage actually taken.
+
+### Fixed
+
+- A mob's rolled hit on a player ignored the difficulty: a zombie hit for the same on Easy and Hard.
+  The roll now scales the way vanilla scales mob damage to players: Easy halves it and adds 1 (never
+  raising it), Hard adds half. Dice Critfall derives from the vanilla amount come from the amount before
+  scaling, so it applies once. Melee, projectiles and spells alike.
+- On Fabric, a rolled hit on a player dealt vanilla's damage instead of the roll, with armor still
+  bypassed. Players now take the rolled damage, as on NeoForge.
+
+### Changed
+
+- **Armor reduces rolled hits like vanilla again, and counts for half as much Armor Class.** Before, armor
+  only raised AC and never reduced a hit, so a strong mob that hit at all hit as hard as against a bare
+  player: a vindicator killed a player in full netherite in about 2 landed hits, where vanilla takes 6. Now
+  `balance.disable_vanilla_armor_reduction` ships `false`, and a derived AC is
+  `10 + armor / 4 + toughness / 4` (full leather 11, iron 13, diamond 17, netherite 18), with both divisors
+  in `rules.json` (`balance.armor_ac_divisor`, `balance.toughness_ac_divisor`). Against diamond and
+  netherite a vindicator now needs about 4–5 landed hits, while misses still make armor worth more than in
+  vanilla (about 1.2–2× vanilla's swings to kill against iron and better).
+  **Existing configs move to the new rule once.** Every `rules.json` written before 0.2.18 says
+  `"disable_vanilla_armor_reduction": true` only because that was the shipped default. On first load such a
+  file (`format_version` 1, or none) has the flag turned off and the divisors written in, its
+  `format_version` becomes 2, and one log line says so. Nothing else in it changes. Setting the flag back to
+  `true` afterwards stays; pair it with `armor_ac_divisor: 2` for the full old rule.
+- `rules.json` is now `format_version` 2.
+- **Mob damage dice average about vanilla's damage on Normal.** Zombies `1d4+1` (was `1d6+1`), spiders
+  `1d4` (`1d8+1`), endermen `2d6` (`2d6+3`), hoglins and zoglins `1d6+2` (`2d6+2`; vanilla rolls 3–8),
+  ravagers `3d6+2` (`3d6+4`), phantoms and blazes `1d6+3`, elder guardians `2d8-1` (`2d8+3`), wardens
+  `4d6+16` (`4d6+6`; vanilla 30), the ender dragon `2d8+1` (`4d8+8`; vanilla 10), ghast fireballs `2d6-1`,
+  wither skulls `2d8-1`, polar bears `2d4+1`, pandas `1d6+3`, goats `1d4`. Silverfish have their own profile
+  (`1d2`). Unarmed vindicators (`2d4`), piglin brutes (`2d6`), zombified piglins (`1d8+1`), wither skeletons
+  (`1d6+1`), skeletons (`1d4`) and pillagers (`1d6+2`) match their bare-handed vanilla damage. Armed, these
+  mobs already rolled their weapon's dice, which average within half a point of vanilla.
+- A weapon's `modifier_from: attack_damage_attribute` bonus can now be negative, down to −12, so a weak
+  item rolls below its dice average: a pillager's bolt is `1d10-1` (vanilla 4), a wooden pickaxe `1d6-1`.
+  Before, the bonus stopped at 0.
+- **Players get +5 to hit** (`balance.player_attack_bonus`). A player's attack bonus only ever derived
+  from the weapon's damage (+3 for an iron sword), so common weapons needed up to 2× vanilla's swings to
+  kill a mob. Now they need about 1.1× on average. Entity profiles and API overrides are unaffected.
+- `RollService.armorClassBreakdown(entity)` returns how Critfall's own AC adds up (`ArmorClassBreakdown`: base,
+  armor part, toughness part, total, and whether it derives from armor or comes from a profile), so an add-on
+  can show it without copying the formula and its divisors.
+- The roll and save readouts show the health a hit actually took after armor, Resistance, Protection,
+  difficulty and absorption, when that differs from the roll: `1d10+4 = 12 → 7`, `FAILED 2d6 = 7 → 3`. A
+  kill shows the whole hit, and a hit nothing got through still says "no damage taken".
+- The roll and save readout packets gained the damage taken and moved to `critfall:roll_feedback_v4` and
+  `critfall:save_feedback_v3`. Clients on 0.2.17 or older get the action-bar readout instead, which shows
+  it too.
+- Docs: example ids use `critfall_depths:` instead of `crawl:`.
+
 ## [0.2.17] - 2026-10-27
 
 An in-game rules screen, weapon damage from fumbles made opt-in, and crits left to other mods when

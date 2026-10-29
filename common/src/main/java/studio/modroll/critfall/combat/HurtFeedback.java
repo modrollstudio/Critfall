@@ -4,13 +4,15 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Consumer;
 import net.minecraft.world.entity.LivingEntity;
+import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 
 /**
  * Holds a rolled hit's feedback until the target's {@code LivingEntity.hurt} has fully resolved, so
  * the kill line reflects what actually happened. The roll runs before vanilla mitigation: Resistance,
  * absorption, a Totem of Undying, or another mod's damage handling can still turn a lethal roll into
  * a survived (or fully negated) hit. Each loader wraps {@code hurt} and calls {@link #enter} /
- * {@link #exit} around it; {@link DamageInterception} parks the feedback with {@link #defer}.
+ * {@link #exit} around it; {@link DamageInterception} parks the feedback with {@link #defer}. Each loader
+ * also reports the health damage the hurt applied ({@link #damageTaken}), after every reduction.
  *
  * <p>Frames are a per-thread stack, not one slot per entity, so a hurt nested inside another
  * (a listener damaging a second entity mid-hurt) flushes its own feedback at its own exit.
@@ -21,11 +23,14 @@ public final class HurtFeedback {
 
     private static final ThreadLocal<Deque<Frame>> FRAMES = ThreadLocal.withInitial(ArrayDeque::new);
 
-    /** What the hurt actually did to the target. */
-    public record Result(boolean killed, boolean negated) {
+    /**
+     * What the hurt actually did to the target. {@code taken} is the health damage it applied after
+     * armor, Resistance, Protection, difficulty and absorption, not capped at the health the target had.
+     */
+    public record Result(boolean killed, boolean negated, float taken) {
 
         /** Used when no wrapped hurt is in flight: the result is unknown, so never claim a kill. */
-        static final Result UNKNOWN = new Result(false, false);
+        static final Result UNKNOWN = new Result(false, false, RollFeedbackPayload.TAKEN_UNKNOWN);
     }
 
     private static final class Frame {
@@ -33,6 +38,7 @@ public final class HurtFeedback {
         float health;
         float absorption;
         boolean deathProtectionUsed;
+        float taken;
         Consumer<Result> pending;
 
         Frame(LivingEntity target) {
@@ -56,7 +62,7 @@ public final class HurtFeedback {
                     && !deathProtectionUsed
                     && target.getHealth() >= health
                     && target.getAbsorptionAmount() >= absorption;
-            return new Result(killed, negated);
+            return new Result(killed, negated, taken);
         }
     }
 
@@ -91,6 +97,19 @@ public final class HurtFeedback {
         for (Frame frame : FRAMES.get()) {
             if (frame.target == entity) {
                 frame.deathProtectionUsed = true;
+            }
+        }
+    }
+
+    /**
+     * Loader hook: {@code entity}'s hurt is taking {@code amount} health, the damage left after every
+     * reduction (vanilla's {@code CombatTracker.recordDamage}). Counts for every in-flight frame for it,
+     * so the driven path's {@link #observe} sees it through the loader's own frame inside.
+     */
+    public static void damageTaken(LivingEntity entity, float amount) {
+        for (Frame frame : FRAMES.get()) {
+            if (frame.target == entity) {
+                frame.taken += amount;
             }
         }
     }

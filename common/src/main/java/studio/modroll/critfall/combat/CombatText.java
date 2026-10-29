@@ -57,7 +57,8 @@ public final class CombatText {
         if (!p.saved()) {
             line.append(Component.translatableWithFallback("critfall.feedback.save_failed", "FAILED"));
             if (p.showDamage()) {
-                line.append(Component.literal(" " + p.diceNotation() + " = " + p.damage()));
+                line.append(
+                        Component.literal(" " + p.diceNotation() + " = " + p.damage() + taken(p.damage(), p.taken())));
             }
         } else {
             line.append(
@@ -66,7 +67,7 @@ public final class CombatText {
                             : Component.translatableWithFallback(
                                     "critfall.feedback.save_halved", "SAVED, half damage"));
             if (p.showDamage() && p.onSuccess() == Rules.SaveOutcome.HALF) {
-                line.append(Component.literal(" " + p.damage()));
+                line.append(Component.literal(" " + p.damage() + taken(p.damage(), p.taken())));
             }
         }
         return withDryRun(p.dryRun(), line);
@@ -190,9 +191,36 @@ public final class CombatText {
 
     private static void appendDamage(MutableComponent line, RollFeedbackPayload p) {
         if (p.showDamage()) {
-            line.append(
-                    Component.literal(" " + p.diceNotation() + " = " + p.damage() + multiplier(p.critMultiplier())));
+            line.append(Component.literal(
+                    " " + p.diceNotation() + " = " + p.damage() + multiplier(p.critMultiplier()) + taken(p)));
         }
+    }
+
+    /**
+     * {@code " → 7"}: the health the hit actually took, when Resistance, Protection, difficulty or
+     * absorption made it differ from the roll. Nothing when it matches, is unknown, or the hit was resisted
+     * outright (its consequence line already says no damage was taken).
+     */
+    private static String taken(RollFeedbackPayload p) {
+        if (p.consequences().stream().anyMatch(c -> c.key().equals(ConsequenceLine.RESISTED))) {
+            return "";
+        }
+        return taken(p.damage() * p.critMultiplier(), p.taken());
+    }
+
+    /** {@code " → 7"} when {@code taken} is known and differs from the {@code dealt} damage shown. */
+    private static String taken(float dealt, float taken) {
+        if (taken < 0 || Math.abs(taken - dealt) < 0.05F) {
+            return "";
+        }
+        return " → " + oneDecimal(taken);
+    }
+
+    /** {@code 7}, {@code 6.8}: at most one decimal, no trailing zero. */
+    private static String oneDecimal(float value) {
+        return BigDecimal.valueOf(Math.round(value * 10) / 10.0)
+                .stripTrailingZeros()
+                .toPlainString();
     }
 
     /** {@code " ×1.5"} for a carried crit multiplier, nothing for 1; at most two decimals, no trailing zeros. */

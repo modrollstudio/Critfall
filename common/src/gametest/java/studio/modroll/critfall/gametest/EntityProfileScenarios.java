@@ -23,7 +23,7 @@ import studio.modroll.critfall.data.ProfileStore;
 
 /**
  * Per-entity profiles: one husk gets its own profile without changing every husk. Shipped profiles: husk
- * AC 9 and +3 with 1d6+1, pig AC 10.
+ * AC 9 and +3 with 1d4+1, pig AC 10.
  */
 public final class EntityProfileScenarios {
 

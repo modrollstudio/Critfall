@@ -1,4 +1,4 @@
-package studio.modroll.critfall.config;
+package studio.modroll.critfall.data;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -11,13 +11,13 @@ import java.util.stream.Collectors;
  * still reads well by hand: two-space indents, and an object of plain values on one line
  * ({@code "damage_dice": { "enabled": true }}).
  */
-final class RulesFileFormat {
+public final class RulesFileFormat {
 
     private static final String INDENT = "  ";
 
     private RulesFileFormat() {}
 
-    static String write(JsonObject root) {
+    public static String write(JsonObject root) {
         StringBuilder out = new StringBuilder();
         expanded(root, out, "");
         return out.append('\n').toString();

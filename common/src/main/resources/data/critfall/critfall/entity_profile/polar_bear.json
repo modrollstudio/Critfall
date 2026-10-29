@@ -3,5 +3,5 @@
   "matches": ["minecraft:polar_bear"],
   "armor_class": 12,
   "attack_bonus": 5,
-  "damage": { "melee": "2d4+2" }
+  "damage": { "melee": "2d4+1" }
 }

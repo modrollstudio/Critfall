@@ -102,4 +102,34 @@ public class CombatGameTests implements FabricGameTest {
     public void globalDamageMultiplierScalesRolledDamage(GameTestHelper helper) {
         CombatScenarios.globalDamageMultiplierScalesRolledDamage(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void mobHitOnPlayerScalesOnEasy(GameTestHelper helper) {
+        CombatScenarios.mobHitOnPlayerScalesOnEasy(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void mobHitOnPlayerScalesOnNormal(GameTestHelper helper) {
+        CombatScenarios.mobHitOnPlayerScalesOnNormal(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void mobHitOnPlayerScalesOnHard(GameTestHelper helper) {
+        CombatScenarios.mobHitOnPlayerScalesOnHard(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void derivedDiceOnPlayerScaleOnceOnHard(GameTestHelper helper) {
+        CombatScenarios.derivedDiceOnPlayerScaleOnceOnHard(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void armoredPlayerIsEasierToHitButTakesLess(GameTestHelper helper) {
+        CombatScenarios.armoredPlayerIsEasierToHitButTakesLess(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void playerAttackBonusAddsToTheDerivedBonus(GameTestHelper helper) {
+        CombatScenarios.playerAttackBonusAddsToTheDerivedBonus(helper);
+    }
 }

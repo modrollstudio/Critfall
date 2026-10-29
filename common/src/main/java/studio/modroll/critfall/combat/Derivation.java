@@ -1,5 +1,8 @@
 package studio.modroll.critfall.combat;
 
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.dice.DiceExpression;
 
 /**
@@ -11,6 +14,9 @@ import studio.modroll.critfall.api.dice.DiceExpression;
 public final class Derivation {
 
     private static final int MAX_ATTACK_BONUS = 12;
+
+    /** A derived Armor Class before armor and toughness. */
+    public static final int BASE_ARMOR_CLASS = 10;
 
     /**
      * Flat damage 1..15 mapped to the dice expression with the same average (±0.5). Pre-parsed
@@ -31,10 +37,25 @@ public final class Derivation {
 
     private Derivation() {}
 
-    /** {@code AC = 10 + floor(armor / 2) + floor(toughness / 4)}, never below 1. */
+    /** {@link #armorClass(double, double, int, int)} with the divisors of the current rules ({@code balance}). */
     public static int armorClass(double armor, double toughness) {
-        int ac = 10 + (int) Math.floor(armor / 2.0) + (int) Math.floor(toughness / 4.0);
+        Rules.Balance balance = RollRuntime.rules().balance();
+        return armorClass(armor, toughness, balance.armorAcDivisor(), balance.toughnessAcDivisor());
+    }
+
+    /**
+     * {@code AC = 10 + floor(armor / armorDivisor) + floor(toughness / toughnessDivisor)}, never below 1. Since
+     * 0.2.18 the shipped divisors are 4 and 4, as armor reduces rolled hits too; before, armor counted
+     * twice as much ({@code armor / 2}) and reduced nothing.
+     */
+    public static int armorClass(double armor, double toughness, int armorDivisor, int toughnessDivisor) {
+        int ac = BASE_ARMOR_CLASS + armorPart(armor, armorDivisor) + armorPart(toughness, toughnessDivisor);
         return Math.max(1, ac);
+    }
+
+    /** What {@code points} of armor or toughness add to a derived AC: {@code floor(points / divisor)}. */
+    public static int armorPart(double points, int divisor) {
+        return (int) Math.floor(points / divisor);
     }
 
     /** {@code floor(attackDamage / 2)}, clamped to {@code [0, 12]}. */
@@ -43,13 +64,25 @@ public final class Derivation {
     }
 
     /**
+     * {@link #attackBonus(double)}, plus {@code balance.player_attack_bonus} when {@code attacker} is a player:
+     * a mob's attack bonus is tuned in its profile, a player's only ever derives.
+     */
+    public static int attackBonus(LivingEntity attacker, double attackDamage) {
+        int bonus = attackBonus(attackDamage);
+        return attacker instanceof Player
+                ? bonus + RollRuntime.rules().balance().playerAttackBonus()
+                : bonus;
+    }
+
+    /**
      * Flat bonus added to an item profile's dice when {@code modifier_from} is
      * {@code attack_damage_attribute}: the difference between the item's real (post-modifier)
      * attack damage and the dice average, so expected rolled damage tracks the item's vanilla
-     * power (an Apotheosis-boosted sword keeps its edge over a plain one). Clamped to [0, 12].
+     * power (an Apotheosis-boosted sword keeps its edge over a plain one). Clamped to [-12, 12]: since
+     * 0.2.18 a weak item rolls below its dice average too (a pillager's bolt, a wooden pickaxe).
      */
     public static int itemDamageBonus(double attackDamage, double diceAverage) {
-        return Math.clamp((int) Math.round(attackDamage - diceAverage), 0, MAX_ATTACK_BONUS);
+        return Math.clamp((int) Math.round(attackDamage - diceAverage), -MAX_ATTACK_BONUS, MAX_ATTACK_BONUS);
     }
 
     /**

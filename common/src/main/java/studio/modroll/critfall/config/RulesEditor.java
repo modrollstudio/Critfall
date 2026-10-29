@@ -15,7 +15,9 @@ import java.util.Map;
 import java.util.Optional;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.config.RulesSchema.Setting;
+import studio.modroll.critfall.data.RulesFileFormat;
 import studio.modroll.critfall.data.RulesLoader;
+import studio.modroll.critfall.data.RulesMigration;
 
 /**
  * The config screen's model: {@code rules.json} as written, edited one {@link Setting} at a time.
@@ -53,9 +55,15 @@ public final class RulesEditor {
         }
     }
 
-    /** @throws JsonParseException or {@link IllegalStateException} when {@code text} is not a JSON object */
+    /**
+     * A file written before 0.2.18 shows, and saves, the way the loader migrates it ({@link RulesMigration}).
+     *
+     * @throws JsonParseException or {@link IllegalStateException} when {@code text} is not a JSON object
+     */
     public static RulesEditor of(String text) {
-        return new RulesEditor(object(text), false);
+        JsonObject root = object(text);
+        RulesMigration.migrate(root);
+        return new RulesEditor(root, false);
     }
 
     /** An independent copy: edits to either leave the other as it was. */

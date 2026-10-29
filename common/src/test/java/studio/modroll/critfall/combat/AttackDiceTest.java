@@ -50,11 +50,21 @@ class AttackDiceTest {
     }
 
     @Test
-    void weakWeaponNeverGetsNegativeBonus() {
+    void weakWeaponRollsBelowItsDiceAverage() {
         ItemProfile stick = item("{\"matches\": [\"minecraft:stick\"], \"damage\": \"2d6\"}");
         AttackDice.Resolved resolved =
                 AttackDice.resolve(Optional.of(stick), Optional.empty(), 1.0).orElseThrow();
-        assertEquals("2d6", resolved.dice().toString());
+        assertEquals("2d6-6", resolved.dice().toString(), "attack damage 1 against an average of 7");
+    }
+
+    @Test
+    void pillagerBoltRollsAboutItsVanillaDamage() {
+        ItemProfile crossbow = item("{\"matches\": [\"minecraft:crossbow\"], \"damage\": \"1d10\"}");
+        // a pillager's bolt: vanilla 4, dice average 5.5 -> bonus round(-1.5) = -1, average 4.5
+        AttackDice.Resolved resolved = AttackDice.resolveRanged(
+                        Optional.of(crossbow), Optional.empty(), Optional.empty(), 4.0)
+                .orElseThrow();
+        assertEquals("1d10-1", resolved.dice().toString());
     }
 
     @Test
@@ -154,7 +164,9 @@ class AttackDiceTest {
     void itemDamageBonusDerivation() {
         assertEquals(2, Derivation.itemDamageBonus(6.0, 4.5), "iron sword over 1d8");
         assertEquals(4, Derivation.itemDamageBonus(8.0, 4.5), "netherite sword over 1d8");
-        assertEquals(0, Derivation.itemDamageBonus(1.0, 4.5), "never negative");
+        assertEquals(-3, Derivation.itemDamageBonus(1.0, 4.5), "a weak item rolls below the dice average");
+        assertEquals(0, Derivation.itemDamageBonus(4.0, 4.5), "half a point rounds up, as Math.round does");
         assertEquals(12, Derivation.itemDamageBonus(99.0, 4.5), "clamped at +12");
+        assertEquals(-12, Derivation.itemDamageBonus(0.0, 99.0), "clamped at -12");
     }
 }

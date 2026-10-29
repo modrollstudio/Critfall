@@ -147,7 +147,7 @@ public final class OutcomeScenarios {
                 rules,
                 () -> {
                     // nat 1, default_unarmed pick (d4): face 1 = hit_nearest_ally, then the husk's
-                    // entity-profile dice 1d6+1 roll a 4 -> the packmate takes 5
+                    // entity-profile dice 1d4+1 roll a 4 -> the packmate takes 5
                     target.hurt(helper.getLevel().damageSources().mobAttack(husk), VANILLA_HIT);
                     expectHealth(helper, target, target.getMaxHealth());
                     expectHealth(helper, packmate, packmate.getMaxHealth() - 5.0F);

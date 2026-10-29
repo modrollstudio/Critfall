@@ -169,7 +169,7 @@ public final class CritfallCommands {
                 "  Attack bonus: "
                         + (profileBonus.isPresent()
                                 ? "+" + profileBonus.getAsInt() + " (profile)"
-                                : "+" + Derivation.attackBonus(attackDamage) + " (derived: attack damage "
+                                : "+" + Derivation.attackBonus(living, attackDamage) + " (derived: attack damage "
                                         + attackDamage + ")"));
 
         Optional<ItemProfile> heldProfile = ProfileLookup.forItem(living.getMainHandItem());

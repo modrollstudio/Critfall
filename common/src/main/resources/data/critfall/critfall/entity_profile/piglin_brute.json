@@ -3,5 +3,5 @@
   "matches": ["minecraft:piglin_brute"],
   "armor_class": 14,
   "attack_bonus": 6,
-  "damage": { "melee": "2d6+3" }
+  "damage": { "melee": "2d6" }
 }

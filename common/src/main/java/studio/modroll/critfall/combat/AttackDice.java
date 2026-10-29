@@ -19,15 +19,19 @@ public final class AttackDice {
 
     /**
      * Pre-parsed flat-bonus terms for {@code modifier_from: attack_damage_attribute}, indexed by
-     * bonus value ({@link Derivation#itemDamageBonus} clamps to 0..12) — appending via
-     * {@link DiceExpression#plus} yields the identical canonical expression the previous
+     * bonus value plus {@link #MAX_BONUS} ({@link Derivation#itemDamageBonus} clamps to -12..12) —
+     * appending via {@link DiceExpression#plus} yields the identical canonical expression the previous
      * string-concat-and-reparse produced, without a per-hit parse.
      */
-    private static final DiceExpression[] BONUS_TERMS = new DiceExpression[13];
+    private static final int MAX_BONUS = 12;
+
+    private static final DiceExpression[] BONUS_TERMS = new DiceExpression[2 * MAX_BONUS + 1];
 
     static {
-        for (int i = 1; i < BONUS_TERMS.length; i++) {
-            BONUS_TERMS[i] = DiceExpression.parse(Integer.toString(i));
+        for (int bonus = -MAX_BONUS; bonus <= MAX_BONUS; bonus++) {
+            if (bonus != 0) {
+                BONUS_TERMS[bonus + MAX_BONUS] = DiceExpression.parse(Integer.toString(bonus));
+            }
         }
     }
 
@@ -89,11 +93,11 @@ public final class AttackDice {
 
     /** Appends the flat attribute bonus, dropping it when the dice already sit at the term cap. */
     private static DiceExpression withBonus(DiceExpression dice, int bonus) {
-        if (bonus <= 0) {
+        if (bonus == 0) {
             return dice;
         }
         try {
-            return dice.plus(BONUS_TERMS[bonus]);
+            return dice.plus(BONUS_TERMS[bonus + MAX_BONUS]);
         } catch (DiceParseException e) {
             return dice; // profile dice already at MAX_TERMS — same policy as withAmmo
         }

@@ -17,10 +17,11 @@ you which entities still rely on fallbacks.
 
 ### Does armor count twice?
 
-No. When `balance.disable_vanilla_armor_reduction` is on (the default), rolled damage bypasses
-vanilla base-armor reduction because the target's Armor Class already represents armor. Enchantment
-protection, the Resistance effect, and absorption still apply. See
-[design-decisions.md](design-decisions.md).
+No. Since 0.2.18 armor does two smaller jobs: it raises Armor Class by a quarter of its armor points
+(full iron is AC 13), and it reduces the hits that land like vanilla armor does. Before, armor only raised
+AC (by half its points) and never reduced a hit, so a strong mob that hit at all hit as hard as against a
+bare player. `balance.disable_vanilla_armor_reduction: true` brings back AC-only armor; pair it with
+`armor_ac_divisor: 2`. See [design-decisions.md](design-decisions.md).
 
 ### Fumbles fire too often in fast combat.
 

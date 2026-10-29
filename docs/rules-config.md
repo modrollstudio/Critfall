@@ -29,7 +29,7 @@ Default file:
 
 ```json
 {
-  "format_version": 1,
+  "format_version": 2,
   "attack_rolls": { "enabled": true, "players": true, "mobs": true, "projectiles": true, "spells": true },
   "damage_dice": { "enabled": true },
   "crits": {
@@ -56,7 +56,7 @@ Default file:
   },
   "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
   "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20, "kill_chance_percent": 25 } },
-  "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true },
+  "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": false, "armor_ac_divisor": 4, "toughness_ac_divisor": 4, "player_attack_bonus": 5 },
   "modifier_providers": { "enabled": true },
   "advantage_sources": { "jump_attack": true }
 }
@@ -141,8 +141,8 @@ untouched:
 - `saves.on_success` — `half` (rounded down) or `negate`; profile `save.on_success` overrides.
 
 A successful save's remaining damage (and a failed save's full damage, when the profile has
-dice) bypasses vanilla armor reduction under the same `disable_vanilla_armor_reduction` flag as
-attack rolls — the defense already happened, it was the save.
+dice) follows the same `disable_vanilla_armor_reduction` flag as attack rolls: reduced by vanilla
+armor by default, or not at all when the flag is on.
 
 ## fallbacks
 
@@ -177,9 +177,25 @@ is client-side). If present in an old `rules.json` they are ignored with a one-l
 
 - `global_damage_multiplier` — scales all rolled damage (misses already cut DPS ~40%; packs tuned
   around vanilla time-to-kill may want > 1).
-- `disable_vanilla_armor_reduction` — AC already represents armor, so vanilla armor reduction is
-  zeroed for rolled damage by default to avoid double-dipping (enchantments, Resistance and
-  absorption still apply — see docs/design-decisions.md). Set `false` to let armor double-dip.
+- `disable_vanilla_armor_reduction` (default `false` since 0.2.18) — `true` skips vanilla armor
+  reduction for rolled damage, so armor only raises AC (enchantments, Resistance and absorption still
+  apply). Off, armor raises AC a little and reduces hits like vanilla — see docs/design-decisions.md.
+- `armor_ac_divisor` (1–100, default `4`) and `toughness_ac_divisor` (1–100, default `4`, since 0.2.18) —
+  a derived Armor Class is `10 + floor(armor / armor_ac_divisor) + floor(toughness /
+  toughness_ac_divisor)`: full leather 11, iron 13, diamond 17, netherite 18. Profiles with an
+  `armor_class` are unaffected; add-ons can read the parts with `RollService.armorClassBreakdown`.
+
+### format_version and the 0.2.18 migration
+
+`format_version` is 2 since 0.2.18. A file below it (1, or none) was written before 0.2.18, when
+`disable_vanilla_armor_reduction: true` was simply the shipped default. The first load moves it to the
+new armor rule once: the flag is turned off, `armor_ac_divisor` and `toughness_ac_divisor` are written in
+where the file names none, `format_version` becomes 2, and the server logs one line saying so. Nothing
+else in the file changes. The config screen shows such a file the same way before the server has loaded
+it. Turning the flag back on afterwards stays: a version 2 file is never migrated.
+- `player_attack_bonus` (−20–20, default `5`, since 0.2.18) — added to a player's attack bonus, which
+  otherwise derives from the weapon's damage (`floor(attack_damage / 2)`: +3 for an iron sword, so +8).
+  Without it common weapons needed up to 2× vanilla's swings to kill a mob; with it about 1.1×.
 
 ## modifier_providers
 

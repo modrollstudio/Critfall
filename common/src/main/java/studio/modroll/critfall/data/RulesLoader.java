@@ -25,7 +25,7 @@ public final class RulesLoader {
     /** Written verbatim when no config exists. Keep in sync with {@link Rules#DEFAULTS}. */
     public static final String DEFAULT_FILE = """
             {
-              "format_version": 1,
+              "format_version": 2,
               "attack_rolls": { "enabled": true, "players": true, "mobs": true, "projectiles": true, "spells": true },
               "damage_dice": { "enabled": true },
               "crits": {
@@ -52,12 +52,18 @@ public final class RulesLoader {
               },
               "fallbacks": { "unknown_entity": "derive", "unknown_weapon": "derive", "unknown_spell": "derive" },
               "feedback": { "roll_visibility": "everyone", "flavor": { "enabled": true, "cooldown_ticks": 20, "kill_chance_percent": 25 } },
-              "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": true },
+              "balance": { "global_damage_multiplier": 1.0, "disable_vanilla_armor_reduction": false, "armor_ac_divisor": 4, "toughness_ac_divisor": 4, "player_attack_bonus": 5 },
               "dry_run": { "enabled": false },
               "modifier_providers": { "enabled": true },
               "advantage_sources": { "jump_attack": true }
             }
             """;
+
+    /** Bounds of {@code balance.armor_ac_divisor} and {@code toughness_ac_divisor}. */
+    public static final int MAX_AC_DIVISOR = 100;
+
+    /** {@code balance.player_attack_bonus} lies within ± this. */
+    public static final int MAX_PLAYER_ATTACK_BONUS = 20;
 
     private RulesLoader() {}
 
@@ -72,10 +78,23 @@ public final class RulesLoader {
             }
             String text = Files.readString(file);
             JsonObject json = JsonParser.parseString(text).getAsJsonObject();
+            if (RulesMigration.migrate(json)) {
+                saveMigrated(file, json);
+            }
             return parse(json, Critfall.LOG::warn);
         } catch (IOException | JsonParseException | IllegalStateException e) {
             Critfall.LOG.error("Could not read {} — using default rules: {}", file, e.toString());
             return Rules.DEFAULTS;
+        }
+    }
+
+    /** Rewrites a file {@link RulesMigration} just moved, so the move happens once. The rules apply either way. */
+    private static void saveMigrated(Path file, JsonObject json) {
+        try {
+            Files.writeString(file, RulesFileFormat.write(json));
+            Critfall.LOG.info(RulesMigration.MESSAGE, file);
+        } catch (IOException e) {
+            Critfall.LOG.warn("Could not save {} after moving it to 0.2.18's armor rule: {}", file, e.toString());
         }
     }
 
@@ -171,8 +190,26 @@ public final class RulesLoader {
             warn.accept("rules.json: 'global_damage_multiplier' must be a positive finite number, using 1.0");
             multiplier = 1.0;
         }
-        Rules.Balance balanceRules =
-                new Rules.Balance(multiplier, balance.getBool("disable_vanilla_armor_reduction", true));
+        boolean bypassArmor = balance.getBool("disable_vanilla_armor_reduction", false);
+        Rules.Balance balanceRules = new Rules.Balance(
+                multiplier,
+                bypassArmor,
+                intInRange(
+                        balance, "armor_ac_divisor", Rules.Balance.DEFAULT_ARMOR_AC_DIVISOR, 1, MAX_AC_DIVISOR, warn),
+                intInRange(
+                        balance,
+                        "toughness_ac_divisor",
+                        Rules.Balance.DEFAULT_TOUGHNESS_AC_DIVISOR,
+                        1,
+                        MAX_AC_DIVISOR,
+                        warn),
+                intInRange(
+                        balance,
+                        "player_attack_bonus",
+                        Rules.Balance.DEFAULT_PLAYER_ATTACK_BONUS,
+                        -MAX_PLAYER_ATTACK_BONUS,
+                        MAX_PLAYER_ATTACK_BONUS,
+                        warn));
 
         Rules.DryRun dryRun = new Rules.DryRun(j.object("dry_run").getBool("enabled", false));
         Rules.ModifierProviders modifierProviders =

@@ -4,7 +4,7 @@
 const CritfallEvents = Java.loadClass('studio.modroll.critfall.api.event.CritfallEvents');
 const ResourceLocation = Java.loadClass('net.minecraft.resources.ResourceLocation');
 
-const POISON_NEEDLE = ResourceLocation.parse('crawl:trap/poison_needle');
+const POISON_NEEDLE = ResourceLocation.parse('critfall_depths:trap/poison_needle');
 
 CritfallEvents.onHazardRoll(event => {
     const target = event.target();

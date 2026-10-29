@@ -24,7 +24,7 @@ class DatapackGeneratorTest {
         assertTrue(out.containsKey(path), out.keySet().toString());
         String json = out.get(path);
         assertTrue(json.contains("\"minecraft:zombie\""), json);
-        assertTrue(json.contains("\"armor_class\": 11"), json); // 10 + floor(2/2) + floor(0/4)
+        assertTrue(json.contains("\"armor_class\": 10"), json); // 10 + floor(2/4) + floor(0/4)
         assertTrue(json.contains("\"attack_bonus\": 1"), json); // floor(3/2)
     }
 

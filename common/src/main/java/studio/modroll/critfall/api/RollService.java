@@ -8,6 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.RollRuntime;
@@ -148,7 +149,20 @@ public final class RollService {
                 entity.getAttributeValue(Attributes.ARMOR_TOUGHNESS),
                 entity.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE)
                         ? entity.getAttributeValue(Attributes.ATTACK_DAMAGE)
-                        : 0.0);
+                        : 0.0,
+                entity instanceof Player);
+    }
+
+    /**
+     * How {@code entity}'s own Armor Class adds up: 10 plus its armor and toughness parts, or its profile's
+     * {@code armor_class}. Use it to show or explain an AC rather than copying the formula, whose divisors are in
+     * {@code rules.json}. Since 0.2.18.
+     */
+    public static ArmorClassBreakdown armorClassBreakdown(LivingEntity entity) {
+        return ArmorClassBreakdown.of(
+                ProfileLookup.forEntity(entity),
+                entity.getAttributeValue(Attributes.ARMOR),
+                entity.getAttributeValue(Attributes.ARMOR_TOUGHNESS));
     }
 
     public static EffectiveItemProfile effectiveItem(ItemStack stack) {
@@ -260,6 +274,7 @@ public final class RollService {
         }
         Rules rules = RollRuntime.rules();
         List<ConsequenceLine> consequences = bundle.consequences();
+        float taken = RollFeedbackPayload.TAKEN_UNKNOWN;
         if (result.isHit() && result.damage() > 0) {
             HurtFeedback.Result hurt = HurtFeedback.observe(
                     target, () -> DamageInterception.applyRolledDamage(target, ctx.source(), result.damage()));
@@ -267,6 +282,7 @@ public final class RollService {
                 consequences = new ArrayList<>(consequences);
                 consequences.add(ConsequenceLine.of(ConsequenceLine.RESISTED));
             }
+            taken = hurt.taken();
         }
         boolean isKill = result.isHit() && !target.isAlive();
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
@@ -283,7 +299,8 @@ public final class RollService {
                 target.getUUID(),
                 target.level().getGameTime(),
                 1.0F,
-                FlavorKills.alwaysFlavored(target));
+                FlavorKills.alwaysFlavored(target),
+                taken);
         FeedbackSink.get().roll(attacker, target, payload, rules.feedback().visibility());
         return result;
     }

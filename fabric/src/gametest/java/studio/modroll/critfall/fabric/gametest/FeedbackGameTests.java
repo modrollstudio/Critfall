@@ -103,4 +103,29 @@ public class FeedbackGameTests implements FabricGameTest {
     public void everyShippedLineFillsItsPlaceholders(GameTestHelper helper) {
         FlavorScenarios.everyShippedLineFillsItsPlaceholders(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void readoutShowsDamageTakenAfterResistance(GameTestHelper helper) {
+        FeedbackScenarios.readoutShowsDamageTakenAfterResistance(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void readoutShowsAnUnchangedHitOnce(GameTestHelper helper) {
+        FeedbackScenarios.readoutShowsAnUnchangedHitOnce(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void readoutShowsTheWholeKillingBlow(GameTestHelper helper) {
+        FeedbackScenarios.readoutShowsTheWholeKillingBlow(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void readoutShowsDifficultyScaledDamageTaken(GameTestHelper helper) {
+        FeedbackScenarios.readoutShowsDifficultyScaledDamageTaken(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void saveReadoutShowsDamageTaken(GameTestHelper helper) {
+        FeedbackScenarios.saveReadoutShowsDamageTaken(helper);
+    }
 }

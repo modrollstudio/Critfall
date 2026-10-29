@@ -127,7 +127,8 @@ precedence as damage dice.
 ```
 
 - `modifier_from` — `"attack_damage_attribute"` (default) adds a flat bonus of
-  `round(attacker's attack damage − dice average)`, clamped to 0…12, so the expected rolled damage
+  `round(attacker's attack damage − dice average)`, clamped to −12…12 (0…12 before 0.2.18), so the
+  expected rolled damage
   tracks the item's real (post-modifier) vanilla power: an iron sword (6 damage) rolls `1d8+2`, an
   Apotheosis-boosted one keeps its edge. On a melee hit the attack damage includes the weapon's
   enchantment damage against that target, as vanilla computes it (Sharpness always, Smite only on

@@ -36,7 +36,7 @@ import studio.modroll.critfall.feedback.FeedbackSink;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
 /**
- * The modifier provider end to end. Shipped profiles: husk +3 with 1d6+1, skeleton +4 with the bow's
+ * The modifier provider end to end. Shipped profiles: husk +3 with 1d4+1, skeleton +4 with the bow's
  * 1d8+2, pig AC 10 and save +0.
  */
 public final class ModifierProviderScenarios {
@@ -119,10 +119,10 @@ public final class ModifierProviderScenarios {
                 null,
                 Rules.DEFAULTS,
                 sink -> {
-                    // 13 + 3 = 16 vs AC 10 -> hit, 1d6+1 rolls 4 -> 5
+                    // 13 + 3 = 16 vs AC 10 -> hit, 1d4+1 rolls 4 -> 5
                     meleeHit(helper, husk, pig);
                     expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
-                    expectReadout(helper, sink.lastRoll(), "d20 13+3=16 vs AC 10", "1d6+1 = 5");
+                    expectReadout(helper, sink.lastRoll(), "d20 13+3=16 vs AC 10", "1d4+1 = 5");
                 },
                 13,
                 4);
@@ -156,10 +156,10 @@ public final class ModifierProviderScenarios {
                 new FixedProvider(null, 4, null),
                 Rules.DEFAULTS,
                 sink -> {
-                    // 1d6+1 plus 4 is 1d6+5, rolls 4 -> 9
+                    // 1d4+1 plus 4 is 1d4+5, rolls 4 -> 9
                     meleeHit(helper, husk, pig);
                     expectHealth(helper, pig, pig.getMaxHealth() - 9.0F);
-                    expectReadout(helper, sink.lastRoll(), "d20 13+3=16 vs AC 10", "1d6+5 = 9");
+                    expectReadout(helper, sink.lastRoll(), "d20 13+3=16 vs AC 10", "1d4+5 = 9");
                 },
                 13,
                 4);
@@ -223,7 +223,7 @@ public final class ModifierProviderScenarios {
                 sink -> {
                     meleeHit(helper, husk, pig);
                     expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
-                    expectReadout(helper, sink.lastRoll(), "d20 13+3=16 vs AC 10", "1d6+1 = 5");
+                    expectReadout(helper, sink.lastRoll(), "d20 13+3=16 vs AC 10", "1d4+1 = 5");
                 },
                 13,
                 4);
@@ -260,7 +260,7 @@ public final class ModifierProviderScenarios {
                     new FixedProvider(8, 1, null),
                     Rules.DEFAULTS,
                     sink -> {
-                        // 2 + 8 = 10 -> hit, where the husk's own +3 would miss; 1d6+1 plus 1 rolls 4 -> 6
+                        // 2 + 8 = 10 -> hit, where the husk's own +3 would miss; 1d4+1 plus 1 rolls 4 -> 6
                         AttackResult result = RollService.performAttack(husk, pig, melee(helper, husk));
                         if (result.outcome() != AttackOutcome.HIT || result.attackBonus() != 8) {
                             helper.fail(
@@ -314,10 +314,10 @@ public final class ModifierProviderScenarios {
                 new FixedProvider(null, -10, null),
                 Rules.DEFAULTS,
                 sink -> {
-                    // 1d6+1 minus 10 is 1d6-9, rolls 4 -> -5, floored to 1
+                    // 1d4+1 minus 10 is 1d4-9, rolls 4 -> -5, floored to 1
                     meleeHit(helper, husk, pig);
                     expectHealth(helper, pig, pig.getMaxHealth() - 1.0F);
-                    expectReadout(helper, sink.lastRoll(), "1d6-9 = 1");
+                    expectReadout(helper, sink.lastRoll(), "1d4-9 = 1");
                 },
                 13,
                 4);
@@ -386,10 +386,10 @@ public final class ModifierProviderScenarios {
                 new FixedProvider(null, null, null, -2),
                 Rules.DEFAULTS,
                 sink -> {
-                    // 5 + 3 = 8 would miss AC 10; minus 2 is AC 8 -> hit, 1d6+1 rolls 4 -> 5
+                    // 5 + 3 = 8 would miss AC 10; minus 2 is AC 8 -> hit, 1d4+1 rolls 4 -> 5
                     meleeHit(helper, husk, pig);
                     expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
-                    expectReadout(helper, sink.lastRoll(), "d20 5+3=8 vs AC 8", "1d6+1 = 5");
+                    expectReadout(helper, sink.lastRoll(), "d20 5+3=8 vs AC 8", "1d4+1 = 5");
                 },
                 5,
                 4);

@@ -116,6 +116,8 @@ public final class DamageInterception {
         if (!rules.attackRolls().enabled()) {
             return;
         }
+        // Vanilla scaled a hit on a player by difficulty before this hook: read past it, scale the roll.
+        dmg = DifficultyDamage.wrap(dmg, target, source);
         if (rules.dryRun().enabled()) {
             // Compute and report the roll, but no mutator lands — the vanilla damage stands.
             dmg = new DryRunDamage(dmg);
@@ -187,8 +189,9 @@ public final class DamageInterception {
 
         boolean hasAttribute = attacker.getAttributes().hasAttribute(Attributes.ATTACK_DAMAGE);
         double attackAttribute = hasAttribute ? attacker.getAttributeValue(Attributes.ATTACK_DAMAGE) : dmg.amount();
-        int attackBonus =
-                intStat(attackerProfile.map(EntityProfile::attackBonus), () -> Derivation.attackBonus(attackAttribute));
+        int attackBonus = intStat(
+                attackerProfile.map(EntityProfile::attackBonus),
+                () -> Derivation.attackBonus(attacker, attackAttribute));
         // The vanilla amount already carries enchantment damage; the attribute does not.
         double weaponDamage = hasAttribute
                 ? attackAttribute + EnchantmentDamage.bonus(attacker.getMainHandItem(), target, source, attackAttribute)
@@ -249,8 +252,8 @@ public final class DamageInterception {
         ItemStack launcher = launcherStack(source);
         AttackDelivery delivery = projectileDelivery(source, launcher);
         Optional<ItemProfile> weaponProfile = ProfileLookup.forItem(launcher, delivery);
-        int attackBonus =
-                intStat(attackerProfile.map(EntityProfile::attackBonus), () -> Derivation.attackBonus(dmg.amount()));
+        int attackBonus = intStat(
+                attackerProfile.map(EntityProfile::attackBonus), () -> Derivation.attackBonus(attacker, dmg.amount()));
 
         DiceExpression damageDice;
         int critRange;
@@ -385,7 +388,8 @@ public final class DamageInterception {
         int attackBonus = intStat(
                 spellProfile.map(SpellProfile::attackBonus),
                 () -> intStat(
-                        attackerProfile.map(EntityProfile::attackBonus), () -> Derivation.attackBonus(dmg.amount())));
+                        attackerProfile.map(EntityProfile::attackBonus),
+                        () -> Derivation.attackBonus(attacker, dmg.amount())));
         DiceExpression damageDice =
                 spellProfile.flatMap(SpellProfile::damage).orElseGet(() -> Derivation.damageDice(dmg.amount()));
         int critRange =
@@ -473,7 +477,18 @@ public final class DamageInterception {
         boolean showDamage = useDice || save.saved();
         FlavorLines pool = ProfileLookup.forFlavor(attacker, attacker.getMainHandItem(), AttackDelivery.SPELL);
         if (damage <= 0) {
-            emitSave(attacker, target, save, false, onSuccess, notation, shownDamage, showDamage, pool, rules);
+            emitSave(
+                    attacker,
+                    target,
+                    save,
+                    false,
+                    onSuccess,
+                    notation,
+                    shownDamage,
+                    showDamage,
+                    pool,
+                    rules,
+                    RollFeedbackPayload.TAKEN_UNKNOWN);
             return;
         }
         // The kill is read once the hurt has resolved: mitigation after this point can still save it.
@@ -489,7 +504,8 @@ public final class DamageInterception {
                         shownDamage,
                         showDamage,
                         pool,
-                        rules));
+                        rules,
+                        hurt.taken()));
     }
 
     private static void emitSave(
@@ -502,7 +518,8 @@ public final class DamageInterception {
             int damage,
             boolean showDamage,
             FlavorLines pool,
-            Rules rules) {
+            Rules rules,
+            float taken) {
         SaveFeedbackPayload payload = FeedbackBuilder.buildSave(
                 save,
                 isKill,
@@ -517,7 +534,8 @@ public final class DamageInterception {
                 RollRuntime.feedbackRoller(),
                 target.getUUID(),
                 target.level().getGameTime(),
-                FlavorKills.alwaysFlavored(target));
+                FlavorKills.alwaysFlavored(target),
+                taken);
         FeedbackSink.get().save(attacker, target, payload, rules.feedback().visibility());
     }
 
@@ -615,7 +633,17 @@ public final class DamageInterception {
         String notation = damageDice.toString();
         FlavorLines pool = ProfileLookup.forFlavor(attacker, weaponStack, delivery);
         if (!result.isHit()) {
-            emitAttack(attacker, target, result, false, notation, consequences, pool, rules, 1.0F);
+            emitAttack(
+                    attacker,
+                    target,
+                    result,
+                    false,
+                    notation,
+                    consequences,
+                    pool,
+                    rules,
+                    1.0F,
+                    RollFeedbackPayload.TAKEN_UNKNOWN);
             return;
         }
         // The kill is read once the hurt has resolved: Resistance, absorption, a totem or another
@@ -631,7 +659,8 @@ public final class DamageInterception {
                         hurt.negated() ? withResisted(consequences) : consequences,
                         pool,
                         rules,
-                        critMultiplier));
+                        critMultiplier,
+                        hurt.taken()));
     }
 
     /**
@@ -660,7 +689,8 @@ public final class DamageInterception {
             List<ConsequenceLine> consequences,
             FlavorLines pool,
             Rules rules,
-            float critMultiplier) {
+            float critMultiplier,
+            float taken) {
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
                 result,
                 isKill,
@@ -675,7 +705,8 @@ public final class DamageInterception {
                 target.getUUID(),
                 target.level().getGameTime(),
                 critMultiplier,
-                FlavorKills.alwaysFlavored(target));
+                FlavorKills.alwaysFlavored(target),
+                taken);
         FeedbackSink.get().roll(attacker, target, payload, rules.feedback().visibility());
     }
 

@@ -2,6 +2,7 @@ package studio.modroll.critfall.api;
 
 import java.util.Optional;
 import java.util.OptionalInt;
+import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.combat.AttackDice;
 import studio.modroll.critfall.combat.Derivation;
@@ -22,6 +23,16 @@ public record EffectiveEntityProfile(
 
     static EffectiveEntityProfile of(
             Optional<EntityProfile> profile, double armorAttr, double toughnessAttr, double attackDamageAttr) {
+        return of(profile, armorAttr, toughnessAttr, attackDamageAttr, false);
+    }
+
+    /** @param player a derived attack bonus gets {@code balance.player_attack_bonus} on top */
+    static EffectiveEntityProfile of(
+            Optional<EntityProfile> profile,
+            double armorAttr,
+            double toughnessAttr,
+            double attackDamageAttr,
+            boolean player) {
         int ac = profile.map(EntityProfile::armorClass)
                 .filter(OptionalInt::isPresent)
                 .map(OptionalInt::getAsInt)
@@ -29,7 +40,8 @@ public record EffectiveEntityProfile(
         int attackBonus = profile.map(EntityProfile::attackBonus)
                 .filter(OptionalInt::isPresent)
                 .map(OptionalInt::getAsInt)
-                .orElseGet(() -> Derivation.attackBonus(attackDamageAttr));
+                .orElseGet(() -> Derivation.attackBonus(attackDamageAttr)
+                        + (player ? RollRuntime.rules().balance().playerAttackBonus() : 0));
         int saveBonus = profile.map(EntityProfile::saveBonus)
                 .filter(OptionalInt::isPresent)
                 .map(OptionalInt::getAsInt)

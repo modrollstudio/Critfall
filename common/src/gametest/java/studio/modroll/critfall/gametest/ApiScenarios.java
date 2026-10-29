@@ -8,11 +8,15 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
 import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.ArmorClassBreakdown;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.ContestContext;
@@ -53,7 +57,7 @@ public final class ApiScenarios {
         withRolls(
                 helper,
                 () -> {
-                    // 13 + 3 (husk profile) = 16 vs AC 10 (pig) -> hit; 1d6+1 rolls 4 -> 5 damage.
+                    // 13 + 3 (husk profile) = 16 vs AC 10 (pig) -> hit; 1d4+1 rolls 4 -> 5 damage.
                     AttackContext ctx = AttackContext.melee(
                             helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem());
                     AttackResult result = RollService.performAttack(husk, pig, ctx);
@@ -125,7 +129,7 @@ public final class ApiScenarios {
         withRolls(
                 helper,
                 () -> {
-                    // 5 + 3 = 8 would miss the pig's base AC 10, but -2 (flanked) drops it to 8 -> hit; 1d6+1 rolls 4
+                    // 5 + 3 = 8 would miss the pig's base AC 10, but -2 (flanked) drops it to 8 -> hit; 1d4+1 rolls 4
                     // -> 5.
                     AttackContext ctx = AttackContext.melee(
                                     helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem())
@@ -199,17 +203,19 @@ public final class ApiScenarios {
         apiTarget.setItemSlot(EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
         float autoBefore = autoTarget.getHealth();
         float apiBefore = apiTarget.getHealth();
-        withRolls(
+        CombatScenarios.withRolls(
                 helper,
+                CombatScenarios.BYPASS_ARMOR,
                 () -> {
-                    // Automatic pipeline: nat 20 -> crit for exactly 7 (1d6+1 maxed), armor bypassed.
+                    // Automatic pipeline: nat 20 -> crit for exactly 5 (1d4+1 maxed), armor bypassed.
                     autoTarget.hurt(helper.getLevel().damageSources().mobAttack(attacker), VANILLA_HIT);
                 },
                 20);
         RollService.suppress(attacker);
         RollService.suppress(apiTarget);
-        withRolls(
+        CombatScenarios.withRolls(
                 helper,
+                CombatScenarios.BYPASS_ARMOR,
                 () -> {
                     // API path, same nat 20: the hurt must not double-dip vanilla armor on top of AC.
                     AttackContext ctx = AttackContext.melee(
@@ -226,8 +232,8 @@ public final class ApiScenarios {
             helper.fail("API attack lost " + apiLost + " but automatic attack lost " + autoLost
                     + " — armor double-dip on the API path");
         }
-        if (Math.abs(apiLost - 7.0F) > 0.001F) {
-            helper.fail("armored target must take the full rolled 7, but lost " + apiLost);
+        if (Math.abs(apiLost - 5.0F) > 0.001F) {
+            helper.fail("armored target must take the full rolled 5, but lost " + apiLost);
         }
         cleanup(attacker, apiTarget);
         helper.succeed();
@@ -259,8 +265,8 @@ public final class ApiScenarios {
                                 helper.getLevel().damageSources().mobAttack(attacker), attacker.getMainHandItem());
                         RollService.performAttack(attacker, armored, ctx);
                         float lost = before - armored.getHealth();
-                        if (lost <= 0.0F || lost >= 7.0F) {
-                            helper.fail("with the bypass flag off, vanilla armor must reduce the 7-damage crit, but "
+                        if (lost <= 0.0F || lost >= 5.0F) {
+                            helper.fail("with the bypass flag off, vanilla armor must reduce the 5-damage crit, but "
                                     + lost + " was lost");
                         }
                     },
@@ -453,6 +459,30 @@ public final class ApiScenarios {
         helper.succeed();
     }
 
+    /**
+     * The AC breakdown adds up to the AC attacks roll against: a player with full iron's 15 armor and 2 toughness
+     * is 10 + 3 + 0 = 13; a husk's profile sets 9, with no armor parts.
+     */
+    public static void armorClassBreakdownMatchesTheEffectiveArmorClass(GameTestHelper helper) {
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        player.getAttribute(Attributes.ARMOR).setBaseValue(15.0);
+        player.getAttribute(Attributes.ARMOR_TOUGHNESS).setBaseValue(2.0);
+        ArmorClassBreakdown armored = RollService.armorClassBreakdown(player);
+        if (!armored.equals(new ArmorClassBreakdown(10, 3, 0, 13, true))) {
+            helper.fail("expected 10 + 3 + 0 = 13, derived, was " + armored);
+        }
+        if (armored.total() != RollService.effectiveEntity(player).armorClass()) {
+            helper.fail("the breakdown must add up to the effective AC "
+                    + RollService.effectiveEntity(player).armorClass());
+        }
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        ArmorClassBreakdown profiled = RollService.armorClassBreakdown(husk);
+        if (!profiled.equals(new ArmorClassBreakdown(9, 0, 0, 9, false))) {
+            helper.fail("expected the husk profile's AC 9, was " + profiled);
+        }
+        helper.succeed();
+    }
+
     public static void contestResolvesWinnerAndTotals(GameTestHelper helper) {
         Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
         Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
@@ -527,7 +557,7 @@ public final class ApiScenarios {
         withRolls(
                 helper,
                 () -> {
-                    // Advantage keeps 18 (of 7/18); 18 + 3 = 21 vs AC 10 -> hit, 1d6+1 rolls 4 -> 5.
+                    // Advantage keeps 18 (of 7/18); 18 + 3 = 21 vs AC 10 -> hit, 1d4+1 rolls 4 -> 5.
                     AttackContext ctx = AttackContext.melee(
                                     helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem())
                             .withMode(RollMode.ADVANTAGE);
@@ -580,7 +610,7 @@ public final class ApiScenarios {
             withRolls(
                     helper,
                     () -> {
-                        // Advantage keeps 18; 18 + 3 = 21 vs AC 10 (+4) = 14 -> hit, 1d6+1 rolls 4 -> 5.
+                        // Advantage keeps 18; 18 + 3 = 21 vs AC 10 (+4) = 14 -> hit, 1d4+1 rolls 4 -> 5.
                         AttackContext ctx = AttackContext.melee(
                                         helper.getLevel().damageSources().mobAttack(husk), husk.getMainHandItem())
                                 .withMode(RollMode.ADVANTAGE)
@@ -689,7 +719,7 @@ public final class ApiScenarios {
     }
 
     /**
-     * Drives one husk-on-pig attack (husk +3, 1d6+1; pig AC 10) with {@code listener} on {@link
+     * Drives one husk-on-pig attack (husk +3, 1d4+1; pig AC 10) with {@code listener} on {@link
      * PreAttackRollEvent}, and returns the result and the readout.
      */
     private static AttackResult attackWithListener(
@@ -727,7 +757,7 @@ public final class ApiScenarios {
     /** One add-on grants advantage and another imposes disadvantage: 5e cancels them to one die. */
     public static void attackAdvantageAndDisadvantageCancel(GameTestHelper helper) {
         String[] readout = new String[1];
-        // One die: 12 + 3 = 15 hits; 1d6+1 rolls 4 -> 5.
+        // One die: 12 + 3 = 15 hits; 1d4+1 rolls 4 -> 5.
         AttackResult result = attackWithListener(
                 helper,
                 event -> {
@@ -746,7 +776,7 @@ public final class ApiScenarios {
     /** Two sources of advantage are still advantage: two dice, the higher kept. */
     public static void attackTwoAdvantagesAreStillAdvantage(GameTestHelper helper) {
         String[] readout = new String[1];
-        // Advantage keeps 18 of 7/18; 21 hits, 1d6+1 rolls 4 -> 5.
+        // Advantage keeps 18 of 7/18; 21 hits, 1d4+1 rolls 4 -> 5.
         AttackResult result = attackWithListener(
                 helper,
                 event -> {
@@ -776,7 +806,7 @@ public final class ApiScenarios {
     /** A listener's bonus raises the attack total, and the readout's modifier shows it. */
     public static void attackBonusShowsInTheReadout(GameTestHelper helper) {
         String[] readout = new String[1];
-        // 5 + 3 = 8 would miss AC 10; with +4 it is 12 and hits. 1d6+1 rolls 4 -> 5.
+        // 5 + 3 = 8 would miss AC 10; with +4 it is 12 and hits. 1d4+1 rolls 4 -> 5.
         AttackResult result = attackWithListener(helper, event -> event.addBonus(4), readout, 5, 4);
         if (!result.isHit() || result.attackTotal() != 12) {
             helper.fail("the +4 must make the total 12 and hit, got " + result);
@@ -790,7 +820,7 @@ public final class ApiScenarios {
     /** The halfling's Luck on an attack: the natural 1 rolls again and the new roll stands. */
     public static void attackRerollOnesRerollsANaturalOne(GameTestHelper helper) {
         String[] readout = new String[1];
-        // The 1 rerolls to 15: 18 hits, 1d6+1 rolls 4 -> 5. No fumble confirmation is rolled.
+        // The 1 rerolls to 15: 18 hits, 1d4+1 rolls 4 -> 5. No fumble confirmation is rolled.
         AttackResult result = attackWithListener(helper, PreAttackRollEvent::rerollOnes, readout, 1, 15, 4);
         if (!result.isHit() || result.natural() != 15) {
             helper.fail("the natural 1 must reroll to 15 and hit, got " + result);

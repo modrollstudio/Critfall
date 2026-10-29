@@ -30,7 +30,7 @@ import studio.modroll.critfall.feedback.FeedbackSink;
 /**
  * Jump attacks ({@code advantage_sources.jump_attack}) through a real {@code Player.attack}, so each
  * loader's hook on vanilla's crit decision is exercised. The attacker is a bare-handed player with
- * attack damage 4: +2 to hit (derived), and 4 vanilla damage that derives {@code 1d8}. Vanilla's
+ * attack damage 4: +7 to hit (+2 derived, +5 {@code balance.player_attack_bonus}), and 4 vanilla damage that derives {@code 1d8}. Vanilla's
  * 1.5x crit would make it 6, which derives {@code 1d12}. The pig's profile AC is 10.
  */
 public final class JumpAttackScenarios {
@@ -50,7 +50,7 @@ public final class JumpAttackScenarios {
                 helper,
                 Rules.DEFAULTS,
                 sink -> {
-                    // advantage 3/15 keeps 15: 15+2=17 vs AC 10 hits; 1d8 rolls 5
+                    // advantage 3/15 keeps 15: 15+7=22 vs AC 10 hits; 1d8 rolls 5
                     player.attack(pig);
                     expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
                     expectRoll(helper, sink.lastRoll(), RollMode.ADVANTAGE, AttackOutcome.HIT);
@@ -69,11 +69,11 @@ public final class JumpAttackScenarios {
                 helper,
                 Rules.DEFAULTS,
                 sink -> {
-                    // a single d20: 15+2=17 vs AC 10 hits; 1d8 rolls 5
+                    // a single d20: 15+7=22 vs AC 10 hits; 1d8 rolls 5
                     player.attack(pig);
                     expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
                     expectRoll(helper, sink.lastRoll(), RollMode.NORMAL, AttackOutcome.HIT);
-                    expectReadout(helper, sink.lastRoll(), "d20 15+2=17", "1d8 = 5");
+                    expectReadout(helper, sink.lastRoll(), "d20 15+7=22", "1d8 = 5");
                 },
                 15,
                 5);
@@ -93,7 +93,7 @@ public final class JumpAttackScenarios {
                     helper,
                     Rules.DEFAULTS,
                     sink -> {
-                        // advantage + disadvantage = one d20: 15+2=17 hits; 1d8 rolls 5
+                        // advantage + disadvantage = one d20: 15+7=22 hits; 1d8 rolls 5
                         player.attack(pig);
                         expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
                         expectRoll(helper, sink.lastRoll(), RollMode.NORMAL, AttackOutcome.HIT);
@@ -153,7 +153,7 @@ public final class JumpAttackScenarios {
                     player.attack(rolled);
                     expectHealth(helper, rolled, rolled.getMaxHealth() - 7.0F);
                     expectRoll(helper, sink.lastRoll(), RollMode.NORMAL, AttackOutcome.HIT);
-                    expectReadout(helper, sink.lastRoll(), "d20 15+2=17", "1d12 = 7");
+                    expectReadout(helper, sink.lastRoll(), "d20 15+7=22", "1d12 = 7");
                 },
                 15,
                 7);
@@ -213,7 +213,7 @@ public final class JumpAttackScenarios {
                     player.attack(rolled);
                     expectHealth(helper, rolled, rolled.getMaxHealth() - 7.0F);
                     expectRoll(helper, sink.lastRoll(), RollMode.NORMAL, AttackOutcome.HIT);
-                    expectReadout(helper, sink.lastRoll(), "d20 15+2=17", "1d12 = 7");
+                    expectReadout(helper, sink.lastRoll(), "d20 15+7=22", "1d12 = 7");
                     expectNoMultiplier(helper, sink.lastRoll());
                 },
                 15,
@@ -352,9 +352,9 @@ public final class JumpAttackScenarios {
                             helper.fail("a driven attack's listener mode must stand, rolled " + result.roll());
                         }
                     },
-                    // disadvantage 15/3 keeps 3: 3+2=5 misses AC 10, so no damage die
+                    // disadvantage 15/2 keeps 2: 2+7=9 misses AC 10, so no damage die
                     15,
-                    3);
+                    2);
         } finally {
             CritfallEvents.clearListeners();
         }
