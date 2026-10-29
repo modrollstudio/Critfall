@@ -483,6 +483,53 @@ public final class ApiScenarios {
         helper.succeed();
     }
 
+    /**
+     * The per-slot breakdown leaves that slot's item out: diamond helmet (3 armor, 2 toughness) and chestplate (8, 2)
+     * are 10 + 2 + 1 = 13, 10 without the chestplate, 12 without the helmet, and 13 for the empty boots slot. The
+     * player keeps its armor; a profile AC ignores equipment.
+     */
+    public static void armorClassBreakdownLeavesOutOneSlot(GameTestHelper helper) {
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        equip(player, EquipmentSlot.HEAD, new ItemStack(Items.DIAMOND_HELMET));
+        equip(player, EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+        ArmorClassBreakdown worn = RollService.armorClassBreakdown(player);
+        if (!worn.equals(new ArmorClassBreakdown(10, 2, 1, 13, true))) {
+            helper.fail("expected 10 + 2 + 1 = 13 with both pieces, was " + worn);
+        }
+        ArmorClassBreakdown noChest = RollService.armorClassBreakdown(player, EquipmentSlot.CHEST);
+        if (!noChest.equals(new ArmorClassBreakdown(10, 0, 0, 10, true))) {
+            helper.fail("expected 10 without the chestplate, was " + noChest);
+        }
+        ArmorClassBreakdown noHead = RollService.armorClassBreakdown(player, EquipmentSlot.HEAD);
+        if (!noHead.equals(new ArmorClassBreakdown(10, 2, 0, 12, true))) {
+            helper.fail("expected 10 + 2 + 0 = 12 without the helmet, was " + noHead);
+        }
+        ArmorClassBreakdown noFeet = RollService.armorClassBreakdown(player, EquipmentSlot.FEET);
+        if (!noFeet.equals(worn)) {
+            helper.fail("an empty slot must not change the breakdown, was " + noFeet);
+        }
+        if (player.getAttributeValue(Attributes.ARMOR) != 11.0
+                || player.getAttributeValue(Attributes.ARMOR_TOUGHNESS) != 4.0
+                || !RollService.armorClassBreakdown(player).equals(worn)
+                || !player.getItemBySlot(EquipmentSlot.CHEST).is(Items.DIAMOND_CHESTPLATE)) {
+            helper.fail("the per-slot breakdown must not change the player");
+        }
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        equip(husk, EquipmentSlot.CHEST, new ItemStack(Items.DIAMOND_CHESTPLATE));
+        ArmorClassBreakdown profiled = RollService.armorClassBreakdown(husk, EquipmentSlot.CHEST);
+        if (!profiled.equals(new ArmorClassBreakdown(9, 0, 0, 9, false))) {
+            helper.fail("expected the husk profile's AC 9 either way, was " + profiled);
+        }
+        helper.succeed();
+    }
+
+    // Wears the item now instead of on the entity's next tick, applying its modifiers as vanilla would.
+    private static void equip(LivingEntity entity, EquipmentSlot slot, ItemStack stack) {
+        entity.setItemSlot(slot, stack);
+        stack.forEachModifier(slot, (attribute, modifier) ->
+                entity.getAttribute(attribute).addOrUpdateTransientModifier(modifier));
+    }
+
     public static void contestResolvesWinnerAndTotals(GameTestHelper helper) {
         Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
         Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);

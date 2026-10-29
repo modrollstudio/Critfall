@@ -181,4 +181,9 @@ public class ApiGameTests implements FabricGameTest {
     public void armorClassBreakdownMatchesTheEffectiveArmorClass(GameTestHelper helper) {
         ApiScenarios.armorClassBreakdownMatchesTheEffectiveArmorClass(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void armorClassBreakdownLeavesOutOneSlot(GameTestHelper helper) {
+        ApiScenarios.armorClassBreakdownLeavesOutOneSlot(helper);
+    }
 }

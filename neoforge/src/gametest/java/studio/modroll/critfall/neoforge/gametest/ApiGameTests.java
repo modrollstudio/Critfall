@@ -194,4 +194,9 @@ public class ApiGameTests {
     public void armorClassBreakdownMatchesTheEffectiveArmorClass(GameTestHelper helper) {
         ApiScenarios.armorClassBreakdownMatchesTheEffectiveArmorClass(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void armorClassBreakdownLeavesOutOneSlot(GameTestHelper helper) {
+        ApiScenarios.armorClassBreakdownLeavesOutOneSlot(helper);
+    }
 }

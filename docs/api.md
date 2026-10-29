@@ -70,6 +70,8 @@ ac.derived();       // true: base 10 + armorPart + toughnessPart; false: the pro
 ac.armorPart();     // floor(armor / balance.armor_ac_divisor), 0 for a profile AC
 ac.toughnessPart(); // floor(toughness / balance.toughness_ac_divisor)
 ac.total();         // equals eff.armorClass()
+// The same as if that slot were empty; the entity keeps its item. Compare to see what the chestplate adds:
+ArmorClassBreakdown noChest = RollService.armorClassBreakdown(livingEntity, EquipmentSlot.CHEST);
 ```
 
 These are Critfall's **own** values, as is [`/critfall inspect`](commands.md#critfall-inspect-entity): a

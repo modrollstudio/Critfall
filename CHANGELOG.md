@@ -53,7 +53,9 @@ mob hits, and readouts that show the damage actually taken.
   kill a mob. Now they need about 1.1× on average. Entity profiles and API overrides are unaffected.
 - `RollService.armorClassBreakdown(entity)` returns how Critfall's own AC adds up (`ArmorClassBreakdown`: base,
   armor part, toughness part, total, and whether it derives from armor or comes from a profile), so an add-on
-  can show it without copying the formula and its divisors.
+  can show it without copying the formula and its divisors. `RollService.armorClassBreakdown(entity, slot)`
+  returns it as if that equipment slot were empty, without changing the entity, so an add-on can tell what one
+  piece adds.
 - The roll and save readouts show the health a hit actually took after armor, Resistance, Protection,
   difficulty and absorption, when that differs from the roll: `1d10+4 = 12 → 7`, `FAILED 2d6 = 7 → 3`. A
   kill shows the whole hit, and a hit nothing got through still says "no damage taken".

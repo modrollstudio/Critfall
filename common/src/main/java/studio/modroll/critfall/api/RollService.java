@@ -4,9 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -163,6 +167,32 @@ public final class RollService {
                 ProfileLookup.forEntity(entity),
                 entity.getAttributeValue(Attributes.ARMOR),
                 entity.getAttributeValue(Attributes.ARMOR_TOUGHNESS));
+    }
+
+    /**
+     * {@link #armorClassBreakdown(LivingEntity)} as if {@code slot} were empty: without the armor and toughness
+     * modifiers (enchantments included) of the item {@code entity} has there. The entity is not changed. Compare
+     * the two to see what one piece of equipment adds to the AC. Since 0.2.18.
+     */
+    public static ArmorClassBreakdown armorClassBreakdown(LivingEntity entity, EquipmentSlot slot) {
+        ItemStack stack = entity.getItemBySlot(Objects.requireNonNull(slot, "slot"));
+        return ArmorClassBreakdown.of(
+                ProfileLookup.forEntity(entity),
+                valueWithout(entity, Attributes.ARMOR, stack, slot),
+                valueWithout(entity, Attributes.ARMOR_TOUGHNESS, stack, slot));
+    }
+
+    // Removes the stack's modifiers from a copy of the attribute by id, as vanilla does when the item comes off.
+    private static double valueWithout(
+            LivingEntity entity, Holder<Attribute> attribute, ItemStack stack, EquipmentSlot slot) {
+        AttributeInstance copy = new AttributeInstance(attribute, ignored -> {});
+        copy.replaceFrom(entity.getAttribute(attribute));
+        stack.forEachModifier(slot, (modified, modifier) -> {
+            if (modified.equals(attribute)) {
+                copy.removeModifier(modifier.id());
+            }
+        });
+        return copy.getValue();
     }
 
     public static EffectiveItemProfile effectiveItem(ItemStack stack) {
