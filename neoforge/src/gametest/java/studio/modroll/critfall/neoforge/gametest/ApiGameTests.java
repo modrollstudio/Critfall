@@ -189,4 +189,14 @@ public class ApiGameTests {
     public void attackRerollOnesRerollsANaturalOne(GameTestHelper helper) {
         ApiScenarios.attackRerollOnesRerollsANaturalOne(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void armorClassBreakdownMatchesTheEffectiveArmorClass(GameTestHelper helper) {
+        ApiScenarios.armorClassBreakdownMatchesTheEffectiveArmorClass(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void armorClassBreakdownLeavesOutOneSlot(GameTestHelper helper) {
+        ApiScenarios.armorClassBreakdownLeavesOutOneSlot(helper);
+    }
 }

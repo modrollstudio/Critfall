@@ -108,4 +108,34 @@ public class CombatGameTests {
     public void globalDamageMultiplierScalesRolledDamage(GameTestHelper helper) {
         CombatScenarios.globalDamageMultiplierScalesRolledDamage(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void mobHitOnPlayerScalesOnEasy(GameTestHelper helper) {
+        CombatScenarios.mobHitOnPlayerScalesOnEasy(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void mobHitOnPlayerScalesOnNormal(GameTestHelper helper) {
+        CombatScenarios.mobHitOnPlayerScalesOnNormal(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void mobHitOnPlayerScalesOnHard(GameTestHelper helper) {
+        CombatScenarios.mobHitOnPlayerScalesOnHard(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void derivedDiceOnPlayerScaleOnceOnHard(GameTestHelper helper) {
+        CombatScenarios.derivedDiceOnPlayerScaleOnceOnHard(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void armoredPlayerIsEasierToHitButTakesLess(GameTestHelper helper) {
+        CombatScenarios.armoredPlayerIsEasierToHitButTakesLess(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void playerAttackBonusAddsToTheDerivedBonus(GameTestHelper helper) {
+        CombatScenarios.playerAttackBonusAddsToTheDerivedBonus(helper);
+    }
 }

@@ -56,12 +56,7 @@ public final class FeedbackBuilder {
                 false);
     }
 
-    /**
-     * @param critMultiplier the crit multiplier the hit's dice damage carried, 1 for none; shown only
-     *     with the damage, so a miss or damage dice off never shows it
-     * @param alwaysFlavorKill a kill always gets a line, whatever the kill chance: the target was a
-     *     named mob or a boss ({@link FlavorKills#alwaysFlavored})
-     */
+    /** As below, with the damage taken unknown. */
     public static RollFeedbackPayload buildAttack(
             AttackResult result,
             boolean isKill,
@@ -77,6 +72,49 @@ public final class FeedbackBuilder {
             long gameTime,
             float critMultiplier,
             boolean alwaysFlavorKill) {
+        return buildAttack(
+                result,
+                isKill,
+                diceNotation,
+                showDamage,
+                consequences,
+                flavorLines,
+                attacker,
+                target,
+                rules,
+                roller,
+                targetId,
+                gameTime,
+                critMultiplier,
+                alwaysFlavorKill,
+                RollFeedbackPayload.TAKEN_UNKNOWN);
+    }
+
+    /**
+     * @param critMultiplier the crit multiplier the hit's dice damage carried, 1 for none; shown only
+     *     with the damage, so a miss or damage dice off never shows it
+     * @param alwaysFlavorKill a kill always gets a line, whatever the kill chance: the target was a
+     *     named mob or a boss ({@link FlavorKills#alwaysFlavored})
+     * @param taken the health the hit took after mitigation; like the multiplier it goes only with the
+     *     shown damage, and never in dry-run, where it would be vanilla's damage rather than the roll's
+     */
+    public static RollFeedbackPayload buildAttack(
+            AttackResult result,
+            boolean isKill,
+            String diceNotation,
+            boolean showDamage,
+            List<ConsequenceLine> consequences,
+            FlavorLines flavorLines,
+            FlavorName attacker,
+            FlavorName target,
+            Rules rules,
+            DiceRoller roller,
+            UUID targetId,
+            long gameTime,
+            float critMultiplier,
+            boolean alwaysFlavorKill,
+            float taken) {
+        boolean damageShown = result.isHit() && showDamage;
         Optional<String> flavor =
                 pickFlavor(result.outcome(), isKill, alwaysFlavorKill, flavorLines, rules, roller, targetId, gameTime);
         return new RollFeedbackPayload(
@@ -95,7 +133,8 @@ public final class FeedbackBuilder {
                 result.defenderAcBonus(),
                 flavor.isPresent() ? attacker : FlavorName.NONE,
                 flavor.isPresent() ? target : FlavorName.NONE,
-                result.isHit() && showDamage ? critMultiplier : 1.0F);
+                damageShown ? critMultiplier : 1.0F,
+                damageShown && !rules.dryRun().enabled() ? taken : RollFeedbackPayload.TAKEN_UNKNOWN);
     }
 
     public static SaveFeedbackPayload buildSave(
@@ -129,7 +168,7 @@ public final class FeedbackBuilder {
                 false);
     }
 
-    /** @param alwaysFlavorKill as for {@link #buildAttack}: a kill always gets a line */
+    /** As below, with the damage taken unknown. */
     public static SaveFeedbackPayload buildSave(
             SaveResult save,
             boolean isKill,
@@ -145,6 +184,44 @@ public final class FeedbackBuilder {
             UUID targetId,
             long gameTime,
             boolean alwaysFlavorKill) {
+        return buildSave(
+                save,
+                isKill,
+                onSuccess,
+                diceNotation,
+                damage,
+                showDamage,
+                flavorLines,
+                attacker,
+                target,
+                rules,
+                roller,
+                targetId,
+                gameTime,
+                alwaysFlavorKill,
+                RollFeedbackPayload.TAKEN_UNKNOWN);
+    }
+
+    /**
+     * @param alwaysFlavorKill as for {@link #buildAttack}: a kill always gets a line
+     * @param taken as for {@link #buildAttack}: only with shown damage, never in dry-run
+     */
+    public static SaveFeedbackPayload buildSave(
+            SaveResult save,
+            boolean isKill,
+            Rules.SaveOutcome onSuccess,
+            String diceNotation,
+            int damage,
+            boolean showDamage,
+            FlavorLines flavorLines,
+            FlavorName attacker,
+            FlavorName target,
+            Rules rules,
+            DiceRoller roller,
+            UUID targetId,
+            long gameTime,
+            boolean alwaysFlavorKill,
+            float taken) {
         // Saves have no crit/fumble; only a kill produces flavor, and it is never priority.
         Optional<String> flavor = isKill && rules.feedback().flavor().enabled()
                 ? killLine(flavorLines, rules, roller, targetId, gameTime, alwaysFlavorKill)
@@ -163,7 +240,8 @@ public final class FeedbackBuilder {
                 save.roll().mode(),
                 save.roll().dropped(),
                 flavor.isPresent() ? attacker : FlavorName.NONE,
-                flavor.isPresent() ? target : FlavorName.NONE);
+                flavor.isPresent() ? target : FlavorName.NONE,
+                showDamage && damage > 0 && !rules.dryRun().enabled() ? taken : RollFeedbackPayload.TAKEN_UNKNOWN);
     }
 
     private static Optional<String> pickFlavor(

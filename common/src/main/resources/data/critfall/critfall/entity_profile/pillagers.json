@@ -3,5 +3,5 @@
   "matches": ["minecraft:pillager", "minecraft:illusioner"],
   "armor_class": 13,
   "attack_bonus": 3,
-  "damage": { "melee": "1d6" }
+  "damage": { "melee": "1d6+2" }
 }

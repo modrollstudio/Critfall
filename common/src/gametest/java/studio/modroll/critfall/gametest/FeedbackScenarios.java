@@ -4,6 +4,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -15,9 +16,11 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.monster.Evoker;
 import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.EvokerFangs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.GameType;
 import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.combat.AttackOutcome;
@@ -211,7 +214,96 @@ public final class FeedbackScenarios {
         }
     }
 
-    /** Pig health before each lethal roll: the 7-damage hit below would kill it outright. */
+    /**
+     * The readout follows the roll with what the target actually took: a husk's 5 (d20 13 + 3 vs AC
+     * 10, 1d4+1 rolls 4) on a pig with Resistance III, which takes 60% off, leaves 2.
+     */
+    public static void readoutShowsDamageTakenAfterResistance(GameTestHelper helper) {
+        hitReadout(
+                helper,
+                pig -> pig.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 2)),
+                4,
+                2.0F,
+                "HIT 1d4+1 = 5 → 2");
+    }
+
+    /** Nothing changed the roll: the readout shows it once, with no arrow. */
+    public static void readoutShowsAnUnchangedHitOnce(GameTestHelper helper) {
+        hitReadout(helper, pig -> {}, 4, 5.0F, "HIT 1d4+1 = 5");
+    }
+
+    /** A kill shows the whole hit, not just the health the target had left. */
+    public static void readoutShowsTheWholeKillingBlow(GameTestHelper helper) {
+        hitReadout(helper, pig -> pig.setHealth(LOW_HEALTH), 4, 5.0F, "HIT 1d4+1 = 5");
+    }
+
+    /** Hard adds half to a mob's hit on a player: the husk's 5 (1d4+1 rolls 4) is 7.5 taken. */
+    public static void readoutShowsDifficultyScaledDamageTaken(GameTestHelper helper) {
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        try {
+            Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+            Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+            CombatScenarios.withDifficulty(
+                    helper,
+                    Difficulty.HARD,
+                    () -> CombatScenarios.withRolls(
+                            helper,
+                            Rules.DEFAULTS,
+                            () -> {
+                                player.hurt(helper.getLevel().damageSources().mobAttack(husk), 3.0F);
+                                expectReadoutEnd(helper, sink.lastRoll(), 7.5F, "HIT 1d4+1 = 5 → 7.5");
+                            },
+                            13,
+                            4));
+            helper.succeed();
+        } finally {
+            FeedbackSink.set(previous);
+        }
+    }
+
+    /** A husk hits a full-health pig set up by {@code setup}: d20 13 + 3 vs AC 10, then 1d4+1 rolls {@code face}. */
+    private static void hitReadout(
+            GameTestHelper helper, Consumer<Pig> setup, int face, float expectedTaken, String expectedEnd) {
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        try {
+            Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+            Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+            setup.accept(pig);
+            CombatScenarios.withRolls(
+                    helper,
+                    Rules.DEFAULTS,
+                    () -> {
+                        pig.hurt(helper.getLevel().damageSources().mobAttack(husk), 3.0F);
+                        expectReadoutEnd(helper, sink.lastRoll(), expectedTaken, expectedEnd);
+                    },
+                    13,
+                    face);
+            helper.succeed();
+        } finally {
+            FeedbackSink.set(previous);
+        }
+    }
+
+    private static void expectReadoutEnd(
+            GameTestHelper helper, RollFeedbackPayload payload, float expectedTaken, String expectedEnd) {
+        if (payload == null || payload.outcome() != AttackOutcome.HIT) {
+            helper.fail("expected a HIT payload, was " + payload);
+            return;
+        }
+        if (Math.abs(payload.taken() - expectedTaken) > 0.001F) {
+            helper.fail("expected " + expectedTaken + " taken, was " + payload.taken());
+        }
+        String readout = CombatText.actionBar(payload).getString();
+        if (!readout.endsWith(expectedEnd)) {
+            helper.fail("expected the readout to end \"" + expectedEnd + "\", was \"" + readout + "\"");
+        }
+    }
+
+    /** Pig health before each lethal roll: the 5-damage hit below would kill it outright. */
     private static final float LOW_HEALTH = 3.0F;
 
     public static void resistanceFiveLethalRollShowsNoKillLine(GameTestHelper helper) {
@@ -298,14 +390,14 @@ public final class FeedbackScenarios {
 
     /** A zoglin has no fists: its empty-handed kill reads from the natural-attack pool. */
     public static void zoglinKillShowsNaturalLine(GameTestHelper helper) {
-        // d20 13 + 5 vs AC 10 hits, 2d6+2 rolls 6, 6 for 14 damage
-        emptyHandedKill(helper, EntityType.ZOGLIN, "critfall.flavor.natural.kill.", 13, 6, 6);
+        // d20 13 + 5 vs AC 10 hits, 1d6+2 rolls 6 for 8 damage
+        emptyHandedKill(helper, EntityType.ZOGLIN, "critfall.flavor.natural.kill.", 13, 6);
     }
 
     /** A zombie fights with fists: its empty-handed kill keeps the unarmed line. */
     public static void zombieKillShowsUnarmedLine(GameTestHelper helper) {
-        // d20 13 + 3 vs AC 10 hits, 1d6+1 rolls 6 for 7 damage
-        emptyHandedKill(helper, EntityType.ZOMBIE, "critfall.flavor.default.kill.", 13, 6);
+        // d20 13 + 3 vs AC 10 hits, 1d4+1 rolls 4 for 5 damage
+        emptyHandedKill(helper, EntityType.ZOMBIE, "critfall.flavor.default.kill.", 13, 4);
     }
 
     /**
@@ -368,6 +460,52 @@ public final class FeedbackScenarios {
         }
     }
 
+    /**
+     * The save readout shows what was taken, like the attack readout: evoker fangs rolled as a save, the pig's
+     * 2 + 0 fails DC 13, 2d6 rolls 3 and 2 for 5, and Resistance III leaves 2.
+     */
+    public static void saveReadoutShowsDamageTaken(GameTestHelper helper) {
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        try {
+            Evoker evoker = CombatScenarios.spawnCalm(helper, EntityType.EVOKER, 1, 1);
+            Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+            pig.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, 200, 2));
+            EvokerFangs fangs = new EvokerFangs(helper.getLevel(), pig.getX(), pig.getY(), pig.getZ(), 0.0F, 0, evoker);
+            DamageSource bite = new DamageSource(
+                    helper.getLevel()
+                            .registryAccess()
+                            .registryOrThrow(Registries.DAMAGE_TYPE)
+                            .getHolderOrThrow(DamageTypes.MOB_ATTACK),
+                    fangs,
+                    evoker);
+            SpellScenarios.withSpellProfile(
+                    "{\"matches\": [\"minecraft:mob_attack\"], \"resolution\": \"save\", \"damage\": \"2d6\","
+                            + " \"save\": {\"dc\": 13}}",
+                    () -> CombatScenarios.withRolls(
+                            helper,
+                            Rules.DEFAULTS,
+                            () -> {
+                                pig.hurt(bite, 6.0F);
+                                SaveFeedbackPayload payload = sink.lastSave();
+                                String readout = payload == null
+                                        ? "none"
+                                        : CombatText.actionBar(payload).getString();
+                                if (!readout.endsWith("FAILED 2d6 = 5 → 2")) {
+                                    helper.fail("expected the save readout to end \"FAILED 2d6 = 5 → 2\", was \""
+                                            + readout + "\"");
+                                }
+                            },
+                            2,
+                            3,
+                            2));
+            helper.succeed();
+        } finally {
+            FeedbackSink.set(previous);
+        }
+    }
+
     private static void emptyHandedKill(
             GameTestHelper helper, EntityType<? extends Mob> attackerType, String expectedPrefix, int... faces) {
         CapturingFeedbackSink sink = new CapturingFeedbackSink();
@@ -405,7 +543,7 @@ public final class FeedbackScenarios {
     }
 
     /**
-     * A husk hits a {@code health} pig: d20 13 + 3 vs AC 10 hits, 1d6+1 rolls 6 for 7 damage
+     * A husk hits a {@code health} pig: d20 13 + 3 vs AC 10 hits, 1d4+1 rolls 4 for 5 damage
      * — lethal as rolled. {@code protect} sets up what may keep the pig alive.
      */
     private static void lethalHit(
@@ -429,13 +567,13 @@ public final class FeedbackScenarios {
                     () -> {
                         pig.hurt(helper.getLevel().damageSources().mobAttack(husk), 3.0F);
                         RollFeedbackPayload payload = sink.lastRoll();
-                        if (payload == null || payload.outcome() != AttackOutcome.HIT || payload.damage() != 7) {
-                            helper.fail("expected a 7-damage HIT payload, was " + payload);
+                        if (payload == null || payload.outcome() != AttackOutcome.HIT || payload.damage() != 5) {
+                            helper.fail("expected a 5-damage HIT payload, was " + payload);
                         }
                         check.accept(pig, payload);
                     },
                     13,
-                    6);
+                    4);
             helper.succeed();
         } finally {
             FeedbackSink.set(previous);

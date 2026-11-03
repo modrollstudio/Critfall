@@ -3,5 +3,5 @@
   "matches": ["minecraft:vindicator"],
   "armor_class": 13,
   "attack_bonus": 6,
-  "damage": { "melee": "2d6+2" }
+  "damage": { "melee": "2d4" }
 }

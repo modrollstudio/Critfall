@@ -273,7 +273,8 @@ public final class ProjectileScenarios {
 
     private static void expectFlewPast(
             GameTestHelper helper, Player player, Pig pig, AbstractArrow arrow, ShotRandom shots) {
-        // 2 + at most +5 misses pig AC 10. Vanilla bounces an arrow whose hurt failed back the way
+        // 2 + at most +5 misses pig AC 10 (no player bonus here). Vanilla bounces an arrow whose hurt failed back the
+        // way
         // it came, so a miss used to fly back into the shooter and roll again against them.
         if (shots.d20Rolls() != 1) {
             helper.fail("a missed shot must roll once and never again, rolled " + shots.d20Rolls()
@@ -294,13 +295,17 @@ public final class ProjectileScenarios {
                 + ", target at " + helper.relativeVec(pig.position()) + ")";
     }
 
+    private static final Rules NO_PLAYER_BONUS =
+            CombatScenarios.withBalance(Rules.DEFAULTS, new Rules.Balance(1.0, false, 4, 4, 0));
+
     private interface ShotCheck {
         void check(Player player, Pig pig, AbstractArrow arrow, ShotRandom shots);
     }
 
     /**
      * A survival fake player fires {@code weapon} for real, full draw, at a still pig at {@code targetZ};
-     * the d20 shows {@code d20Faces} in order (the last repeats), every other die its max face.
+     * the d20 shows {@code d20Faces} in order (the last repeats), every other die its max face. The player gets
+     * no {@code balance.player_attack_bonus}, so a low d20 can still miss.
      */
     private static void realShot(GameTestHelper helper, Item weapon, int[] d20Faces, double targetZ, ShotCheck check) {
         Pig pig = spawnShotTarget(helper, targetZ);
@@ -316,7 +321,7 @@ public final class ProjectileScenarios {
         ShotRandom shots = new ShotRandom(d20Faces);
         Rules before = RollRuntime.rules();
         RollRuntime.setRoller(new DiceRoller(shots));
-        RollRuntime.setRules(Rules.DEFAULTS);
+        RollRuntime.setRules(NO_PLAYER_BONUS);
         FumbleCooldowns.clear();
 
         player.startUsingItem(InteractionHand.MAIN_HAND);

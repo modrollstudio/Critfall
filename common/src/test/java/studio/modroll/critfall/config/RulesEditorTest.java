@@ -20,9 +20,10 @@ import studio.modroll.critfall.data.RulesLoader;
 
 class RulesEditorTest {
 
-    /** The 0.2.16 default file: the last one written with weapon damage on. */
-    private static final String OLD_DEFAULT_FILE = RulesLoader.DEFAULT_FILE.replace(
-            "\"durability_break\": { \"enabled\": false", "\"durability_break\": { \"enabled\": true");
+    /** The 0.2.16 default file: the last one written with weapon damage on (and format_version 1). */
+    private static final String OLD_DEFAULT_FILE = RulesLoader.DEFAULT_FILE
+            .replace("\"durability_break\": { \"enabled\": false", "\"durability_break\": { \"enabled\": true")
+            .replace("\"format_version\": 2", "\"format_version\": 1");
 
     @TempDir
     Path dir;
@@ -107,7 +108,7 @@ class RulesEditorTest {
     void keysTheScreenDoesNotShowAreKept() {
         RulesEditor editor = RulesEditor.of("""
                 {
-                  "format_version": 1,
+                  "format_version": 2,
                   "advantage_sources": { "jump_attack": true, "sneak_attack": true },
                   "my_note": "keep me",
                   "crits": { "enabled": true }
@@ -118,7 +119,7 @@ class RulesEditorTest {
         assertEquals("keep me", written.get("my_note").getAsString());
         assertTrue(
                 written.getAsJsonObject("advantage_sources").get("sneak_attack").getAsBoolean());
-        assertEquals(1, written.get("format_version").getAsInt());
+        assertEquals(2, written.get("format_version").getAsInt());
         assertFalse(written.getAsJsonObject("crits").get("enabled").getAsBoolean());
         assertFalse(written.has("fumbles"), "a key the file leaves out is only written once changed");
     }
@@ -187,6 +188,19 @@ class RulesEditorTest {
     }
 
     @Test
+    void oldConfigShowsAndSavesTheNewArmorRule() throws Exception {
+        // A 0.2.17 file the server has not loaded yet: the screen shows what the loader will make of it.
+        RulesEditor editor = RulesEditor.of("{\"format_version\": 1, \"balance\": { \"global_damage_multiplier\": 1.0,"
+                + " \"disable_vanilla_armor_reduction\": true }}");
+        assertEquals("false", editor.value(setting("balance.disable_vanilla_armor_reduction")));
+        assertEquals("4", editor.value(setting("balance.armor_ac_divisor")));
+        Path file = dir.resolve("saved/rules.json");
+        editor.set(setting("balance.disable_vanilla_armor_reduction"), "true");
+        editor.save(file);
+        assertTrue(RulesLoader.load(file).balance().disableVanillaArmorReduction(), "a saved true stays");
+    }
+
+    @Test
     void weaponDamageIsOffOnlyInFreshConfigs() throws Exception {
         // A fresh config: the loader writes the default file, and the screen shows the same.
         Path fresh = dir.resolve("fresh/rules.json");
@@ -196,13 +210,16 @@ class RulesEditorTest {
         assertEquals(
                 "false", RulesEditor.read(dir.resolve("never-written.json")).value(RulesSchema.DURABILITY_BREAK));
 
-        // A config written by 0.2.16 or earlier says "enabled": true, and keeps it, untouched.
+        // A config written by 0.2.16 or earlier says "enabled": true, and keeps it, also when 0.2.18 moves the
+        // file to its armor rule.
         Path existing = dir.resolve("existing/rules.json");
         Files.createDirectories(existing.getParent());
         Files.writeString(existing, OLD_DEFAULT_FILE);
         assertNotEquals(RulesLoader.DEFAULT_FILE, OLD_DEFAULT_FILE);
         assertTrue(RulesLoader.load(existing).fumbles().durabilityBreak());
-        assertEquals(OLD_DEFAULT_FILE, Files.readString(existing), "loading never rewrites an existing file");
+        String migrated = Files.readString(existing);
+        assertTrue(RulesLoader.load(existing).fumbles().durabilityBreak());
+        assertEquals(migrated, Files.readString(existing), "loading rewrites an old file once, then never");
         RulesEditor editor = RulesEditor.read(existing);
         assertEquals("true", editor.value(RulesSchema.DURABILITY_BREAK));
 
