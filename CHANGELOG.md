@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.2.18] - 2026-10-29
+## [0.2.18] - 2026-11-03
 
 Armor reduces damage again, mob damage close to vanilla, players hit more often, difficulty scaling for
 mob hits, and readouts that show the damage actually taken.

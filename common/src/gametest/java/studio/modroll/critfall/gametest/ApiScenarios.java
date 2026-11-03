@@ -526,8 +526,8 @@ public final class ApiScenarios {
     // Wears the item now instead of on the entity's next tick, applying its modifiers as vanilla would.
     private static void equip(LivingEntity entity, EquipmentSlot slot, ItemStack stack) {
         entity.setItemSlot(slot, stack);
-        stack.forEachModifier(slot, (attribute, modifier) ->
-                entity.getAttribute(attribute).addOrUpdateTransientModifier(modifier));
+        stack.forEachModifier(
+                slot, (attribute, modifier) -> entity.getAttribute(attribute).addOrUpdateTransientModifier(modifier));
     }
 
     public static void contestResolvesWinnerAndTotals(GameTestHelper helper) {
