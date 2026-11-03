@@ -22,7 +22,7 @@ invulnerability / i-frame checks, before mitigation.** Only the hook differs.
 |---|---|---|
 | Hook | `LivingIncomingDamageEvent` (a first-class cancel/modify event) | `ServerLivingEntityEvents.ALLOW_DAMAGE` for the roll + cancel, plus a mixin on `LivingEntity` for amount/armor |
 | Cancel (MISS/FUMBLE) | `event.setCanceled(true)` | `ALLOW_DAMAGE` returns `false` |
-| Replace amount (HIT/CRIT) | `event.setAmount(rolled)` | `@ModifyVariable` on `actuallyHurt`'s amount |
+| Replace amount (HIT/CRIT) | `event.setAmount(rolled)` | `@ModifyVariable` on `actuallyHurt`'s amount, in `LivingEntity` and again in `Player`, which overrides it without calling super |
 
 Fabric has no event that can *modify* the incoming amount (`ALLOW_DAMAGE` is cancel-only), so a
 mixin is required — exactly as PLAN §4.1 anticipated (the only other mixin is for jump attacks,
@@ -30,7 +30,15 @@ below). It is kept
 minimal (amount substitution + armor bypass) and documented in `LivingEntityMixin`. The pipeline
 still runs exactly once, in `ALLOW_DAMAGE`, which fabric-api injects at the `isSleeping()` call in
 `hurt` — verified to sit after the invulnerability checks and before `actuallyHurt`, matching the
-NeoForge event's position.
+NeoForge event's position. Before 0.2.18 the substitution was on `LivingEntity` only, so on Fabric a
+rolled hit on a player landed vanilla's amount instead (still with armor bypassed); the `mobHitOnPlayer*`
+GameTests now cover it on both loaders.
+
+Both loaders hook the same two vanilla points with the same code for the rest: the readout's damage
+taken comes from a mixin on `CombatTracker.recordDamage`, which both `actuallyHurt`s call with the
+health damage after every reduction, and vanilla's difficulty scaling of a hit on a player is re-applied
+to the roll in common code (`DifficultyDamage`), since both loaders' hooks run after `Player.hurt` scaled
+the vanilla amount.
 
 ## Difference 2 — armor bypass mechanism
 

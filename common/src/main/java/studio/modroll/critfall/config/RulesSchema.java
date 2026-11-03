@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceParseException;
+import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.data.RulesLoader;
 
 /**
@@ -241,7 +242,18 @@ public final class RulesSchema {
             number("feedback.flavor.cooldown_ticks", 20, 0, NO_LIMIT),
             number("feedback.flavor.kill_chance_percent", 25, 0, 100),
             new Decimal("balance.global_damage_multiplier", "1.0"),
-            toggle("balance.disable_vanilla_armor_reduction", true),
+            toggle("balance.disable_vanilla_armor_reduction", false),
+            number("balance.armor_ac_divisor", Rules.Balance.DEFAULT_ARMOR_AC_DIVISOR, 1, RulesLoader.MAX_AC_DIVISOR),
+            number(
+                    "balance.toughness_ac_divisor",
+                    Rules.Balance.DEFAULT_TOUGHNESS_AC_DIVISOR,
+                    1,
+                    RulesLoader.MAX_AC_DIVISOR),
+            number(
+                    "balance.player_attack_bonus",
+                    Rules.Balance.DEFAULT_PLAYER_ATTACK_BONUS,
+                    -RulesLoader.MAX_PLAYER_ATTACK_BONUS,
+                    RulesLoader.MAX_PLAYER_ATTACK_BONUS),
             toggle("dry_run.enabled", false),
             toggle("modifier_providers.enabled", true),
             toggle("advantage_sources.jump_attack", true));

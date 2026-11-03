@@ -178,12 +178,13 @@ class RulesSchemaTest {
      */
     private static void assertParity(Setting setting, String input, JsonElement element) {
         JsonObject file = new JsonObject();
+        file.addProperty("format_version", Rules.FORMAT_VERSION); // a current file: RulesMigration leaves it alone
         put(file, setting, element);
         List<String> warnings = new ArrayList<>();
         Rules loaded = RulesLoader.parse(file, warnings::add);
         boolean loaderAccepts = warnings.isEmpty();
 
-        RulesEditor editor = RulesEditor.of("{}");
+        RulesEditor editor = RulesEditor.of("{\"format_version\": " + Rules.FORMAT_VERSION + "}");
         String before = editor.write();
         boolean screenAccepts = editor.set(setting, input);
         assertEquals(

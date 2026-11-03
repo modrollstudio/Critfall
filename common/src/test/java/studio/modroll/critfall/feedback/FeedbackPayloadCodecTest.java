@@ -114,6 +114,80 @@ class FeedbackPayloadCodecTest {
     }
 
     @Test
+    void damageTakenRoundTrips() {
+        RollFeedbackPayload payload = new RollFeedbackPayload(
+                AttackOutcome.HIT,
+                15,
+                17,
+                10,
+                12,
+                "1d10+4",
+                true,
+                Optional.empty(),
+                List.of(),
+                false,
+                RollMode.NORMAL,
+                OptionalInt.empty(),
+                0,
+                FlavorName.NONE,
+                FlavorName.NONE,
+                1.0F,
+                6.8F);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        RollFeedbackPayload.STREAM_CODEC.encode(buf, payload);
+        assertEquals(payload, RollFeedbackPayload.STREAM_CODEC.decode(buf));
+        assertEquals(
+                RollFeedbackPayload.TAKEN_UNKNOWN,
+                new RollFeedbackPayload(AttackOutcome.HIT, 13, 16, 10, 5, "1d6", true, Optional.empty(), List.of())
+                        .taken(),
+                "callers that predate the field leave it unknown");
+        assertEquals("critfall:roll_feedback_v4", RollFeedbackPayload.TYPE.id().toString());
+    }
+
+    @Test
+    void saveDamageTakenRoundTrips() {
+        SaveFeedbackPayload save = new SaveFeedbackPayload(
+                8,
+                10,
+                13,
+                false,
+                Rules.SaveOutcome.HALF,
+                "2d6",
+                7,
+                true,
+                Optional.empty(),
+                false,
+                RollMode.NORMAL,
+                OptionalInt.empty(),
+                FlavorName.NONE,
+                FlavorName.NONE,
+                2.8F);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        SaveFeedbackPayload.STREAM_CODEC.encode(buf, save);
+        assertEquals(save, SaveFeedbackPayload.STREAM_CODEC.decode(buf));
+        assertEquals(
+                RollFeedbackPayload.TAKEN_UNKNOWN,
+                new SaveFeedbackPayload(
+                                8,
+                                10,
+                                13,
+                                false,
+                                Rules.SaveOutcome.HALF,
+                                "2d6",
+                                7,
+                                true,
+                                Optional.empty(),
+                                false,
+                                RollMode.NORMAL,
+                                OptionalInt.empty(),
+                                FlavorName.NONE,
+                                FlavorName.NONE)
+                        .taken(),
+                "callers that predate the field leave it unknown");
+        assertEquals("critfall:save_feedback_v3", SaveFeedbackPayload.TYPE.id().toString());
+    }
+
+    @Test
     void rollPayloadRoundTripsWithoutFlavorOrConsequences() {
         RollFeedbackPayload payload =
                 new RollFeedbackPayload(AttackOutcome.HIT, 13, 16, 10, 5, "1d6+1", true, Optional.empty(), List.of());

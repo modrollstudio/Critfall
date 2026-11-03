@@ -27,6 +27,17 @@ class EffectiveProfilesTest {
     }
 
     @Test
+    void playerDerivedAttackBonusGetsThePlayerBonus() {
+        // An iron sword's 6 derives +3, and the shipped balance.player_attack_bonus adds 5.
+        assertEquals(
+                8, EffectiveEntityProfile.of(Optional.empty(), 0, 0, 6, true).attackBonus());
+        assertEquals(
+                3, EffectiveEntityProfile.of(Optional.empty(), 0, 0, 6, false).attackBonus());
+        assertEquals(
+                13, EffectiveEntityProfile.of(Optional.empty(), 15, 0, 6, true).armorClass(), "full iron");
+    }
+
+    @Test
     void entityProfileValuesWin() {
         EntityProfile profile = EntityProfile.parse(
                 net.minecraft.resources.ResourceLocation.parse("test:e"),

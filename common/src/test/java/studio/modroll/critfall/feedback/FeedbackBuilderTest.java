@@ -226,6 +226,89 @@ class FeedbackBuilderTest {
     }
 
     @Test
+    void hitCarriesTheDamageTaken() {
+        assertEquals(
+                6.5F, buildTaken(AttackOutcome.HIT, true, Rules.DEFAULTS, 6.5F).taken());
+        assertEquals(
+                6.5F, buildTaken(AttackOutcome.CRIT, true, Rules.DEFAULTS, 6.5F).taken());
+    }
+
+    @Test
+    void damageTakenIsUnknownWhereTheReadoutShowsNoDamage() {
+        assertEquals(
+                RollFeedbackPayload.TAKEN_UNKNOWN,
+                buildTaken(AttackOutcome.MISS, true, Rules.DEFAULTS, 0.0F).taken());
+        assertEquals(
+                RollFeedbackPayload.TAKEN_UNKNOWN,
+                buildTaken(AttackOutcome.HIT, false, Rules.DEFAULTS, 6.5F).taken(),
+                "damage dice off: the readout shows no roll to compare with");
+        Rules d = Rules.DEFAULTS;
+        Rules dryRun = new Rules(
+                d.attackRolls(),
+                d.damageDice(),
+                d.crits(),
+                d.fumbles(),
+                d.spells(),
+                d.fallbacks(),
+                d.feedback(),
+                d.balance(),
+                new Rules.DryRun(true),
+                d.modifierProviders(),
+                d.advantageSources());
+        assertEquals(
+                RollFeedbackPayload.TAKEN_UNKNOWN,
+                buildTaken(AttackOutcome.HIT, true, dryRun, 3.0F).taken(),
+                "dry-run: what was taken is vanilla's damage, not the roll's");
+    }
+
+    private RollFeedbackPayload buildTaken(AttackOutcome outcome, boolean showDamage, Rules rules, float taken) {
+        return FeedbackBuilder.buildAttack(
+                new AttackResult(outcome, 13, 16, 10, outcome == AttackOutcome.MISS ? 0 : 5),
+                false,
+                "1d6+1",
+                showDamage,
+                List.of(),
+                pool(),
+                ATTACKER,
+                TARGET,
+                rules,
+                new DiceRoller(SequenceRandom.ofDieFaces()),
+                target,
+                100,
+                1.0F,
+                false,
+                taken);
+    }
+
+    @Test
+    void saveCarriesTheDamageTakenWhenItShowsDamage() {
+        assertEquals(3.0F, buildSaveTaken(true, Rules.DEFAULTS, 3.0F).taken());
+        assertEquals(
+                RollFeedbackPayload.TAKEN_UNKNOWN,
+                buildSaveTaken(false, Rules.DEFAULTS, 3.0F).taken(),
+                "no damage shown, nothing to compare with");
+    }
+
+    private SaveFeedbackPayload buildSaveTaken(boolean showDamage, Rules rules, float taken) {
+        return FeedbackBuilder.buildSave(
+                new SaveResult(8, 10, 13),
+                false,
+                Rules.SaveOutcome.HALF,
+                "2d6",
+                7,
+                showDamage,
+                pool(),
+                ATTACKER,
+                TARGET,
+                rules,
+                new DiceRoller(SequenceRandom.ofDieFaces()),
+                target,
+                100,
+                false,
+                taken);
+    }
+
+    @Test
     void flavorLineCarriesBothNames() {
         RollFeedbackPayload payload = build(AttackOutcome.CRIT, 20, false, 100);
         assertEquals(ATTACKER, payload.flavorAttacker());

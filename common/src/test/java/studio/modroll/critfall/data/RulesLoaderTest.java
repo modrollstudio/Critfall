@@ -87,6 +87,76 @@ class RulesLoaderTest {
     }
 
     @Test
+    void armorReducesRolledDamageAndGivesQuarterAcByDefault() {
+        Rules.Balance balance = RulesLoader.parse(json("{}"), w -> {}).balance();
+        assertFalse(balance.disableVanillaArmorReduction());
+        assertEquals(4, balance.armorAcDivisor());
+        assertEquals(4, balance.toughnessAcDivisor());
+        assertEquals(5, balance.playerAttackBonus());
+    }
+
+    @Test
+    void oldFileIsMovedToTheNewArmorRuleOnce(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("critfall/rules.json");
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, RulesMigrationTest.OLD_DEFAULT_FILE);
+
+        Rules rules = RulesLoader.load(file);
+        assertFalse(rules.balance().disableVanillaArmorReduction());
+        assertEquals(4, rules.balance().armorAcDivisor());
+        String migrated = Files.readString(file);
+        assertTrue(migrated.contains("\"format_version\": 2"), migrated);
+        assertEquals(Rules.DEFAULTS, RulesLoader.parse(json(migrated), w -> {}));
+
+        // Loading again changes nothing, and a pack maker's true afterwards stays.
+        assertEquals(rules, RulesLoader.load(file));
+        assertEquals(migrated, Files.readString(file));
+        Files.writeString(
+                file,
+                migrated.replace(
+                        "\"disable_vanilla_armor_reduction\": false", "\"disable_vanilla_armor_reduction\": true"));
+        assertTrue(RulesLoader.load(file).balance().disableVanillaArmorReduction());
+        assertTrue(RulesLoader.load(file).balance().disableVanillaArmorReduction());
+    }
+
+    @Test
+    void armorClassDivisorDoesNotFollowTheFlag() {
+        Rules.Balance balance = RulesLoader.parse(
+                        json("{\"format_version\": 2, \"balance\": {\"disable_vanilla_armor_reduction\": true}}"),
+                        w -> {})
+                .balance();
+        assertTrue(balance.disableVanillaArmorReduction());
+        assertEquals(4, balance.armorAcDivisor());
+    }
+
+    @Test
+    void balanceArmorClassAndPlayerBonusParse() {
+        List<String> warnings = new ArrayList<>();
+        Rules.Balance balance = RulesLoader.parse(json("""
+                                {"balance": {"disable_vanilla_armor_reduction": true, "armor_ac_divisor": 3,
+                                             "toughness_ac_divisor": 6, "player_attack_bonus": -2}}
+                                """), warnings::add).balance();
+        assertTrue(warnings.isEmpty(), warnings.toString());
+        assertEquals(3, balance.armorAcDivisor());
+        assertEquals(6, balance.toughnessAcDivisor());
+        assertEquals(-2, balance.playerAttackBonus());
+    }
+
+    @Test
+    void badArmorClassDivisorsWarnAndFallBack() {
+        List<String> warnings = new ArrayList<>();
+        Rules.Balance balance = RulesLoader.parse(
+                        json("{\"balance\": {\"armor_ac_divisor\": 0, \"toughness_ac_divisor\": -1,"
+                                + " \"player_attack_bonus\": 99}}"),
+                        warnings::add)
+                .balance();
+        assertEquals(3, warnings.size(), warnings.toString());
+        assertEquals(4, balance.armorAcDivisor());
+        assertEquals(4, balance.toughnessAcDivisor());
+        assertEquals(5, balance.playerAttackBonus());
+    }
+
+    @Test
     void parsesFeedbackFlavorBlock() {
         Rules rules = RulesLoader.parse(JsonParser.parseString("""
                                 { "feedback": { "roll_visibility": "attacker_only",

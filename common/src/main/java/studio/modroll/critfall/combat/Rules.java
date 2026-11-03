@@ -24,7 +24,8 @@ public record Rules(
         ModifierProviders modifierProviders,
         AdvantageSources advantageSources) {
 
-    public static final int FORMAT_VERSION = 1;
+    /** 2 since 0.2.18; a file below it is migrated once when loaded ({@code RulesMigration}). */
+    public static final int FORMAT_VERSION = 2;
 
     /** For call sites that predate advantage sources, which default on. */
     public Rules(
@@ -257,8 +258,33 @@ public record Rules(
         public static final Feedback DEFAULTS = new Feedback(FeedbackVisibility.EVERYONE, Flavor.DEFAULTS);
     }
 
-    public record Balance(double globalDamageMultiplier, boolean disableVanillaArmorReduction) {
-        public static final Balance DEFAULTS = new Balance(1.0, true);
+    /**
+     * @param disableVanillaArmorReduction rolled hits skip vanilla's armor reduction, leaving armor to AC
+     *     alone (the rule before 0.2.18)
+     * @param armorAcDivisor armor points per point of derived AC: {@code AC = 10 + armor / armorAcDivisor +
+     *     toughness / toughnessAcDivisor}
+     * @param playerAttackBonus added to a player's derived attack bonus (one with no profile value)
+     */
+    public record Balance(
+            double globalDamageMultiplier,
+            boolean disableVanillaArmorReduction,
+            int armorAcDivisor,
+            int toughnessAcDivisor,
+            int playerAttackBonus) {
+        public static final int DEFAULT_ARMOR_AC_DIVISOR = 4;
+        public static final int DEFAULT_TOUGHNESS_AC_DIVISOR = 4;
+        public static final int DEFAULT_PLAYER_ATTACK_BONUS = 5;
+        public static final Balance DEFAULTS = new Balance(1.0, false);
+
+        /** The divisors and player bonus at their defaults, as a file that leaves them out reads. */
+        public Balance(double globalDamageMultiplier, boolean disableVanillaArmorReduction) {
+            this(
+                    globalDamageMultiplier,
+                    disableVanillaArmorReduction,
+                    DEFAULT_ARMOR_AC_DIVISOR,
+                    DEFAULT_TOUGHNESS_AC_DIVISOR,
+                    DEFAULT_PLAYER_ATTACK_BONUS);
+        }
     }
 
     /** PLAN §8.2.3 dry-run: rolls are computed and shown but vanilla damage still applies. */

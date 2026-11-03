@@ -176,4 +176,14 @@ public class ApiGameTests implements FabricGameTest {
     public void attackRerollOnesRerollsANaturalOne(GameTestHelper helper) {
         ApiScenarios.attackRerollOnesRerollsANaturalOne(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void armorClassBreakdownMatchesTheEffectiveArmorClass(GameTestHelper helper) {
+        ApiScenarios.armorClassBreakdownMatchesTheEffectiveArmorClass(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void armorClassBreakdownLeavesOutOneSlot(GameTestHelper helper) {
+        ApiScenarios.armorClassBreakdownLeavesOutOneSlot(helper);
+    }
 }

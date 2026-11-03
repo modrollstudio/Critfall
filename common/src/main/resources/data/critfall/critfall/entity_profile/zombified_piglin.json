@@ -3,6 +3,6 @@
   "matches": ["minecraft:zombified_piglin"],
   "armor_class": 11,
   "attack_bonus": 4,
-  "damage": { "melee": "1d8+2" },
+  "damage": { "melee": "1d8+1" },
   "damage_modifiers": { "immune": ["#minecraft:is_fire"] }
 }

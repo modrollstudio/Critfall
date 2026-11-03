@@ -153,13 +153,13 @@ public final class FlavorScenarios {
                 pig.setCustomName(Component.literal(name));
             }
             pig.setHealth(3.0F);
-            // d20 13 + 3 vs AC 10 hits, 1d6+1 rolls 6 for 7 damage
+            // d20 13 + 3 vs AC 10 hits, 1d4+1 rolls 4 for 5 damage
             CombatScenarios.withRolls(
                     helper,
                     rules,
                     () -> pig.hurt(helper.getLevel().damageSources().mobAttack(husk), 3.0F),
                     13,
-                    6);
+                    4);
             RollFeedbackPayload payload = sink.lastRoll();
             if (payload == null || !pig.isDeadOrDying()) {
                 helper.fail("the husk should have killed the pig, payload " + payload);
@@ -231,7 +231,7 @@ public final class FlavorScenarios {
             RollFeedbackPayload[] dispatched = new RollFeedbackPayload[1];
             withFlavorPick(
                     lastLine,
-                    // d20 13 + 3 vs AC 10 hits, 1d6+1 rolls 6 for 7 damage
+                    // d20 13 + 3 vs AC 10 hits, 1d4+1 rolls 4 for 5 damage
                     () -> CombatScenarios.withRolls(
                             helper,
                             CombatScenarios.EVERY_KILL_LINE,
@@ -240,7 +240,7 @@ public final class FlavorScenarios {
                                 dispatched[0] = sink.lastRoll();
                             },
                             13,
-                            6));
+                            4));
             RollFeedbackPayload payload = dispatched[0];
             if (payload == null || !pig.isDeadOrDying()) {
                 helper.fail("the husk should have killed the pig, payload " + payload);

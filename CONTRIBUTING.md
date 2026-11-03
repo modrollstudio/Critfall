@@ -44,9 +44,7 @@ These are enforced in review (see `PLAN.md` for the full spec):
 - Every config and datapack JSON carries a `format_version`. When a format changes incompatibly,
   bump its `format_version` and add a migration so old files keep loading; unknown keys always warn
   rather than crash, so additive changes are safe.
-- Releases are cut by tagging `vX.Y.Z` (matching `mod_version` in `gradle.properties`) and publishing
-  a GitHub release — the `Publish` workflow then uploads to Modrinth and CurseForge. Move the
-  `CHANGELOG.md` `[Unreleased]` section under the new version with the release date.
+- Releases are done by the maintainer.
 
 ## Code style
 
