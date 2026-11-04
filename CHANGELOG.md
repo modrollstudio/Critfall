@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `HazardSave.withSource(Entity)` names who set a hazard off, such as a breath attack or a barrel a player
+  lit. The hurt then comes from them, like their own attack: they get the kill, a player's kill drops
+  experience, and a mob hurt by it turns on them. Without a source a hazard works as before.
+
 ## [0.2.18] - 2026-11-03
 
 Armor reduces damage again, mob damage close to vanilla, players hit more often, difficulty scaling for

@@ -317,6 +317,20 @@ AttackResult result = RollService.performHazardAttack(player, darts);
   [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls) listeners (`event.id()`), so they can
   match a hazard without parsing its label. Optional: without one, `id()` is empty and nothing else
   changes. The id is not shown in the readout.
+- **Source** (since 0.2.19): `HazardSave.withSource(Entity)` names who set the hazard off, such as a breath
+  attack or a barrel a player lit. The rolls stay the hazard's, but the hurt comes from the source, both as
+  the direct and the causing entity, like a player's attack: the source gets the kill, a player's kill drops
+  experience and counts for player only loot, and a mob hurt by it turns on them. A player target is
+  protected by the server's PvP and team rules as against any player's attack; the result still reports the
+  rolled damage. The death message is the damage type's `death.attack.<id>` with the source as `%2$s`, so
+  pick a type that names the attacker, such as `DamageTypes.PLAYER_EXPLOSION`. Without a source, `source()`
+  is empty and nothing changes. A `HazardAttack` has no source yet.
+
+  ```java
+  HazardSave breath = HazardSave.of("Fire breath", DamageTypes.FIREBALL,
+          ModifierProvider.DEXTERITY_SAVE, 13, DiceExpression.parse("2d6")).withSource(player);
+  RollService.performHazardSave(target, breath);
+  ```
 - **Bonuses and rerolls** (since 0.2.14): listeners can `addBonus(int)` to the save or attack total and
   `rerollOnes()`; see [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls).
 - **Crits and fumbles:** a natural 20 hits and uses the server's crit rule (`crits.rule`); a natural 1

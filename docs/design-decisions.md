@@ -2,6 +2,18 @@
 
 Decisions with lasting consequences, and why they were made. Newest first.
 
+## 0.2.19: A hazard's source is credited like an attacker
+
+**Decision:** `HazardSave` takes an optional source entity (`withSource`). The hazard's damage source then
+has it as both the direct and the causing entity, the same shape as a player's own attack, and Critfall
+leaves the rest to vanilla: kill credit, experience, player only loot, mob anger, PvP and team rules, the
+death message.
+
+**Why:** Companion mods have hazards a player sets off (a breath attack, a lit barrel). Crediting through the
+damage source gives them everything a normal attack gets without Critfall tracking kills itself. The source
+is a new record component at the end, with the old constructors kept, so every existing call compiles and
+behaves as before. The rolls stay the hazard's: the source adds no bonus and fires no attack events.
+
 ## 0.2.18: Armor reduces rolled hits again, and counts for half as much AC
 
 **Decision:** `balance.disable_vanilla_armor_reduction` now ships **off**: a rolled hit is reduced by
