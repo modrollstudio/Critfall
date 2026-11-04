@@ -25,7 +25,7 @@ invulnerability / i-frame checks, before mitigation.** Only the hook differs.
 | Replace amount (HIT/CRIT) | `event.setAmount(rolled)` | `@ModifyVariable` on `actuallyHurt`'s amount, in `LivingEntity` and again in `Player`, which overrides it without calling super |
 
 Fabric has no event that can *modify* the incoming amount (`ALLOW_DAMAGE` is cancel-only), so a
-mixin is required — exactly as PLAN §4.1 anticipated (the only other mixin is for jump attacks,
+mixin is required (the only other mixin is for jump attacks,
 below). It is kept
 minimal (amount substitution + armor bypass) and documented in `LivingEntityMixin`. The pipeline
 still runs exactly once, in `ALLOW_DAMAGE`, which fabric-api injects at the `isSleeping()` call in

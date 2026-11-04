@@ -7,7 +7,7 @@ import studio.modroll.critfall.api.dice.DiceExpression;
  * docs/rules-config.md). Turning any flag off must cleanly restore vanilla behavior for that
  * mechanic only — GameTests enforce this per flag.
  *
- * <p>Defaults are conservative about fumble frequency (PLAN.md §9.1): real-time combat rolls
+ * <p>Defaults are conservative about fumble frequency: real-time combat rolls
  * 30+ attacks/minute, so raw 5% nat-1 consequences would fire constantly. Confirmation roll is ON
  * and a 10s cooldown applies out of the box.
  */
@@ -198,7 +198,7 @@ public record Rules(
     }
 
     /**
-     * The save-based spell resolution (M5): a spell profile with {@code "resolution": "save"} has
+     * The save-based spell resolution: a spell profile with {@code "resolution": "save"} has
      * the TARGET roll d20 + save bonus vs a DC instead of the caster rolling to hit — AoE spells
      * feel wrong with to-hit. {@code defaultDc}/{@code onSuccess} apply when the profile does not
      * override them. With {@code enabled} off, save-profiles resolve as attack rolls instead.
@@ -213,7 +213,7 @@ public record Rules(
 
     /** What happens for entities/items no profile matches. */
     public enum FallbackMode {
-        /** Derive plausible stats from vanilla attributes (PLAN.md §4.3). */
+        /** Derive plausible stats from vanilla attributes. */
         DERIVE,
         /** Leave the damage event entirely vanilla. */
         VANILLA_PASSTHROUGH
@@ -234,7 +234,7 @@ public record Rules(
 
     /**
      * Server-side feedback policy. {@code visibility} gates who receives roll feedback at all;
-     * {@code flavor} is the server-authoritative anti-spam gate for narrative flavor lines (M6).
+     * {@code flavor} is the server-authoritative anti-spam gate for narrative flavor lines.
      * Sounds/particles/flavor-display toggles live in the CLIENT config, not here — rendering is
      * client-side.
      */
@@ -287,7 +287,7 @@ public record Rules(
         }
     }
 
-    /** PLAN §8.2.3 dry-run: rolls are computed and shown but vanilla damage still applies. */
+    /** Dry-run: rolls are computed and shown but vanilla damage still applies. */
     public record DryRun(boolean enabled) {
         public static final DryRun DEFAULTS = new DryRun(false);
     }

@@ -54,7 +54,7 @@ import studio.modroll.critfall.tools.CoverageReport;
 import studio.modroll.critfall.tools.DatapackGenerator;
 
 /**
- * Debug commands for pack devs (PLAN.md §8.2): {@code /critfall inspect [entity]} shows the
+ * Debug commands for pack devs: {@code /critfall inspect [entity]} shows the
  * effective combat stats and which profile file won (no argument = whatever the caller's
  * crosshair points at); {@code /critfall check [item]} does the same for the held (or named)
  * item. Both are read-only and require permission level 2.
@@ -253,7 +253,7 @@ public final class CritfallCommands {
 
     /**
      * Scans every living entity type and weapon-like item, derives a profile for each, and writes an
-     * editable datapack (PLAN §8.2.1). Writes into the world's {@code datapacks/} folder so a
+     * editable datapack. Writes into the world's {@code datapacks/} folder so a
      * following {@code /reload} loads it. Overwriting an existing generated pack needs {@code confirm}.
      */
     private static int generate(CommandSourceStack source, boolean onlyMissing, boolean confirmed) {
@@ -376,7 +376,7 @@ public final class CritfallCommands {
     }
 
     /**
-     * Exports a coverage report (PLAN §8.2.4): every living entity and weapon-like item, whether an
+     * Exports a coverage report: every living entity and weapon-like item, whether an
      * explicit profile or the fallback drives it, plus the effective values. CSV + JSON, into a
      * {@code critfall-reports/} folder in the game/server directory.
      */

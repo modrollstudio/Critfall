@@ -104,7 +104,7 @@ The server decides *what* to send and *whether* a flavor line is allowed; it nev
 - `flavor.enabled` — master switch for sending flavor lines.
 - `flavor.cooldown_ticks` (default `20`) — per-target minimum ticks between non-priority flavor lines.
 
-(PLAN's earlier `feedback.sounds` / `feedback.particles` were relocated here to the client config,
+(The `feedback.sounds` / `feedback.particles` keys once in `rules.json` moved here to the client config,
 since rendering is client-side. Old configs carrying them load fine — the keys are ignored with a
 warning.)
 

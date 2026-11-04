@@ -41,7 +41,7 @@ public final class RollRuntime {
         return rules;
     }
 
-    /** Injection point for tests and (from M3) the dry-run/config commands. */
+    /** Injection point for tests and the dry-run/config commands. */
     public static void setRoller(DiceRoller newRoller) {
         roller = newRoller;
     }

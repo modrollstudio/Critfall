@@ -5,7 +5,7 @@ import java.util.UUID;
 import studio.modroll.critfall.combat.SuppressionStore;
 
 /**
- * The per-entity suppression flag from PLAN §12: while an entity is suppressed, an external
+ * The per-entity suppression flag: while an entity is suppressed, an external
  * orchestrator (e.g. the turn-based companion mod) owns its combat and Critfall's automatic damage
  * interception stands down for any attack it is involved in. In-memory only — suppression is
  * cleared internally on server stop, since a restart ends any encounter. Keyed by entity UUID.

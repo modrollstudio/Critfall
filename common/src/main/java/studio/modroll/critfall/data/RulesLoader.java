@@ -231,7 +231,7 @@ public final class RulesLoader {
     }
 
     /**
-     * Accepts {@code "set_to_1"}, {@code "percent_loss"}, and the PLAN.md shorthand
+     * Accepts {@code "set_to_1"}, {@code "percent_loss"}, and the shorthand
      * {@code "percent_loss:25"}; an explicit {@code percent} key overrides the shorthand suffix.
      */
     private static Rules.DurabilityMode parseDurabilityMode(String text, Consumer<String> warn) {

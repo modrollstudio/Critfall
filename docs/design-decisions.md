@@ -54,7 +54,7 @@ lower AC on every mob, which would also change fights between mobs.
 reduction is zeroed out for that hit (`disable_vanilla_armor_reduction` flag, default **on**, in
 the hardcoded M2 rules — it becomes a `rules.json` flag in M3).
 
-**Problem (PLAN.md §9.4):** Armor would count twice. A target's Armor Class is derived from its
+**Problem:** Armor would count twice. A target's Armor Class is derived from its
 armor and toughness attributes (`AC = 10 + floor(armor/2) + floor(toughness/4)`), so armor already
 makes you *harder to hit*. If vanilla then also reduced the damage of the hits that land, heavily
 armored targets would be nearly unkillable and the tabletop math would collapse.

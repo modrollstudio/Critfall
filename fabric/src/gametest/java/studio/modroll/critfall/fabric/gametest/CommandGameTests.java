@@ -8,7 +8,7 @@ import studio.modroll.critfall.gametest.DryRunScenarios;
 import studio.modroll.critfall.gametest.GenerateScenarios;
 import studio.modroll.critfall.gametest.ReportScenarios;
 
-/** Fabric registration shim: delegates to the shared {@link CommandScenarios} bodies (M8). */
+/** Fabric registration shim: delegates to the shared {@link CommandScenarios} bodies. */
 public class CommandGameTests implements FabricGameTest {
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)

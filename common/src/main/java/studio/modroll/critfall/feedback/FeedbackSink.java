@@ -6,7 +6,7 @@ import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
 /**
- * The loader-agnostic seam for sending feedback (PLAN §4.5/§12.4). The internal pipeline and API
+ * The loader-agnostic seam for sending feedback. The internal pipeline and API
  * consumers both emit through {@link #get()}; on NeoForge the real sink forwards to the packet
  * dispatcher, while headless/common contexts keep the {@link #NOOP} default. Set once at mod init.
  */
