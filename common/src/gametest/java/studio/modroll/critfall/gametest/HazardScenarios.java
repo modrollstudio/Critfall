@@ -10,8 +10,11 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.Pig;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
 import studio.modroll.critfall.api.HazardAttack;
 import studio.modroll.critfall.api.HazardSave;
 import studio.modroll.critfall.api.ModifierProvider;
@@ -645,6 +648,68 @@ public final class HazardScenarios {
         helper.succeed();
     }
 
+    /** A hazard a player set off credits them: the hurt, the kill, and the experience only a player kill drops. */
+    public static void sourcedHazardSaveCreditsTheKill(GameTestHelper helper) {
+        Pig pig = spawnPig(helper);
+        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        // The source goes on first, so every wither after it must carry it.
+        HazardSave barrel = HazardSave.of(
+                        "Lit barrel", DamageTypes.PLAYER_EXPLOSION, ModifierProvider.DEXTERITY_SAVE, 13, TWO_D6)
+                .withSource(player)
+                .withMode(RollMode.NORMAL)
+                .withOnSuccess(SuccessDamage.HALF)
+                .withId(ResourceLocation.parse("critfall_test:lit_barrel"));
+        run(
+                helper,
+                null,
+                sink -> {
+                    // d20 5 fails DC 13; 2d6 rolls 6 + 6 = 12, past the pig's 10 health.
+                    HazardSaveResult result = RollService.performHazardSave(pig, barrel);
+                    if (result.saved() || result.damage() != 12 || pig.isAlive()) {
+                        helper.fail("expected a failed save killing the pig, got " + result);
+                    }
+                    if (pig.getLastDamageSource() == null
+                            || pig.getLastDamageSource().getEntity() != player) {
+                        helper.fail("the hurt must come from the player, was " + pig.getLastDamageSource());
+                    }
+                    if (pig.getKillCredit() != player || pig.getLastHurtByMob() != player) {
+                        helper.fail("the player must get the kill, got " + pig.getKillCredit());
+                    }
+                    expectExperience(helper, pig, true);
+                    expectReadout(helper, sink, pig, "Lit barrel: DEX save d20 5+0=5 vs DC 13 — FAILED 2d6 = 12");
+                },
+                5,
+                6,
+                6);
+        helper.succeed();
+    }
+
+    /** Without a source, a lethal hazard credits nobody, as before. */
+    public static void unsourcedHazardSaveCreditsNobody(GameTestHelper helper) {
+        Pig pig = spawnPig(helper);
+        run(
+                helper,
+                null,
+                sink -> {
+                    HazardSaveResult result = RollService.performHazardSave(pig, spikes());
+                    if (result.damage() != 12 || pig.isAlive()) {
+                        helper.fail("expected a failed save killing the pig, got " + result);
+                    }
+                    if (pig.getLastDamageSource() == null
+                            || pig.getLastDamageSource().getEntity() != null) {
+                        helper.fail("the hurt must have no entity, was " + pig.getLastDamageSource());
+                    }
+                    if (pig.getKillCredit() != null) {
+                        helper.fail("nobody gets the kill, got " + pig.getKillCredit());
+                    }
+                    expectExperience(helper, pig, false);
+                },
+                5,
+                6,
+                6);
+        helper.succeed();
+    }
+
     private static void run(
             GameTestHelper helper, ModifierProvider provider, Consumer<CapturingFeedbackSink> action, int... faces) {
         CapturingFeedbackSink sink = new CapturingFeedbackSink();
@@ -687,6 +752,15 @@ public final class HazardScenarios {
         String readout = payload == null ? null : CombatText.actionBar(payload).getString();
         if (!expected.equals(readout)) {
             helper.fail("expected the readout \"" + expected + "\", was \"" + readout + "\"");
+        }
+    }
+
+    private static void expectExperience(GameTestHelper helper, LivingEntity dead, boolean dropped) {
+        boolean found = !helper.getLevel()
+                .getEntitiesOfClass(ExperienceOrb.class, dead.getBoundingBox().inflate(2))
+                .isEmpty();
+        if (found != dropped) {
+            helper.fail(dropped ? "a player kill must drop experience" : "a kill by nobody drops no experience");
         }
     }
 
