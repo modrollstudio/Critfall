@@ -6,7 +6,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import studio.modroll.critfall.gametest.FeedbackScenarios;
 import studio.modroll.critfall.gametest.FlavorScenarios;
 
-/** Fabric registration shim: delegates to the shared {@link FeedbackScenarios} bodies (M8). */
+/** Fabric registration shim: delegates to the shared {@link FeedbackScenarios} bodies. */
 public class FeedbackGameTests implements FabricGameTest {
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)

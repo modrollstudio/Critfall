@@ -5,7 +5,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import studio.modroll.critfall.gametest.CombatScenarios;
 
-/** Fabric registration shim: delegates to the shared {@link CombatScenarios} bodies (M8). */
+/** Fabric registration shim: delegates to the shared {@link CombatScenarios} bodies. */
 public class CombatGameTests implements FabricGameTest {
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)

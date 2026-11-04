@@ -14,7 +14,7 @@ import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.Rules;
 
 /**
- * S2C feedback for one resolved saving throw (M6). Flat primitives only; see {@link RollFeedbackPayload}, whose
+ * S2C feedback for one resolved saving throw. Flat primitives only; see {@link RollFeedbackPayload}, whose
  * {@code taken} this shares: the health the damage actually took, shown after the damage when it differs.
  */
 public record SaveFeedbackPayload(
@@ -127,7 +127,7 @@ public record SaveFeedbackPayload(
                 OptionalInt.empty());
     }
 
-    /** Convenience for the common non-dry-run case (and the M6 tests that predate the flag). */
+    /** Convenience for the common non-dry-run case (and the tests that predate the flag). */
     public SaveFeedbackPayload(
             int natural,
             int saveTotal,

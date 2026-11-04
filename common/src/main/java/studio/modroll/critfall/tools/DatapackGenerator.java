@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import studio.modroll.critfall.combat.Derivation;
 
 /**
- * Pure datapack scaffolder for {@code /critfall generate} (PLAN §8.2.1): given the vanilla stats a
+ * Pure datapack scaffolder for {@code /critfall generate}: given the vanilla stats a
  * pack dev's entities and weapons already expose, it produces a complete, editable set of derived
  * entity/item profiles. No registry access or file IO here — the command layer collects the stats
  * and writes the returned {@code path → json} map to disk, so this stays JVM-testable.

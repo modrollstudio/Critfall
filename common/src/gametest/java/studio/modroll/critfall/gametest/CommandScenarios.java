@@ -14,7 +14,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Runs {@code /critfall} through the REAL command dispatcher — not by calling the handler
- * methods directly. M3's unit-style coverage exercised the command logic but not its registration
+ * methods directly. The unit tests exercised the command logic but not its registration
  * on the server, which nearly shipped broken; these tests fail if the tree is not registered,
  * parses differently, or the raycast default stops finding entities.
  */

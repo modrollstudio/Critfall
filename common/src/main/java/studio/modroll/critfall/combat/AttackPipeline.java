@@ -19,7 +19,7 @@ import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
- * The single, loader-agnostic attack-resolution path (PLAN §2.5 "API-first"): fire
+ * The single, loader-agnostic attack-resolution path: fire
  * {@link PreAttackRollEvent}, roll via {@link CombatEngine}, fire {@link PostAttackRollEvent} plus
  * the crit/fumble events, then run outcome tables. Both the automatic {@code DamageEventHandler} and
  * {@link studio.modroll.critfall.api.RollService#performAttack} call this, so listeners see every attack

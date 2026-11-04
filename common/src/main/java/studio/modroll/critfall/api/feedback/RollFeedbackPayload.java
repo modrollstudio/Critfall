@@ -15,7 +15,7 @@ import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
 
 /**
- * S2C feedback for one resolved attack roll (M6). Flat primitives only — the client rebuilds every
+ * S2C feedback for one resolved attack roll. Flat primitives only — the client rebuilds every
  * {@link net.minecraft.network.chat.Component} from these fields, and the modless fallback renders
  * the same data server-side via {@link studio.modroll.critfall.combat.CombatText}. {@code flavorKey} is
  * present only when the server's anti-spam gate let a flavor line through; {@code consequences} lists
@@ -187,7 +187,7 @@ public record RollFeedbackPayload(
                 0);
     }
 
-    /** Convenience for the common non-dry-run case (and the M6 tests that predate the flag). */
+    /** Convenience for the common non-dry-run case (and the tests that predate the flag). */
     public RollFeedbackPayload(
             AttackOutcome outcome,
             int natural,

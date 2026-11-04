@@ -4,9 +4,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 /**
- * What fires an outcome table. Only the shapes named in PLAN.md §4.2 exist: natural 1/20, a miss
- * margin, and a natural-roll range. The M4 executor gives these their runtime semantics; M3 only
- * parses and validates.
+ * What fires an outcome table. Only these shapes exist: natural 1/20, a miss
+ * margin, and a natural-roll range. {@code OutcomeExecutor} gives these their runtime
+ * semantics; this type only parses and validates them.
  */
 public sealed interface Trigger {
 

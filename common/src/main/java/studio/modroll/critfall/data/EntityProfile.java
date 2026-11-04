@@ -60,7 +60,7 @@ public record EntityProfile(
             throw new IllegalArgumentException("'armor_class' must be at least 1");
         }
         OptionalInt attackBonus = j.optionalInt("attack_bonus");
-        // Added vs the target's d20 saving throw against save-based spells (M5); absent = +0.
+        // Added vs the target's d20 saving throw against save-based spells; absent = +0.
         OptionalInt saveBonus = j.optionalInt("save_bonus");
 
         LenientJson damage = j.object("damage");

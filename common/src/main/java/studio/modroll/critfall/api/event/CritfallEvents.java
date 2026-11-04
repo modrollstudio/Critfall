@@ -12,7 +12,7 @@ import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.dice.RollMode;
 
 /**
- * The public, loader-agnostic event bus for Critfall (PLAN §4.4). Mods and KubeJS scripts register
+ * The public, loader-agnostic event bus for Critfall. Mods and KubeJS scripts register
  * listeners here; both the automatic damage pipeline and {@link studio.modroll.critfall.api.RollService}
  * fire through it, so a listener sees every attack from either path. A listener that throws is caught
  * and logged — one bad script must not break combat for the server.

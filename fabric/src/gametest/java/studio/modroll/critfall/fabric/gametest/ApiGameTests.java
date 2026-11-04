@@ -8,7 +8,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.LivingEntity;
 import studio.modroll.critfall.gametest.ApiScenarios;
 
-/** Fabric registration shim: delegates to the shared {@link ApiScenarios} bodies (M8). */
+/** Fabric registration shim: delegates to the shared {@link ApiScenarios} bodies. */
 public class ApiGameTests implements FabricGameTest {
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)

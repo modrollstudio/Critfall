@@ -7,7 +7,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.gametest.CombatScenarios;
 
-/** NeoForge registration shim: delegates to the shared {@link CombatScenarios} bodies (M8). */
+/** NeoForge registration shim: delegates to the shared {@link CombatScenarios} bodies. */
 @GameTestHolder(Critfall.MOD_ID)
 @PrefixGameTestTemplate(false)
 public class CombatGameTests {

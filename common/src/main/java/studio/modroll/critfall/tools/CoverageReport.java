@@ -7,7 +7,7 @@ import com.google.gson.JsonObject;
 import java.util.List;
 
 /**
- * Pure formatting for the {@code /critfall report} coverage export (PLAN §8.2.4): rows describing
+ * Pure formatting for the {@code /critfall report} coverage export: rows describing
  * every entity/item — whether an explicit profile or a fallback drives it, plus the effective values
  * — rendered as CSV (spreadsheet-friendly) or JSON. The command layer collects the rows from the
  * registries; this class does no registry access, so it stays JVM-testable.
