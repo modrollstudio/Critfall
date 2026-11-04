@@ -118,4 +118,14 @@ public class HazardGameTests {
     public void listenerBonusAndRerollOnHazardAttack(GameTestHelper helper) {
         HazardScenarios.listenerBonusAndRerollOnHazardAttack(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void sourcedHazardSaveCreditsTheKill(GameTestHelper helper) {
+        HazardScenarios.sourcedHazardSaveCreditsTheKill(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void unsourcedHazardSaveCreditsNobody(GameTestHelper helper) {
+        HazardScenarios.unsourcedHazardSaveCreditsNobody(helper);
+    }
 }

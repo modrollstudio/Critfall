@@ -112,4 +112,14 @@ public class HazardGameTests implements FabricGameTest {
     public void listenerBonusAndRerollOnHazardAttack(GameTestHelper helper) {
         HazardScenarios.listenerBonusAndRerollOnHazardAttack(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void sourcedHazardSaveCreditsTheKill(GameTestHelper helper) {
+        HazardScenarios.sourcedHazardSaveCreditsTheKill(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void unsourcedHazardSaveCreditsNobody(GameTestHelper helper) {
+        HazardScenarios.unsourcedHazardSaveCreditsNobody(helper);
+    }
 }

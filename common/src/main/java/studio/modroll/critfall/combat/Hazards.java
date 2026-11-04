@@ -4,6 +4,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.HazardAttack;
@@ -39,7 +40,8 @@ public final class Hazards {
     public static HazardSaveResult save(LivingEntity target, HazardSave hazard, int ownSaveBonus) {
         Rules rules = RollRuntime.rules();
         DiceRoller roller = RollRuntime.roller();
-        DamageSource source = source(target, hazard.damageType());
+        DamageSource source =
+                source(target, hazard.damageType(), hazard.source().orElse(null));
         int saveBonus = Modifiers.saveBonus(rules, target, hazard.saveKey(), ownSaveBonus);
         HazardRollEvent event = CritfallEvents.fireHazardRoll(new HazardRollEvent(target, hazard));
         SaveResult save = CombatEngine.resolveSave(
@@ -82,7 +84,7 @@ public final class Hazards {
      */
     public static AttackResult attack(LivingEntity target, HazardAttack hazard, int ownArmorClass) {
         Rules rules = RollRuntime.rules();
-        DamageSource source = source(target, hazard.damageType());
+        DamageSource source = source(target, hazard.damageType(), null);
         int armorClass = Modifiers.armorClass(rules, target, null, ownArmorClass);
         HazardRollEvent event = CritfallEvents.fireHazardRoll(new HazardRollEvent(target, hazard));
         // A hazard has no vanilla amount to fall back on, so it rolls its dice even with damage_dice off;
@@ -117,11 +119,14 @@ public final class Hazards {
         return result;
     }
 
-    private static DamageSource source(LivingEntity target, ResourceKey<DamageType> type) {
-        return new DamageSource(target.level()
-                .registryAccess()
-                .registryOrThrow(Registries.DAMAGE_TYPE)
-                .getHolderOrThrow(type));
+    /** Like a player's attack, a hazard's source is both the direct and the causing entity. */
+    private static DamageSource source(LivingEntity target, ResourceKey<DamageType> type, Entity cause) {
+        return new DamageSource(
+                target.level()
+                        .registryAccess()
+                        .registryOrThrow(Registries.DAMAGE_TYPE)
+                        .getHolderOrThrow(type),
+                cause);
     }
 
     /** The target profile's resist/immune/vulnerable multiplier for the source, times the global multiplier. */

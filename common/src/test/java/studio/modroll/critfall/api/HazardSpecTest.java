@@ -72,6 +72,28 @@ class HazardSpecTest {
     }
 
     @Test
+    void sourceIsEmptyUnlessGiven() {
+        HazardSave save = HazardSave.of("Pit", DamageTypes.FALL, ModifierProvider.DEXTERITY_SAVE, 13, DICE);
+        assertEquals(Optional.empty(), save.source());
+        assertEquals(
+                Optional.empty(),
+                new HazardSave("Pit", DamageTypes.FALL, "k", 13, DICE, SuccessDamage.HALF, RollMode.NORMAL).source());
+        assertEquals(
+                Optional.empty(),
+                new HazardSave(
+                                "Pit",
+                                DamageTypes.FALL,
+                                "k",
+                                13,
+                                DICE,
+                                SuccessDamage.HALF,
+                                RollMode.NORMAL,
+                                Optional.of(ResourceLocation.parse("crawl:trap/pit")))
+                        .source());
+        assertThrows(NullPointerException.class, () -> save.withSource(null));
+    }
+
+    @Test
     void onlyAFlatZeroDealsNoDamage() {
         assertFalse(HazardSave.of("Gas", DamageTypes.MAGIC, "k", 13, HazardSave.NO_DAMAGE)
                 .dealsDamage());
