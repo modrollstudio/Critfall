@@ -10,8 +10,8 @@
   "icon": "logo.png",
   "contact": {
     "homepage": "https://modroll.studio",
-    "sources": "https://github.com/NightsHigh/Critfall",
-    "issues": "https://github.com/NightsHigh/Critfall/issues"
+    "sources": "https://github.com/modrollstudio/Critfall",
+    "issues": "https://github.com/modrollstudio/Critfall/issues"
   },
   "environment": "*",
   "entrypoints": {
