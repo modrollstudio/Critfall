@@ -44,7 +44,7 @@ import studio.modroll.critfall.data.Trigger;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
- * End-to-end tests of the M4 outcome-table executor with forced nat 1 / nat 20 rolls. Custom
+ * End-to-end tests of the outcome-table executor with forced nat 1 / nat 20 rolls. Custom
  * single-effect tables are injected under the id the sword item profile references
  * ({@code critfall:default_melee} / {@code default_crit}), so each consequence is exercised in
  * isolation and without a weighted-pick RNG draw. The attacker holds an iron sword — dice

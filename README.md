@@ -2,7 +2,7 @@
 
 Tabletop-style d20 combat for Minecraft. Every hit rolls to attack against the target's Armor Class; damage comes from dice, nat 20s crit, nat 1s fumble — and every value and mechanic is data-driven so modpack developers can tune it for any mob, boss, weapon, or spell from any mod.
 
-> **0.2.0** — latest release, for NeoForge and Fabric on Minecraft 1.21.1. See the [changelog](CHANGELOG.md).
+> For NeoForge and Fabric on Minecraft 1.21.1. The latest release and what changed in each version are in the [changelog](CHANGELOG.md).
 
 ## For players
 - Attacks roll `d20 + bonus` vs the target's AC. Miss = no damage.

@@ -5,7 +5,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import studio.modroll.critfall.gametest.SpellScenarios;
 
-/** Fabric registration shim: delegates to the shared {@link SpellScenarios} bodies (M8). */
+/** Fabric registration shim: delegates to the shared {@link SpellScenarios} bodies. */
 public class SpellGameTests implements FabricGameTest {
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)

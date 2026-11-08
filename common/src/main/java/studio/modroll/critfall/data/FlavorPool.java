@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import studio.modroll.critfall.api.AttackDelivery;
 
 /**
- * A pool of narrative flavor-line translation keys (PLAN §4.5), loaded from
+ * A pool of narrative flavor-line translation keys, loaded from
  * {@code data/<ns>/critfall/flavor_pool/*.json} and matched against the attack's weapon item with
  * the same {@code matches}/{@code priority} resolution as the other profiles. {@code lines} groups
  * keys by outcome — only {@code crit}, {@code fumble}, and {@code kill} ever produce flavor.

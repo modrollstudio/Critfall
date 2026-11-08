@@ -15,8 +15,8 @@ import studio.modroll.critfall.data.FlavorLines;
 import studio.modroll.critfall.data.FlavorPool;
 
 /**
- * Builds the S2C feedback payloads and owns the server-authoritative flavor anti-spam gate
- * (PLAN §4.5): flavor only on crit/fumble/kill; nat 20 crit and nat 1 fumble are priority and always
+ * Builds the S2C feedback payloads and owns the server-authoritative flavor anti-spam gate:
+ * flavor only on crit/fumble/kill; nat 20 crit and nat 1 fumble are priority and always
  * fire (bypassing and resetting the per-target cooldown); a non-crit kill fires only when the target
  * is off cooldown, and then always for a named mob or a boss ({@link FlavorKills}) but only at
  * {@code feedback.flavor.kill_chance_percent} for any other kill. Pure — the caller resolves the {@link FlavorLines} and the names for the line's

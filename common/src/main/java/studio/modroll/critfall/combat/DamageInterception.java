@@ -37,7 +37,7 @@ import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
- * Loader-agnostic damage interception (extracted from the NeoForge handler in M8). Runs at the
+ * Loader-agnostic damage interception (extracted from the NeoForge handler). Runs at the
  * earliest point in each loader's damage sequence (after invulnerability, before mitigation) and
  * replaces vanilla damage with a d20 attack roll vs the target's AC. Stats come from datapack
  * profiles (entity + item + spell) with per-field fallback to attribute derivation. Scope: melee,
@@ -53,7 +53,7 @@ public final class DamageInterception {
     private static final ThreadLocal<LivingEntity> ROLLED_APPLY = new ThreadLocal<>();
 
     /**
-     * Applies damage an API-driven attack already resolved (PLAN §12): the {@code hurt} passes
+     * Applies damage an API-driven attack already resolved: the {@code hurt} passes
      * through this interception without re-rolling, and — under the same
      * {@code balance.disable_vanilla_armor_reduction} flag as the automatic path — with vanilla
      * armor reduction bypassed, because the attack roll's AC already stood in for armor. Only the
@@ -95,7 +95,7 @@ public final class DamageInterception {
         }
         if (ROLLED_APPLY.get() == target) {
             // Damage applied by RollService.performAttack: already rolled, AC stood in for armor —
-            // bypass vanilla reduction (same §9 decision as the automatic path) and never re-roll.
+            // bypass vanilla reduction (same decision as the automatic path) and never re-roll.
             if (RollRuntime.rules().balance().disableVanillaArmorReduction()) {
                 dmg.bypassArmor();
             }
@@ -110,7 +110,7 @@ public final class DamageInterception {
             CritfallEvents.fireCombatInteraction(attacker, target, source, interactionDelivery(source));
         }
         if (isSuppressed(source, target)) {
-            return; // an orchestrator (§12) owns this entity's combat — auto pipeline stands down
+            return; // an orchestrator owns this entity's combat — auto pipeline stands down
         }
         Rules rules = RollRuntime.rules();
         if (!rules.attackRolls().enabled()) {
@@ -141,7 +141,7 @@ public final class DamageInterception {
         return source.isDirect() ? AttackDelivery.MELEE : AttackDelivery.SPELL;
     }
 
-    /** True when the target or the (living) attacker is externally suppressed (PLAN §12). */
+    /** True when the target or the (living) attacker is externally suppressed. */
     private static boolean isSuppressed(DamageSource source, LivingEntity target) {
         if (CombatSuppression.isSuppressed(target.getUUID())) {
             return true;
@@ -418,7 +418,7 @@ public final class DamageInterception {
     }
 
     /**
-     * The saving-throw path (PLAN.md §4.2): the TARGET rolls d20 + save bonus vs the profile's DC.
+     * The saving-throw path: the TARGET rolls d20 + save bonus vs the profile's DC.
      * Failure takes the full damage (profile dice when present, the vanilla amount otherwise);
      * success takes half (rounded down) or nothing per {@code on_success}. No crits, fumbles, or
      * outcome tables — saves have none.

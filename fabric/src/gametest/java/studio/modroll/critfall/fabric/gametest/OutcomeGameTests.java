@@ -5,7 +5,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import studio.modroll.critfall.gametest.OutcomeScenarios;
 
-/** Fabric registration shim: delegates to the shared {@link OutcomeScenarios} bodies (M8). */
+/** Fabric registration shim: delegates to the shared {@link OutcomeScenarios} bodies. */
 public class OutcomeGameTests implements FabricGameTest {
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)

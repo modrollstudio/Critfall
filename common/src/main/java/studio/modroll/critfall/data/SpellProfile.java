@@ -31,7 +31,7 @@ public record SpellProfile(
 
     public static final int FORMAT_VERSION = 1;
 
-    /** Whether the caster rolls to hit or the target rolls to save (PLAN.md §4.2 AoE option). */
+    /** Whether the caster rolls to hit or the target rolls to save. */
     public enum Resolution {
         ATTACK_ROLL,
         SAVE;

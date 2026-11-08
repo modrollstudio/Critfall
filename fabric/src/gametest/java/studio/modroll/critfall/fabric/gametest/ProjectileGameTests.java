@@ -5,7 +5,7 @@ import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import studio.modroll.critfall.gametest.ProjectileScenarios;
 
-/** Fabric registration shim: delegates to the shared {@link ProjectileScenarios} bodies (M8). */
+/** Fabric registration shim: delegates to the shared {@link ProjectileScenarios} bodies. */
 public class ProjectileGameTests implements FabricGameTest {
 
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)

@@ -5,7 +5,7 @@ import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.combat.AttackResult;
 
 /**
- * Fired after the attack resolved but before damage is applied (PLAN §4.4). Listeners see the full
+ * Fired after the attack resolved but before damage is applied. Listeners see the full
  * {@link AttackResult} and may change the {@code finalDamage} that will be applied, or veto the
  * attack (resolved, but no damage and no outcome tables). {@code finalDamage} starts at
  * {@code result.damage()}.

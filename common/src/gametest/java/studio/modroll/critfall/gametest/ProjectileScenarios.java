@@ -36,7 +36,7 @@ import studio.modroll.critfall.data.ItemProfile;
 import studio.modroll.critfall.data.ProfileStore;
 
 /**
- * End-to-end tests of M5 projectile interception: arrows roll on impact with dice from the bow's
+ * End-to-end tests of projectile interception: arrows roll on impact with dice from the bow's
  * item profile (bonus derived from the vanilla projectile damage, which carries Power and draw
  * strength), thrown tridents use the trident profile, ammo profiles add dice on top, and
  * 0-damage/ownerless projectiles stay vanilla. Shipped default profiles: skeleton +4/AC 12,

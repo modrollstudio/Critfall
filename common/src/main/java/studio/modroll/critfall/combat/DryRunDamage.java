@@ -1,7 +1,7 @@
 package studio.modroll.critfall.combat;
 
 /**
- * Dry-run decorator (PLAN §8.2.3): the amount reader passes through, but every mutator is a no-op so
+ * Dry-run decorator: the amount reader passes through, but every mutator is a no-op so
  * the vanilla damage stands. {@link DamageInterception} still rolls and reports the attack — a pack
  * dev sees the numbers during normal play without the mod changing their balance. Effect suppression
  * (durability, redirected hits, …) is handled separately by skipping the outcome executor.

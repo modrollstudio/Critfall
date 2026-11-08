@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The source and issue links in the mod list point at github.com/modrollstudio/Critfall instead of the old repo.
+
+## [0.2.19] - 2026-11-04
+
+Hazards can name who set them off, so they get the kill.
+
 ### Added
 
 - `HazardSave.withSource(Entity)` names who set a hazard off, such as a breath attack or a barrel a player

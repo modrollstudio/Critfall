@@ -7,7 +7,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.gametest.OutcomeScenarios;
 
-/** NeoForge registration shim: delegates to the shared {@link OutcomeScenarios} bodies (M8). */
+/** NeoForge registration shim: delegates to the shared {@link OutcomeScenarios} bodies. */
 @GameTestHolder(Critfall.MOD_ID)
 @PrefixGameTestTemplate(false)
 public class OutcomeGameTests {
