@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- The source and issue links in the mod list point at github.com/modrollstudio/Critfall instead of the old repo.
+
 ## [0.2.19] - 2026-11-04
 
 Hazards can name who set them off, so they get the kill.
