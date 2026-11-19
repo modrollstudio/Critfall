@@ -44,6 +44,9 @@ line saying the assigned profile is not loaded.
 
 The bonuses and AC shown are **Critfall's own**, without a [modifier provider](api.md#modifier-provider)'s,
 which answers per attacker and target. The roll readout shows the modifier and AC a roll actually used.
+Since 0.2.20, when other mods change the AC (the provider's AC modifier and any
+[AC source](api.md#ac-sources), asked with no attacker), one more line shows the result:
+`Armor Class with other mods: 19 (+5)`.
 
 ## `/critfall check [item]`
 

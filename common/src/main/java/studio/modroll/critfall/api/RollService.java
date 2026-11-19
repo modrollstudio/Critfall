@@ -19,6 +19,7 @@ import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.critfall.api.combat.HazardSaveResult;
+import studio.modroll.critfall.api.combat.HealResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
@@ -44,6 +45,7 @@ import studio.modroll.critfall.data.ProfileLookup;
 import studio.modroll.critfall.feedback.FeedbackBuilder;
 import studio.modroll.critfall.feedback.FeedbackSink;
 import studio.modroll.critfall.feedback.FlavorKills;
+import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
@@ -125,6 +127,34 @@ public final class RollService {
 
     public static Optional<ModifierProvider> modifierProvider() {
         return RollRuntime.modifierProvider();
+    }
+
+    /**
+     * Adds {@code source} to every defender's AC, after the {@link ModifierProvider}'s modifier and the sources
+     * added before it. Any number of mods can add one; adding the same source again changes nothing. Since 0.2.20.
+     */
+    public static void addArmorClassSource(ArmorClassSource source) {
+        RollRuntime.addArmorClassSource(Objects.requireNonNull(source, "source"));
+    }
+
+    /** Since 0.2.20. */
+    public static void removeArmorClassSource(ArmorClassSource source) {
+        RollRuntime.removeArmorClassSource(source);
+    }
+
+    /**
+     * The AC an attack by {@code attacker} on {@code defender} would roll against now: Critfall's own ({@link
+     * #effectiveEntity}), plus the {@link ModifierProvider}'s AC modifier and every {@link ArmorClassSource}.
+     * {@code attacker} may be null, as for a hazard attack. Not counted: an attack's own {@link
+     * AttackContext#withDefenderAcBonus} and a listener's {@link
+     * studio.modroll.critfall.api.event.PostAttackRollEvent#raiseArmorClass}. Since 0.2.20.
+     */
+    public static int armorClass(LivingEntity defender, LivingEntity attacker) {
+        return Modifiers.armorClass(
+                RollRuntime.rules(),
+                defender,
+                attacker,
+                effectiveEntity(defender).armorClass());
     }
 
     /**
@@ -282,6 +312,33 @@ public final class RollService {
                 effectiveEntity(target).armorClass());
     }
 
+    /**
+     * {@code healer} heals {@code target} by {@code dice}, rolled on the combat roller (a negative total heals
+     * nothing), and the readout shows it to the healer and, under {@code roll_visibility: everyone}, to the target:
+     * {@code Cure Wounds: 2d8+3 = 12 healed}. {@code healer} may be the target. The heal goes through vanilla's
+     * {@code heal}, so it stops at the target's maximum health, does nothing to a dead target, and on NeoForge
+     * fires {@code LivingHealEvent}. Since 0.2.20.
+     *
+     * @param label names the heal in the readout: a translation key, or plain text; empty for none
+     */
+    public static HealResult performHeal(LivingEntity healer, LivingEntity target, String label, DiceExpression dice) {
+        Objects.requireNonNull(healer, "healer");
+        Objects.requireNonNull(label, "label");
+        RollResult roll = RollRuntime.roller().roll(Objects.requireNonNull(dice, "dice"));
+        float before = target.getHealth();
+        if (roll.total() > 0) {
+            target.heal(roll.total());
+        }
+        float healed = Math.max(0.0F, target.getHealth() - before);
+        FeedbackSink.get()
+                .heal(
+                        healer,
+                        target,
+                        new HealFeedbackPayload(label, dice.toString(), roll.total(), healed),
+                        RollRuntime.rules().feedback().visibility());
+        return new HealResult(roll, healed);
+    }
+
     /** Resolves an attack (fires the pre/post/crit/fumble events) WITHOUT applying damage or feedback. */
     public static AttackResult attackRoll(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
         return resolve(attacker, target, ctx, damageDice(attacker, target, ctx)).result();
@@ -293,7 +350,8 @@ public final class RollService {
      * armor, so vanilla armor reduction is bypassed (under {@code balance.
      * disable_vanilla_armor_reduction}) and the {@code hurt} never re-rolls. Callers orchestrating
      * an entity's combat should still {@link #suppress} the participants so OTHER real-time damage
-     * stands down. Returns the resolved {@link AttackResult}.
+     * stands down. The readout names the attack by {@link AttackContext#withLabel its label}, when it has one.
+     * Returns the resolved {@link AttackResult}.
      */
     public static AttackResult performAttack(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
         DiceExpression dice = damageDice(attacker, target, ctx);
@@ -316,21 +374,22 @@ public final class RollService {
         }
         boolean isKill = result.isHit() && !target.isAlive();
         RollFeedbackPayload payload = FeedbackBuilder.buildAttack(
-                result,
-                isKill,
-                dice.toString(),
-                rules.damageDice(),
-                consequences,
-                ProfileLookup.forFlavor(attacker, ctx.weapon(), ctx.delivery()),
-                FlavorName.of(attacker),
-                FlavorName.of(target),
-                rules,
-                RollRuntime.feedbackRoller(),
-                target.getUUID(),
-                target.level().getGameTime(),
-                1.0F,
-                FlavorKills.alwaysFlavored(target),
-                taken);
+                        result,
+                        isKill,
+                        dice.toString(),
+                        rules.damageDice(),
+                        consequences,
+                        ProfileLookup.forFlavor(attacker, ctx.weapon(), ctx.delivery()),
+                        FlavorName.of(attacker),
+                        FlavorName.of(target),
+                        rules,
+                        RollRuntime.feedbackRoller(),
+                        target.getUUID(),
+                        target.level().getGameTime(),
+                        1.0F,
+                        FlavorKills.alwaysFlavored(target),
+                        taken)
+                .withLabel(ctx.label());
         FeedbackSink.get().roll(attacker, target, payload, rules.feedback().visibility());
         return result;
     }

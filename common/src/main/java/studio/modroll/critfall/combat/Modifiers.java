@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import net.minecraft.world.entity.LivingEntity;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.ArmorClassSource;
 import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.dice.DiceExpression;
@@ -17,8 +18,9 @@ import studio.modroll.critfall.api.dice.DiceParseException;
 
 /**
  * Applies the registered {@link ModifierProvider}'s answer when it gives one: it replaces Critfall's own
- * attack and save bonus, and adds to Critfall's own damage dice and the defender's AC. Bad answers are
- * logged once per provider and roll type, since real-time combat asks on every hit.
+ * attack and save bonus, and adds to Critfall's own damage dice and the defender's AC. Each {@link
+ * ArmorClassSource} then adds to the AC. Bad answers are logged once per provider or source and roll type, since
+ * real time combat asks on every hit.
  */
 public final class Modifiers {
 
@@ -32,8 +34,8 @@ public final class Modifiers {
     /** Largest AC modifier magnitude accepted; the same bound as a dice constant. */
     static final int MAX_AC_MODIFIER = 1_000_000;
 
-    /** Weak so a replaced provider can be collected. */
-    private static final Map<ModifierProvider, EnumSet<Roll>> REPORTED = new WeakHashMap<>();
+    /** Weak so a replaced provider or a removed source can be collected. */
+    private static final Map<Object, EnumSet<Roll>> REPORTED = new WeakHashMap<>();
 
     /** Test seam. */
     static volatile BiConsumer<String, Throwable> errorLog = Critfall.LOG::error;
@@ -72,8 +74,22 @@ public final class Modifiers {
                 : ask(p, Roll.SAVE, () -> p.saveModifier(entity, saveKey)).orElse(own);
     }
 
-    /** Critfall's own AC for the defender plus the provider's modifier, when it gives one in range. */
+    /**
+     * Critfall's own AC for the defender plus the provider's modifier, when it gives one in range, then what each
+     * AC source adds, in the order they were added.
+     */
     public static int armorClass(Rules rules, LivingEntity defender, LivingEntity attacker, int own) {
+        int armorClass = withProvidedArmorClass(rules, defender, attacker, own);
+        if (!rules.modifierProviders().enabled()) {
+            return armorClass;
+        }
+        for (ArmorClassSource source : RollRuntime.armorClassSources()) {
+            armorClass += sourceAdds(source, defender, attacker, armorClass);
+        }
+        return armorClass;
+    }
+
+    private static int withProvidedArmorClass(Rules rules, LivingEntity defender, LivingEntity attacker, int own) {
         ModifierProvider p = provider(rules);
         OptionalInt modifier =
                 p == null ? OptionalInt.empty() : ask(p, Roll.ARMOR_CLASS, () -> p.acModifier(defender, attacker));
@@ -86,6 +102,23 @@ public final class Modifiers {
             return own;
         }
         return own + value;
+    }
+
+    /** 0 for a source that throws or answers out of range. */
+    private static int sourceAdds(ArmorClassSource source, LivingEntity defender, LivingEntity attacker, int soFar) {
+        int value;
+        try {
+            value = source.add(defender, attacker, soFar);
+        } catch (Throwable t) {
+            reportOnce(source, Roll.ARMOR_CLASS, t);
+            return 0;
+        }
+        if (value < -MAX_AC_MODIFIER || value > MAX_AC_MODIFIER) {
+            reportOnce(
+                    source, Roll.ARMOR_CLASS, new IllegalArgumentException(value + " is beyond ±" + MAX_AC_MODIFIER));
+            return 0;
+        }
+        return value;
     }
 
     /** Null when providers are turned off or none is registered. */
@@ -108,16 +141,18 @@ public final class Modifiers {
         return OptionalInt.empty();
     }
 
-    private static void reportOnce(ModifierProvider provider, Roll roll, Throwable cause) {
+    /** {@code from} is a {@link ModifierProvider} or an {@link ArmorClassSource}. */
+    private static void reportOnce(Object from, Roll roll, Throwable cause) {
         boolean first;
         synchronized (REPORTED) {
-            first = REPORTED.computeIfAbsent(provider, k -> EnumSet.noneOf(Roll.class))
+            first = REPORTED.computeIfAbsent(from, k -> EnumSet.noneOf(Roll.class))
                     .add(roll);
         }
         if (first) {
+            String fallback = from instanceof ArmorClassSource ? "counting it as 0" : "using Critfall's own";
             errorLog.accept(
                     "Bad " + roll.name().toLowerCase(Locale.ROOT).replace('_', ' ') + " modifier from "
-                            + provider.getClass().getName() + ", using Critfall's own (logged once)",
+                            + from.getClass().getName() + ", " + fallback + " (logged once)",
                     cause);
         }
     }

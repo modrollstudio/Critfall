@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Optional;
@@ -13,6 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.HazardAttack;
@@ -22,6 +24,7 @@ import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.combat.Rules;
 
 class CritfallEventsTest {
 
@@ -69,6 +72,81 @@ class CritfallEventsTest {
         PostAttackRollEvent fired = CritfallEvents.firePostAttackRoll(null, null, ctx(), result);
         assertEquals(12, fired.finalDamage());
         assertTrue(fired.isVetoed());
+    }
+
+    @Test
+    void raisingTheArmorClassTurnsAHitIntoAMiss() {
+        CritfallEvents.onPostAttackRoll(e -> e.raiseArmorClass(5));
+        AttackResult[] seenAfter = new AttackResult[1];
+        CritfallEvents.onPostAttackRoll(e -> seenAfter[0] = e.result());
+        // d20 13 + 3 = 16 hits AC 14; AC 19 does not.
+        AttackResult hit = new AttackResult(AttackOutcome.HIT, 13, 16, 14, 0, 7);
+        PostAttackRollEvent fired = CritfallEvents.firePostAttackRoll(null, null, ctx(), hit);
+        AttackResult result = fired.result();
+        assertEquals(AttackOutcome.MISS, result.outcome());
+        assertEquals(19, result.armorClass());
+        assertEquals(5, result.defenderAcBonus());
+        assertEquals(14, result.baseArmorClass());
+        assertEquals(0, result.damage());
+        assertEquals(0, fired.finalDamage());
+        assertEquals(result, seenAfter[0], "later listeners see the miss");
+    }
+
+    @Test
+    void aRaiseTheTotalStillMeetsKeepsTheHit() {
+        CritfallEvents.onPostAttackRoll(e -> {
+            e.finalDamage(9);
+            e.raiseArmorClass(2);
+            e.raiseArmorClass(2);
+        });
+        AttackResult hit = new AttackResult(AttackOutcome.CRIT, 19, 22, 14, 1, 12);
+        PostAttackRollEvent fired = CritfallEvents.firePostAttackRoll(null, null, ctx(), hit);
+        assertEquals(AttackOutcome.CRIT, fired.result().outcome());
+        assertEquals(18, fired.result().armorClass(), "raises add up");
+        assertEquals(5, fired.result().defenderAcBonus());
+        assertEquals(12, fired.result().damage());
+        assertEquals(9, fired.finalDamage());
+    }
+
+    @Test
+    void aNatural20StillHitsARaisedArmorClass() {
+        AttackResult crit = new AttackResult(AttackOutcome.CRIT, 20, 21, 14, 0, 16);
+        PostAttackRollEvent event = new PostAttackRollEvent(null, null, ctx(), crit);
+        event.raiseArmorClass(10);
+        assertEquals(AttackOutcome.CRIT, event.result().outcome());
+        assertEquals(16, event.finalDamage());
+    }
+
+    @Test
+    void aNatural20MissesARaisedArmorClassWhenTheRuleIsOff() {
+        Rules before = RollRuntime.rules();
+        RollRuntime.setRules(new Rules(
+                before.attackRolls(),
+                before.damageDice(),
+                new Rules.Crits(true, Rules.CritRule.MAX_DICE, false, true, true),
+                before.fumbles(),
+                before.spells(),
+                before.fallbacks(),
+                before.feedback(),
+                before.balance()));
+        try {
+            AttackResult hit = new AttackResult(AttackOutcome.CRIT, 20, 21, 14, 0, 16);
+            PostAttackRollEvent event = new PostAttackRollEvent(null, null, ctx(), hit);
+            event.raiseArmorClass(10);
+            assertEquals(AttackOutcome.MISS, event.result().outcome());
+        } finally {
+            RollRuntime.setRules(before);
+        }
+    }
+
+    @Test
+    void raisingTheArmorClassOfAMissOnlyRaisesIt() {
+        AttackResult miss = new AttackResult(AttackOutcome.FUMBLE, 1, 4, 14, 0, 0);
+        PostAttackRollEvent event = new PostAttackRollEvent(null, null, ctx(), miss);
+        event.raiseArmorClass(5);
+        assertEquals(AttackOutcome.FUMBLE, event.result().outcome());
+        assertEquals(19, event.result().armorClass());
+        assertThrows(IllegalArgumentException.class, () -> event.raiseArmorClass(-1));
     }
 
     @Test

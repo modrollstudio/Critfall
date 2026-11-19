@@ -6,11 +6,11 @@ with vanilla / non-Critfall clients, which fall back to a plain action-bar reado
 
 ## What crosses the wire
 
-Three server→client packets, all registered `optional()` so a client that doesn't understand them is
+Four server→client packets, all registered `optional()` so a client that doesn't understand them is
 never disconnected:
 
-- `critfall:roll_feedback_v4` (0.2.18; `_v3` from 0.2.17, `_v2` from 0.2.15, `critfall:roll_feedback`
-  before) — one resolved attack roll:
+- `critfall:roll_feedback_v5` (0.2.20; `_v4` from 0.2.18, `_v3` from 0.2.17, `_v2` from 0.2.15,
+  `critfall:roll_feedback` before) — one resolved attack roll:
   outcome, natural d20, attack total, AC, damage, dice notation, an optional flavor-line key, and the
   list of consequences that fired. Since 0.2.6 it also carries the roll mode, the dropped d20 face
   under advantage/disadvantage, and the situational defender-AC modifier (`roll()` and
@@ -21,15 +21,16 @@ never disconnected:
   `1d8 = 7 ×1.5`, so the number matches the damage dealt. Since 0.2.18 it carries `taken`, the health
   the hit actually took after Resistance, Protection, difficulty and absorption (`TAKEN_UNKNOWN`, -1,
   on a miss, in dry-run, or with damage dice off); the readout shows it after the roll when it differs,
-  `1d10+4 = 12 → 7`.
+  `1d10+4 = 12 → 7`. Since 0.2.20 it carries the attack's label, which the readout puts first:
+  `Fire Bolt: d20 13+5=18 ...`.
 - `critfall:save_feedback_v3` (0.2.18; `_v2` from 0.2.15, `critfall:save_feedback` before) — one resolved
   saving throw: natural, total, DC, saved/failed, half/negate, dice, damage, optional flavor key, (0.2.6)
   the same roll mode and dropped face, (0.2.15) the two flavor names, and (0.2.18) `taken`, shown after the
   damage the same way: `FAILED 2d6 = 7 → 3`, `SAVED, half damage 3 → 1.2`.
 
 The 0.2.15 roll and save packets gained fields, so they moved to new channel names, as the check
-packet did in 0.2.14, and the 0.2.17 and 0.2.18 roll packets and the 0.2.18 save packet moved again for
-the same reason. A server
+packet did in 0.2.14, and the 0.2.17, 0.2.18 and 0.2.20 roll packets and the 0.2.18 save packet moved
+again for the same reason. A server
 only sends a packet on a channel the client has, so an older client gets the action-bar text (which
 shows the multiplier and the damage taken too) instead of a packet it cannot read.
 - `critfall:check_feedback_v2` (0.2.14; `critfall:check_feedback` in 0.2.13) — one labelled save,
@@ -39,6 +40,8 @@ shows the multiplier and the damage taken too) instead of a packet it cannot rea
   `RollService.sendCheckFeedback`; hazards send it too. A client without this channel gets the
   action-bar text instead, so an older Critfall client keeps working: the 0.2.14 packet gained fields,
   so it moved to a new channel name rather than reach a 0.2.13 client that cannot read it.
+- `critfall:heal_feedback` (0.2.20) — one heal from `RollService.performHeal`: label, dice, the roll, and
+  the health actually gained. A client without it, an older Critfall one included, gets the action bar text.
 
 The payloads carry only flat primitives + translation keys; the client builds all text from them.
 
@@ -56,6 +59,9 @@ The line stays terse when there is nothing extra to say, and spends characters o
 | Hazard save | `Spike trap: save d20 8+2=10 vs DC 13 — FAILED 2d6 = 7` |
 | Hazard attack | `Dart trap: d20 15+5=20 vs AC 14 — HIT 1d4 = 3` |
 | An add-on's check | `Perception: check d20 14+3=17 vs DC 15 — SUCCESS` |
+| An AC raised after the roll (Shield) | `d20 13+3=16 vs AC 19 (14+5) — MISS` |
+| A driven attack with a label | `Fire Bolt: d20 13+5=18 vs AC 12 — HIT 1d10 = 6` |
+| A heal | `Cure Wounds: 2d8+3 = 12 healed`, or `2d8+3 = 12 → 5 healed` when less was missing |
 
 Both dice appear only when two were rolled, and the AC split only when the modifier is non-zero, so a
 plain attack renders exactly as it did before 0.2.6. The arrow after the roll (0.2.18) is the health the

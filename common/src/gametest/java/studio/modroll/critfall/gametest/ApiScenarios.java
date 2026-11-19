@@ -26,6 +26,7 @@ import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.critfall.api.combat.ContestSide;
 import studio.modroll.critfall.api.combat.SaveResult;
+import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
@@ -681,6 +682,45 @@ public final class ApiScenarios {
                     7,
                     18,
                     4);
+        } finally {
+            FeedbackSink.set(previous);
+        }
+        cleanup(husk, pig);
+        helper.succeed();
+    }
+
+    /** A driven spell attack names the spell in its readout, not the hand that cast it. */
+    public static void drivenAttackReadoutNamesItsLabel(GameTestHelper helper) {
+        Husk husk = CombatScenarios.spawnCalm(helper, EntityType.HUSK, 1, 1);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        RollService.suppress(husk);
+        RollService.suppress(pig);
+        CapturingFeedbackSink sink = new CapturingFeedbackSink();
+        FeedbackSink previous = FeedbackSink.get();
+        FeedbackSink.set(sink);
+        try {
+            withRolls(
+                    helper,
+                    () -> {
+                        // 13 + 5 = 18 vs AC 10 hits; 1d10 rolls 6.
+                        AttackContext fireBolt = AttackContext.spell(
+                                        helper.getLevel().damageSources().indirectMagic(husk, husk),
+                                        husk.getMainHandItem())
+                                .withAttackBonus(5)
+                                .withDamageDice(DiceExpression.parse("1d10"))
+                                .withLabel("Fire Bolt");
+                        RollService.performAttack(husk, pig, fireBolt);
+                        expectHealth(helper, pig, pig.getMaxHealth() - 6.0F);
+                        RollFeedbackPayload payload = sink.lastRoll();
+                        String readout = payload == null
+                                ? null
+                                : CombatText.actionBar(payload).getString();
+                        if (!"Fire Bolt: d20 13+5=18 vs AC 10 — HIT 1d10 = 6".equals(readout)) {
+                            helper.fail("the readout must name the spell, was: " + readout);
+                        }
+                    },
+                    13,
+                    6);
         } finally {
             FeedbackSink.set(previous);
         }

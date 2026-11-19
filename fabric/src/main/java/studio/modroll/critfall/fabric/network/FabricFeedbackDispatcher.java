@@ -10,6 +10,7 @@ import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.combat.Rules;
 import studio.modroll.critfall.feedback.FeedbackSink;
+import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
 /**
@@ -48,6 +49,16 @@ public final class FabricFeedbackDispatcher {
                     sendCheck(player, payload);
                 }
             }
+
+            /** A heal goes to the healer, and under {@code everyone} to the target, once when they are the same. */
+            @Override
+            public void heal(
+                    LivingEntity healer,
+                    LivingEntity target,
+                    HealFeedbackPayload payload,
+                    Rules.FeedbackVisibility visibility) {
+                dispatch(healer, target == healer ? null : target, visibility, player -> sendHeal(player, payload));
+            }
         };
     }
 
@@ -85,6 +96,14 @@ public final class FabricFeedbackDispatcher {
 
     private static void sendCheck(ServerPlayer player, CheckFeedbackPayload payload) {
         if (hasChannel(player, CheckFeedbackPayload.TYPE)) {
+            ServerPlayNetworking.send(player, payload);
+        } else {
+            player.displayClientMessage(CombatText.actionBar(payload), true);
+        }
+    }
+
+    private static void sendHeal(ServerPlayer player, HealFeedbackPayload payload) {
+        if (hasChannel(player, HealFeedbackPayload.TYPE)) {
             ServerPlayNetworking.send(player, payload);
         } else {
             player.displayClientMessage(CombatText.actionBar(payload), true);

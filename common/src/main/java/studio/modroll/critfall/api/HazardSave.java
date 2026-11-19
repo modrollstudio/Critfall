@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Entity;
 import studio.modroll.critfall.api.combat.SuccessDamage;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.api.dice.RollResult;
 
 /**
  * Damage the target saves against, with no living attacker: a trap, a gas cloud, a falling block. Roll it
@@ -30,6 +31,8 @@ import studio.modroll.critfall.api.dice.RollMode;
  *     empty for none. Since 0.2.14
  * @param source the entity the hurt comes from, credited with the damage and the kill like their own attack;
  *     empty for none. Since 0.2.19
+ * @param rolledDamage {@code damage} already rolled, taken instead of rolling it again; empty to roll it. Since
+ *     0.2.20
  */
 public record HazardSave(
         String label,
@@ -40,7 +43,8 @@ public record HazardSave(
         SuccessDamage onSuccess,
         RollMode mode,
         Optional<ResourceLocation> id,
-        Optional<Entity> source) {
+        Optional<Entity> source,
+        Optional<RollResult> rolledDamage) {
 
     /** The damage of a hazard that deals none: a failed save takes 0, not the usual minimum of 1. Since 0.2.14. */
     public static final DiceExpression NO_DAMAGE = DiceExpression.parse("0");
@@ -54,6 +58,21 @@ public record HazardSave(
         Objects.requireNonNull(mode, "mode");
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(source, "source");
+        Objects.requireNonNull(rolledDamage, "rolledDamage");
+    }
+
+    /** A hazard that rolls its own damage, as in 0.2.19. */
+    public HazardSave(
+            String label,
+            ResourceKey<DamageType> damageType,
+            String saveKey,
+            int dc,
+            DiceExpression damage,
+            SuccessDamage onSuccess,
+            RollMode mode,
+            Optional<ResourceLocation> id,
+            Optional<Entity> source) {
+        this(label, damageType, saveKey, dc, damage, onSuccess, mode, id, source, Optional.empty());
     }
 
     /** A hazard with no source, as in 0.2.14. */
@@ -66,7 +85,7 @@ public record HazardSave(
             SuccessDamage onSuccess,
             RollMode mode,
             Optional<ResourceLocation> id) {
-        this(label, damageType, saveKey, dc, damage, onSuccess, mode, id, Optional.empty());
+        this(label, damageType, saveKey, dc, damage, onSuccess, mode, id, Optional.empty(), Optional.empty());
     }
 
     /** A hazard with no id, as in 0.2.13. */
@@ -78,7 +97,17 @@ public record HazardSave(
             DiceExpression damage,
             SuccessDamage onSuccess,
             RollMode mode) {
-        this(label, damageType, saveKey, dc, damage, onSuccess, mode, Optional.empty(), Optional.empty());
+        this(
+                label,
+                damageType,
+                saveKey,
+                dc,
+                damage,
+                onSuccess,
+                mode,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty());
     }
 
     /** Half damage on a success, rolled normally. */
@@ -88,11 +117,11 @@ public record HazardSave(
     }
 
     public HazardSave withOnSuccess(SuccessDamage newOnSuccess) {
-        return new HazardSave(label, damageType, saveKey, dc, damage, newOnSuccess, mode, id, source);
+        return new HazardSave(label, damageType, saveKey, dc, damage, newOnSuccess, mode, id, source, rolledDamage);
     }
 
     public HazardSave withMode(RollMode newMode) {
-        return new HazardSave(label, damageType, saveKey, dc, damage, onSuccess, newMode, id, source);
+        return new HazardSave(label, damageType, saveKey, dc, damage, onSuccess, newMode, id, source, rolledDamage);
     }
 
     /** Since 0.2.14. */
@@ -106,7 +135,8 @@ public record HazardSave(
                 onSuccess,
                 mode,
                 Optional.of(Objects.requireNonNull(newId)),
-                source);
+                source,
+                rolledDamage);
     }
 
     /**
@@ -122,7 +152,29 @@ public record HazardSave(
                 onSuccess,
                 mode,
                 id,
-                Optional.of(Objects.requireNonNull(newSource, "source")));
+                Optional.of(Objects.requireNonNull(newSource, "source")),
+                rolledDamage);
+    }
+
+    /**
+     * Takes {@code roll} as the damage instead of rolling {@link #damage()}: roll the dice once with {@link
+     * RollService#roll(DiceExpression)} and give every target of an area the same roll, each with its own save.
+     * A failed save takes the roll's total (at least 1), a success half or none, each after the target's own
+     * resistances. The readout names {@link #damage()} as the dice, so pass the roll of those dice. A hazard with
+     * {@link #NO_DAMAGE} still deals none. Since 0.2.20.
+     */
+    public HazardSave withRolledDamage(RollResult roll) {
+        return new HazardSave(
+                label,
+                damageType,
+                saveKey,
+                dc,
+                damage,
+                onSuccess,
+                mode,
+                id,
+                source,
+                Optional.of(Objects.requireNonNull(roll, "roll")));
     }
 
     /**

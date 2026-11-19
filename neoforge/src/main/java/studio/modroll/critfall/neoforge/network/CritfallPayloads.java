@@ -6,6 +6,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
 /**
@@ -32,6 +33,10 @@ public final class CritfallPayloads {
                 CheckFeedbackPayload.TYPE,
                 CheckFeedbackPayload.STREAM_CODEC,
                 FMLEnvironment.dist.isClient() ? ClientFeedbackReceiver::receiveCheck : CritfallPayloads::ignore);
+        registrar.playToClient(
+                HealFeedbackPayload.TYPE,
+                HealFeedbackPayload.STREAM_CODEC,
+                FMLEnvironment.dist.isClient() ? ClientFeedbackReceiver::receiveHeal : CritfallPayloads::ignore);
     }
 
     private static void ignore(Object payload, IPayloadContext context) {}

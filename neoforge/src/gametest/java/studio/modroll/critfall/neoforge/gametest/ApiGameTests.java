@@ -199,4 +199,9 @@ public class ApiGameTests {
     public void armorClassBreakdownLeavesOutOneSlot(GameTestHelper helper) {
         ApiScenarios.armorClassBreakdownLeavesOutOneSlot(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void drivenAttackReadoutNamesItsLabel(GameTestHelper helper) {
+        ApiScenarios.drivenAttackReadoutNamesItsLabel(helper);
+    }
 }

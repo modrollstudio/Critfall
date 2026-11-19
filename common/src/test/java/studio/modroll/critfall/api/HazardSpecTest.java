@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageTypes;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.combat.SuccessDamage;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.api.dice.RollResult;
 
 class HazardSpecTest {
 
@@ -104,5 +106,31 @@ class HazardSpecTest {
                 .dealsDamage());
         assertTrue(HazardSave.of("Gas", DamageTypes.MAGIC, "k", 13, DiceExpression.parse("1d4-5"))
                 .dealsDamage());
+    }
+
+    @Test
+    void rolledDamageIsEmptyUnlessGivenAndWithersKeepIt() {
+        HazardSave save = HazardSave.of("Fireball", DamageTypes.FIREBALL, ModifierProvider.DEXTERITY_SAVE, 15, DICE);
+        assertEquals(Optional.empty(), save.rolledDamage());
+        RollResult roll = new RollResult(9, List.of(), 0);
+        HazardSave shared = save.withRolledDamage(roll)
+                .withMode(RollMode.ADVANTAGE)
+                .withOnSuccess(SuccessDamage.NONE)
+                .withId(ResourceLocation.parse("spells:fireball"));
+        assertEquals(Optional.of(roll), shared.rolledDamage());
+        assertEquals(
+                Optional.empty(),
+                new HazardSave(
+                                "Pit",
+                                DamageTypes.FALL,
+                                "k",
+                                13,
+                                DICE,
+                                SuccessDamage.HALF,
+                                RollMode.NORMAL,
+                                Optional.empty(),
+                                Optional.empty())
+                        .rolledDamage());
+        assertThrows(NullPointerException.class, () -> save.withRolledDamage(null));
     }
 }

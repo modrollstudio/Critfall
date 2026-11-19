@@ -30,6 +30,16 @@ public interface FeedbackSink {
      */
     default void check(LivingEntity roller, CheckFeedbackPayload payload, Rules.FeedbackVisibility visibility) {}
 
+    /**
+     * A heal, shown to {@code healer} when it is a player and {@code visibility} is not off, and to a player {@code
+     * target} too under {@code everyone}, as a roll is.
+     */
+    default void heal(
+            LivingEntity healer,
+            LivingEntity target,
+            HealFeedbackPayload payload,
+            Rules.FeedbackVisibility visibility) {}
+
     FeedbackSink NOOP = new FeedbackSink() {
         @Override
         public void roll(LivingEntity a, LivingEntity t, RollFeedbackPayload p, Rules.FeedbackVisibility v) {}

@@ -1,5 +1,6 @@
 package studio.modroll.critfall.combat;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -12,6 +13,7 @@ import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.api.feedback.FlavorName;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
 class CombatTextTest {
@@ -318,5 +320,28 @@ class CombatTextTest {
         String text = CombatText.actionBar(payload).getString();
         assertTrue(text.contains("no damage taken"), text);
         assertFalse(text.contains("critfall.consequence"), text);
+    }
+
+    @Test
+    void healShowsTheDiceAndTheRoll() {
+        HealFeedbackPayload heal = new HealFeedbackPayload("Cure Wounds", "2d8+3", 12, 12.0F);
+        assertEquals(
+                "Cure Wounds: 2d8+3 = 12 healed", CombatText.actionBar(heal).getString());
+    }
+
+    @Test
+    void healShowsWhatWasGainedWhenItIsLessThanTheRoll() {
+        HealFeedbackPayload heal = new HealFeedbackPayload("", "2d8+3", 12, 5.0F);
+        assertEquals("2d8+3 = 12 → 5 healed", CombatText.actionBar(heal).getString());
+    }
+
+    @Test
+    void aLabelNamesTheAttack() {
+        RollFeedbackPayload payload = new RollFeedbackPayload(
+                        AttackOutcome.HIT, 13, 18, 10, 6, "1d10", true, Optional.empty(), List.of())
+                .withLabel("Fire Bolt");
+        assertEquals(
+                "Fire Bolt: d20 13+5=18 vs AC 10 — HIT 1d10 = 6",
+                CombatText.actionBar(payload).getString());
     }
 }

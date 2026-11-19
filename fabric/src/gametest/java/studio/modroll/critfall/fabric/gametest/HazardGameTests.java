@@ -122,4 +122,14 @@ public class HazardGameTests implements FabricGameTest {
     public void unsourcedHazardSaveCreditsNobody(GameTestHelper helper) {
         HazardScenarios.unsourcedHazardSaveCreditsNobody(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void sharedDamageRollHitsEveryTargetWithItsOwnSave(GameTestHelper helper) {
+        HazardScenarios.sharedDamageRollHitsEveryTargetWithItsOwnSave(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void armorReducesHazardDamageUnlessBypassed(GameTestHelper helper) {
+        HazardScenarios.armorReducesHazardDamageUnlessBypassed(helper);
+    }
 }

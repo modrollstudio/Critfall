@@ -12,6 +12,7 @@ import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
@@ -707,6 +708,82 @@ public final class HazardScenarios {
                 5,
                 6,
                 6);
+        helper.succeed();
+    }
+
+    /** One damage roll for every target of an area, each with its own save and its own resistances. */
+    public static void sharedDamageRollHitsEveryTargetWithItsOwnSave(GameTestHelper helper) {
+        Pig failing = spawnPig(helper);
+        Pig saving = CombatScenarios.spawnCalm(helper, EntityType.PIG, 4, 4);
+        Pig immune = CombatScenarios.spawnCalm(helper, EntityType.PIG, 2, 4);
+        EntityProfileScenarios.withProfile(
+                CACTUS_PROOF, "{\"matches\": [], \"damage_modifiers\": {\"immune\": [\"minecraft:cactus\"]}}", () -> {
+                    RollService.setEntityProfile(immune, CACTUS_PROOF);
+                    run(
+                            helper,
+                            null,
+                            sink -> {
+                                // 2d6 rolls 3 + 4 = 7 once; then only the d20s: 5 fails, 15 saves, 5 fails.
+                                HazardSave area = spikes().withRolledDamage(RollService.roll(TWO_D6));
+                                HazardSaveResult failed = RollService.performHazardSave(failing, area);
+                                expectReadout(
+                                        helper,
+                                        sink,
+                                        failing,
+                                        "Spike trap: DEX save d20 5+0=5 vs DC 13 — FAILED 2d6 = 7");
+                                HazardSaveResult saved = RollService.performHazardSave(saving, area);
+                                expectReadout(helper, sink, saving, "SAVED, half damage 3");
+                                HazardSaveResult resisted = RollService.performHazardSave(immune, area);
+                                if (failed.damage() != 7 || saved.damage() != 3 || resisted.damage() != 0) {
+                                    helper.fail("expected 7, 3 and 0 from one roll of 7, got " + failed + ", " + saved
+                                            + ", " + resisted);
+                                }
+                                expectHealth(helper, failing, failing.getMaxHealth() - 7);
+                                expectHealth(helper, saving, saving.getMaxHealth() - 3);
+                                expectHealth(helper, immune, immune.getMaxHealth());
+                            },
+                            3,
+                            4,
+                            5,
+                            15,
+                            5);
+                });
+        helper.succeed();
+    }
+
+    /**
+     * Vanilla armor reduces a hazard's damage, as it does a driven attack's, unless {@code
+     * balance.disable_vanilla_armor_reduction} is on. The result reports the damage Critfall applied, before armor.
+     */
+    public static void armorReducesHazardDamageUnlessBypassed(GameTestHelper helper) {
+        Pig armored = spawnPig(helper);
+        Pig bypassed = CombatScenarios.spawnCalm(helper, EntityType.PIG, 4, 4);
+        armored.getAttribute(Attributes.ARMOR).setBaseValue(20.0);
+        bypassed.getAttribute(Attributes.ARMOR).setBaseValue(20.0);
+        // d20 5 fails DC 13; 2d6 rolls 3 + 4 = 7.
+        CombatScenarios.withRolls(
+                helper,
+                Rules.DEFAULTS,
+                () -> {
+                    HazardSaveResult result = RollService.performHazardSave(armored, spikes());
+                    float lost = armored.getMaxHealth() - armored.getHealth();
+                    if (result.damage() != 7 || lost <= 0.0F || lost >= 6.9F) {
+                        helper.fail("armor must reduce the rolled 7, but " + lost + " was lost (" + result + ")");
+                    }
+                },
+                5,
+                3,
+                4);
+        CombatScenarios.withRolls(
+                helper,
+                CombatScenarios.BYPASS_ARMOR,
+                () -> {
+                    RollService.performHazardSave(bypassed, spikes());
+                    expectHealth(helper, bypassed, bypassed.getMaxHealth() - 7);
+                },
+                5,
+                3,
+                4);
         helper.succeed();
     }
 

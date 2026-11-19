@@ -9,6 +9,7 @@ import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
 /**
@@ -21,11 +22,14 @@ public final class CombatText {
 
     private CombatText() {}
 
-    /** Renders a resolved attack roll's feedback payload into a single action-bar {@link Component}. */
+    /**
+     * Renders a resolved attack roll's feedback payload into a single action bar {@link Component}, named by its
+     * label when it has one: {@code Fire Bolt: d20 13+5=18 vs AC 12 — HIT 1d10 = 6}.
+     */
     public static Component actionBar(RollFeedbackPayload p) {
         int bonus = p.attackTotal() - p.natural();
         String roll = d20(p.roll()) + signed(bonus) + "=" + p.attackTotal() + " " + versusArmorClass(p);
-        MutableComponent line = Component.literal(roll + " — ");
+        MutableComponent line = labelled(p.label()).append(roll + " — ");
         switch (p.outcome()) {
             case MISS ->
                 line.append(
@@ -80,11 +84,7 @@ public final class CombatText {
      * 14+3=17}.
      */
     public static Component actionBar(CheckFeedbackPayload p) {
-        MutableComponent line = Component.empty();
-        if (!p.label().isEmpty()) {
-            line.append(Component.translatableWithFallback(p.label(), p.label()))
-                    .append(": ");
-        }
+        MutableComponent line = labelled(p.label());
         String roll = d20(p.roll()) + signed(p.bonus()) + "=" + p.total();
         String dice = p.showsDamage() ? " " + p.diceNotation() + " = " + p.damage() : "";
         if (p.outcomeHidden()) {
@@ -131,6 +131,25 @@ public final class CombatText {
                             .append(dice);
                 }
             }
+        }
+        return line;
+    }
+
+    /**
+     * Renders a heal: {@code Cure Wounds: 2d8+3 = 12 healed}, or {@code Cure Wounds: 2d8+3 = 12 → 5 healed} when the
+     * target gained less than the roll.
+     */
+    public static Component actionBar(HealFeedbackPayload p) {
+        return labelled(p.label())
+                .append(p.diceNotation() + " = " + p.rolled() + taken(p.rolled(), p.healed()) + " ")
+                .append(Component.translatableWithFallback("critfall.feedback.healed", "healed"));
+    }
+
+    /** {@code "Fire Bolt: "} for a label, a translation key or plain text; nothing for an empty one. */
+    private static MutableComponent labelled(String label) {
+        MutableComponent line = Component.empty();
+        if (!label.isEmpty()) {
+            line.append(Component.translatableWithFallback(label, label)).append(": ");
         }
         return line;
     }
@@ -208,7 +227,7 @@ public final class CombatText {
         return taken(p.damage() * p.critMultiplier(), p.taken());
     }
 
-    /** {@code " → 7"} when {@code taken} is known and differs from the {@code dealt} damage shown. */
+    /** {@code " → 7"} when {@code taken} is known and differs from the {@code dealt} amount shown. */
     private static String taken(float dealt, float taken) {
         if (taken < 0 || Math.abs(taken - dealt) < 0.05F) {
             return "";

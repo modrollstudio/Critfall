@@ -2,6 +2,41 @@
 
 Decisions with lasting consequences, and why they were made. Newest first.
 
+## 0.2.20: AC sources count in rolls, not in the entity's own AC
+
+**Decision:** Other mods add to AC through any number of `ArmorClassSource`s, asked after the one
+`ModifierProvider`, in the order added, each with the AC so far. They count wherever an attack rolls (real time,
+driven, hazard attacks) and in the new `RollService.armorClass`. `effectiveEntity`, `armorClassBreakdown` and
+`/critfall inspect`'s own line stay Critfall's own AC, without the provider or the sources.
+
+**Why:** Spells needs Shield, Mage Armor, Haste and others at once, and the provider slot is Checks'. Passing the
+AC so far lets a source set a floor (Barkskin) without knowing the others. The breakdown cannot count sources:
+Checks' own AC modifier reads `armorClassBreakdown(...).total()` as the AC of what is worn, so counting sources
+there would ask the provider from inside the provider, and skew Checks' body armor floor. Sources follow
+`modifier_providers.enabled`, so the server's "other mods' modifiers off" switch still means Critfall's own AC.
+
+## 0.2.20: A reaction raises the AC of a roll already made
+
+**Decision:** `PostAttackRollEvent.raiseArmorClass(int)` measures the roll again against the higher AC, turning
+a hit into a miss when it falls short; a natural 20 still hits under `nat20_always_hits`. The raise goes into
+the result's `defenderAcBonus`, and the event's `result()` changes at once.
+
+**Why:** Shield is cast after the attacker rolls. Folding the raise into `defenderAcBonus` keeps `baseArmorClass`
+the defender's own AC and gives the readout its existing split (`vs AC 19 (14+5)`) with no new field on the
+wire. Changing `result()` at once lets a second reaction see the miss and stay out.
+
+## 0.2.20: A shared damage roll, a heal readout and attack labels
+
+**Decision:** `HazardSave.withRolledDamage` carries a roll made once for an area; each target still saves and
+resists on its own. `RollService.performHeal` rolls, heals through vanilla `heal`, and sends a heal readout on
+its own optional channel, `critfall:heal_feedback`, shown to the healer and, under `everyone`, the target.
+`AttackContext.withLabel` names a driven attack; the label rides the roll packet, which moved to
+`critfall:roll_feedback_v5`, and the readout puts it first, as a check readout does.
+
+**Why:** The 5e area rule is one damage roll for everyone; a new record component at the end, with the old
+constructor kept, changes nothing for existing hazards. Healing had no readout at all. A new channel rather
+than a new `CheckFeedbackPayload` kind keeps older clients connected: they fall back to the action bar text.
+
 ## 0.2.19: A hazard's source is credited like an attacker
 
 **Decision:** `HazardSave` takes an optional source entity (`withSource`). The hazard's damage source then
