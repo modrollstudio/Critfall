@@ -186,4 +186,9 @@ public class ApiGameTests implements FabricGameTest {
     public void armorClassBreakdownLeavesOutOneSlot(GameTestHelper helper) {
         ApiScenarios.armorClassBreakdownLeavesOutOneSlot(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void drivenAttackReadoutNamesItsLabel(GameTestHelper helper) {
+        ApiScenarios.drivenAttackReadoutNamesItsLabel(helper);
+    }
 }

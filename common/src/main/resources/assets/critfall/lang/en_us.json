@@ -10,6 +10,7 @@
   "critfall.feedback.saved": "SAVED",
   "critfall.feedback.check_success": "SUCCESS",
   "critfall.feedback.check_failed": "FAILED",
+  "critfall.feedback.healed": "healed",
 
   "critfall.save.critfall.spell": "Spell save",
   "critfall.save.critfall.strength": "STR save",

@@ -12,6 +12,8 @@ import net.minecraft.world.entity.LivingEntity;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.ArmorClassSource;
 import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.RollService;
@@ -106,6 +108,7 @@ class ModifiersTest {
     @AfterEach
     void clear() {
         RollService.clearModifierProvider();
+        RollRuntime.armorClassSources().clear();
         Modifiers.errorLog = realLog;
     }
 
@@ -288,5 +291,58 @@ class ModifiersTest {
         RollService.clearModifierProvider();
         assertTrue(RollService.modifierProvider().isEmpty());
         assertEquals(3, attack(Rules.DEFAULTS));
+    }
+
+    @Test
+    void armorClassSourcesAddAfterTheProviderInTheOrderAdded() {
+        List<Integer> soFar = new ArrayList<>();
+        RollService.registerModifierProvider(new FixedProvider(OptionalInt.of(2)));
+        RollService.addArmorClassSource((defender, attacker, armorClass) -> {
+            soFar.add(armorClass);
+            return 5;
+        });
+        RollService.addArmorClassSource((defender, attacker, armorClass) -> {
+            soFar.add(armorClass);
+            return -1;
+        });
+        assertEquals(16, armorClass(Rules.DEFAULTS));
+        assertEquals(List.of(12, 17), soFar, "each source sees the AC before it");
+    }
+
+    @Test
+    void anArmorClassSourceCanSetAFloor() {
+        RollService.addArmorClassSource((defender, attacker, armorClass) -> Math.max(0, 17 - armorClass));
+        assertEquals(17, armorClass(Rules.DEFAULTS));
+        assertEquals(19, Modifiers.armorClass(Rules.DEFAULTS, null, null, 19));
+    }
+
+    @Test
+    void addingASourceTwiceCountsItOnceAndRemovingStopsIt() {
+        ArmorClassSource shield = (defender, attacker, armorClass) -> 5;
+        RollService.addArmorClassSource(shield);
+        RollService.addArmorClassSource(shield);
+        assertEquals(15, armorClass(Rules.DEFAULTS));
+        RollService.removeArmorClassSource(shield);
+        assertEquals(10, armorClass(Rules.DEFAULTS));
+    }
+
+    @Test
+    void toggleOffIgnoresTheArmorClassSources() {
+        RollService.addArmorClassSource((defender, attacker, armorClass) -> 5);
+        assertEquals(10, armorClass(PROVIDERS_OFF));
+    }
+
+    @Test
+    void badArmorClassSourcesCountAsZeroAndLogOnce() {
+        RollService.addArmorClassSource((defender, attacker, armorClass) -> {
+            throw new IllegalStateException("boom");
+        });
+        RollService.addArmorClassSource((defender, attacker, armorClass) -> Modifiers.MAX_AC_MODIFIER + 1);
+        RollService.addArmorClassSource((defender, attacker, armorClass) -> 3);
+        for (int i = 0; i < 3; i++) {
+            assertEquals(13, armorClass(Rules.DEFAULTS), "the good source still counts");
+        }
+        assertEquals(2, logged.size(), "one line per bad source, " + logged);
+        assertTrue(logged.getFirst().contains("counting it as 0"), logged.getFirst());
     }
 }

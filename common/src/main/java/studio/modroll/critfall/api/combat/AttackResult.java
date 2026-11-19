@@ -9,8 +9,10 @@ import studio.modroll.critfall.api.dice.RollDetail;
  * @param natural the face the (kept) d20 showed, before any bonus
  * @param attackTotal natural + attack bonus
  * @param armorClass the effective AC the roll was made against (base defender AC + defenderAcBonus); the
- *     base includes a {@link studio.modroll.critfall.api.ModifierProvider#acModifier provided AC modifier}
- * @param defenderAcBonus per-attack situational modifier to the defender's AC; may be negative
+ *     base includes a {@link studio.modroll.critfall.api.ModifierProvider#acModifier provided AC modifier} and,
+ *     since 0.2.20, what each {@link studio.modroll.critfall.api.ArmorClassSource} added
+ * @param defenderAcBonus per attack situational modifier to the defender's AC; may be negative. Since 0.2.20 it
+ *     includes a {@link studio.modroll.critfall.api.event.PostAttackRollEvent#raiseArmorClass raise} after the roll
  * @param damage rolled damage on HIT/CRIT, at least 1 (0 with damage dice off, when vanilla applies);
  *     0 on MISS/FUMBLE
  * @param roll how the d20 was rolled (mode, kept face, dropped face)
@@ -42,7 +44,7 @@ public record AttackResult(
         return attackTotal - natural;
     }
 
-    /** The defender's AC (with any provided AC modifier), before {@link #defenderAcBonus()} was applied. */
+    /** The defender's AC (with any provided AC modifier and AC sources), before {@link #defenderAcBonus()}. */
     public int baseArmorClass() {
         return armorClass - defenderAcBonus;
     }

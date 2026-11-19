@@ -3,6 +3,7 @@ package studio.modroll.critfall.api.feedback;
 import io.netty.handler.codec.DecoderException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import net.minecraft.network.FriendlyByteBuf;
@@ -27,7 +28,8 @@ import studio.modroll.critfall.api.dice.RollMode;
  * none did; the readout shows it after the dice so the number matches the damage dealt. {@code taken} is
  * the health a hit actually took once Resistance, Protection, difficulty and absorption had their say
  * ({@link #TAKEN_UNKNOWN} when not known: a miss, dry-run, damage dice off, or a hurt no loader hook saw);
- * the readout shows it after the roll when it differs, {@code 1d10+4 = 12 → 7}.
+ * the readout shows it after the roll when it differs, {@code 1d10+4 = 12 → 7}. {@code label} names the attack
+ * ahead of the roll, {@code Fire Bolt: d20 ...}: a translation key, or plain text; empty for none (since 0.2.20).
  */
 public record RollFeedbackPayload(
         AttackOutcome outcome,
@@ -46,11 +48,56 @@ public record RollFeedbackPayload(
         FlavorName flavorAttacker,
         FlavorName flavorTarget,
         float critMultiplier,
-        float taken)
+        float taken,
+        String label)
         implements CustomPacketPayload {
 
     /** {@link #taken()} when the health the hit took is not known. */
     public static final float TAKEN_UNKNOWN = -1.0F;
+
+    public RollFeedbackPayload {
+        Objects.requireNonNull(label, "label");
+    }
+
+    /** Convenience without a label (pre-0.2.20 callers). */
+    public RollFeedbackPayload(
+            AttackOutcome outcome,
+            int natural,
+            int attackTotal,
+            int armorClass,
+            int damage,
+            String diceNotation,
+            boolean showDamage,
+            Optional<String> flavorKey,
+            List<ConsequenceLine> consequences,
+            boolean dryRun,
+            RollMode rollMode,
+            OptionalInt droppedNatural,
+            int defenderAcBonus,
+            FlavorName flavorAttacker,
+            FlavorName flavorTarget,
+            float critMultiplier,
+            float taken) {
+        this(
+                outcome,
+                natural,
+                attackTotal,
+                armorClass,
+                damage,
+                diceNotation,
+                showDamage,
+                flavorKey,
+                consequences,
+                dryRun,
+                rollMode,
+                droppedNatural,
+                defenderAcBonus,
+                flavorAttacker,
+                flavorTarget,
+                critMultiplier,
+                taken,
+                "");
+    }
 
     /** Convenience without the damage taken (pre-0.2.18 callers). */
     public RollFeedbackPayload(
@@ -215,6 +262,29 @@ public record RollFeedbackPayload(
         return new RollDetail(rollMode, natural, droppedNatural);
     }
 
+    /** The same payload naming the attack {@code newLabel}; see {@link #label()}. Since 0.2.20. */
+    public RollFeedbackPayload withLabel(String newLabel) {
+        return new RollFeedbackPayload(
+                outcome,
+                natural,
+                attackTotal,
+                armorClass,
+                damage,
+                diceNotation,
+                showDamage,
+                flavorKey,
+                consequences,
+                dryRun,
+                rollMode,
+                droppedNatural,
+                defenderAcBonus,
+                flavorAttacker,
+                flavorTarget,
+                critMultiplier,
+                taken,
+                newLabel);
+    }
+
     /** The defender's AC (with any provided AC modifier), before {@link #defenderAcBonus()} was applied. */
     public int baseArmorClass() {
         return armorClass - defenderAcBonus;
@@ -229,12 +299,13 @@ public record RollFeedbackPayload(
     private static final int MAX_CONSEQUENCES = 64;
 
     /**
-     * {@code critfall:roll_feedback_v4} since 0.2.18, which added the damage taken ({@code _v3} since
-     * 0.2.17 added the carried crit multiplier, {@code _v2} since 0.2.15 the flavor line's names). An older
-     * client only has an older channel, so it gets the action bar instead of a packet it cannot read.
+     * {@code critfall:roll_feedback_v5} since 0.2.20, which added the label ({@code _v4} since 0.2.18 added the
+     * damage taken, {@code _v3} since 0.2.17 the carried crit multiplier, {@code _v2} since 0.2.15 the flavor
+     * line's names). An older client only has an older channel, so it gets the action bar instead of a packet it
+     * cannot read.
      */
     public static final Type<RollFeedbackPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "roll_feedback_v4"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(Critfall.MOD_ID, "roll_feedback_v5"));
 
     public static final StreamCodec<FriendlyByteBuf, RollFeedbackPayload> STREAM_CODEC =
             StreamCodec.of(RollFeedbackPayload::encode, RollFeedbackPayload::decode);
@@ -265,6 +336,7 @@ public record RollFeedbackPayload(
         FlavorName.write(buf, p.flavorTarget);
         buf.writeFloat(p.critMultiplier);
         buf.writeFloat(p.taken);
+        buf.writeUtf(p.label);
     }
 
     private static RollFeedbackPayload decode(FriendlyByteBuf buf) {
@@ -293,6 +365,7 @@ public record RollFeedbackPayload(
         FlavorName flavorTarget = FlavorName.read(buf);
         float critMultiplier = buf.readFloat();
         float taken = buf.readFloat();
+        String label = buf.readUtf();
         return new RollFeedbackPayload(
                 outcome,
                 natural,
@@ -310,7 +383,8 @@ public record RollFeedbackPayload(
                 flavorAttacker,
                 flavorTarget,
                 critMultiplier,
-                taken);
+                taken,
+                label);
     }
 
     static void writeLine(FriendlyByteBuf buf, ConsequenceLine line) {

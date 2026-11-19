@@ -7,8 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+What Critfall: Spells needs: AC from several mods, reactions after the roll, one damage roll for an area, a
+heal readout, and labels on driven attacks.
+
+### Added
+
+- `RollService.addArmorClassSource(ArmorClassSource)`: any number of mods can add to a defender's AC, beside
+  the one modifier provider. Each source sees the AC so far, so it can also set a floor. Sources count in
+  every attack roll, real time and driven, and in hazard attacks; `modifier_providers.enabled: false` turns
+  them off with the provider. `RollService.armorClass(defender, attacker)` gives the AC with the provider and
+  every source, and `/critfall inspect` shows it when other mods change the AC.
+- `PostAttackRollEvent.raiseArmorClass(int)`: a reaction after the roll, such as Shield. A hit the higher AC
+  is above becomes a miss with no damage (a natural 20 still hits), later listeners see the miss, and the
+  readout shows the raise: `vs AC 19 (14+5) — MISS`.
+- `HazardSave.withRolledDamage(RollResult)`: one damage roll shared by every target of an area, each with its
+  own save and resistances, as a Fireball works.
+- `RollService.performHeal(healer, target, label, dice)`: rolls the healing on the combat roller, heals, and
+  shows `Cure Wounds: 2d8+3 = 12 healed` to the healer and the target. When the target gains less than the
+  roll, the readout shows both: `12 → 5 healed`.
+- `AttackContext.withLabel(String)`: a driven attack's readout names it, so a spell cast through a held focus
+  reads `Fire Bolt: d20 13+5=18 vs AC 12 — HIT 1d10 = 6`. The roll packet carries the label, so it moved to
+  `critfall:roll_feedback_v5`; an older client gets the action bar text.
+
 ### Fixed
 
+- `docs/api.md` said vanilla armor does not reduce a hazard's damage. Since 0.2.18 it does, as it does a
+  driven attack's, unless `balance.disable_vanilla_armor_reduction` is on; the docs now say so.
 - The source and issue links in the mod list point at github.com/modrollstudio/Critfall instead of the old repo.
 
 ## [0.2.19] - 2026-11-04

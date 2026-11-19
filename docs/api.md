@@ -14,7 +14,7 @@ The `api` subpackages:
 | Package | Types |
 |---------|-------|
 | `api.dice` | `DiceExpression`, `DiceRoller`, `RollResult`, `DieRoll`, `RollMode`, `RollDetail`, `DiceParseException` |
-| `api.combat` | `AttackResult`, `AttackOutcome`, `SaveResult`, `ContestResult`, `ContestSide`, `HazardSaveResult`, `SuccessDamage` |
+| `api.combat` | `AttackResult`, `AttackOutcome`, `SaveResult`, `ContestResult`, `ContestSide`, `HazardSaveResult`, `HealResult`, `SuccessDamage` |
 | `api.feedback` | `RollFeedbackPayload`, `CheckFeedbackPayload`, `ConsequenceLine`, `FlavorName` |
 | `api.event` | the events below |
 
@@ -79,6 +79,11 @@ These are Critfall's **own** values, as is [`/critfall inspect`](commands.md#cri
 modifier and AC a roll actually used are on its result: `AttackResult.attackBonus()`,
 `AttackResult.armorClass()`, `SaveResult.saveBonus()`.
 
+Since 0.2.20 `RollService.armorClass(defender, attacker)` gives the AC an attack would roll against now:
+the own AC above, plus the provider's AC modifier and every [AC source](#ac-sources). `attacker` may be
+`null`. It leaves out what belongs to one attack: `AttackContext.withDefenderAcBonus` and a
+[raise after the roll](#postattackrollevent--a-reaction-after-the-roll).
+
 ### Per-entity profiles
 
 Since 0.2.13 one entity can have its own [entity profile](datapack-formats.md#entity-profile), ahead of
@@ -127,8 +132,8 @@ AttackResult applied = RollService.performAttack(attacker, target, ctx);
 the **effective** AC the roll was made against; `defenderAcBonus()` is the situational modifier that
 was applied (see [Defender AC modifier](#defender-ac-modifier)), and `baseArmorClass()` is
 `armorClass() - defenderAcBonus()` — the defender's own AC before the modifier, including a
-[provided AC modifier](#modifier-provider). With no modifier set they are equal and `defenderAcBonus()`
-is `0`.
+[provided AC modifier](#modifier-provider) and, since 0.2.20, the [AC sources](#ac-sources). With no
+modifier set they are equal and `defenderAcBonus()` is `0`.
 
 > **Armor note.** `performAttack` applies damage exactly like the automatic pipeline: vanilla armor
 > reduces the resulting `hurt` by default, and is bypassed on both paths when
@@ -308,8 +313,8 @@ AttackResult result = RollService.performHazardAttack(player, darts);
   `DEXTERITY_SAVE`, `CONSTITUTION_SAVE`, `INTELLIGENCE_SAVE`, `WISDOM_SAVE`, `CHARISMA_SAVE`
   (`"critfall:strength"` ...), or your own key. With Checks, map the key to an ability in its
   `save_abilities`, e.g. `"critfall:dexterity": "dex"`.
-- **AC:** the target's AC as Critfall computes it, plus the provider's `acModifier(target, null)`. The
-  attacker is `null` for a hazard.
+- **AC:** the target's AC as Critfall computes it, plus the provider's `acModifier(target, null)`, then
+  since 0.2.20 each [AC source](#ac-sources). The attacker is `null` for a hazard.
 - **Advantage and disadvantage:** `withMode` is the hazard's own source, and
   [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls) listeners add theirs before the d20;
   Critfall combines them the 5e way. Both dice show in the result's `roll()` and the readout.
@@ -331,6 +336,22 @@ AttackResult result = RollService.performHazardAttack(player, darts);
           ModifierProvider.DEXTERITY_SAVE, 13, DiceExpression.parse("2d6")).withSource(player);
   RollService.performHazardSave(target, breath);
   ```
+- **One damage roll for an area** (since 0.2.20): `HazardSave.withRolledDamage(RollResult)` takes a roll
+  you made instead of rolling the damage again, so every creature in an area takes the same roll (the 5e
+  rule for a Fireball), each with its own save. A failed save takes the roll's total (at least 1), a success
+  half or none, each after its own resistances. Roll the hazard's own dice: the readout names them.
+  Without it each target rolls its own damage, as before.
+
+  ```java
+  DiceExpression dice = DiceExpression.parse("8d6");
+  HazardSave fireball = HazardSave.of("spell.critfall_spells.fireball", fireType,
+                  ModifierProvider.DEXTERITY_SAVE, dc, dice)
+          .withSource(caster)
+          .withRolledDamage(RollService.roll(dice));
+  for (LivingEntity target : inTheArea) {
+      RollService.performHazardSave(target, fireball);   // Fireball: DEX save d20 8+2=10 vs DC 15 — FAILED 8d6 = 28
+  }
+  ```
 - **Bonuses and rerolls** (since 0.2.14): listeners can `addBonus(int)` to the save or attack total and
   `rerollOnes()`; see [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls).
 - **Crits and fumbles:** a natural 20 hits and uses the server's crit rule (`crits.rule`); a natural 1
@@ -338,10 +359,11 @@ AttackResult result = RollService.performHazardAttack(player, darts);
 - **Damage:** a failed save or a hit deals at least 1 before resistances, unless the hazard's damage is
   `HazardSave.NO_DAMAGE` (a flat `0`, since 0.2.14), which deals 0. `dealsDamage()` on either record
   tells which. The target profile's
-  `damage_modifiers` for the damage type and `balance.global_damage_multiplier` apply; vanilla armor
-  does not (the AC or the save stood in for it), Resistance and absorption do. The dice roll even with
-  `damage_dice` off: a hazard has no vanilla amount. `HazardSaveResult.damage()` and the attack's
-  `AttackResult.damage()` are what Critfall applied.
+  `damage_modifiers` for the damage type and `balance.global_damage_multiplier` apply. Then vanilla armor
+  reduces it, as it does a driven attack's (since 0.2.18), unless `balance.disable_vanilla_armor_reduction`
+  is on; Resistance and absorption apply too. The dice roll even with `damage_dice` off: a hazard has no
+  vanilla amount. `HazardSaveResult.damage()` and the attack's `AttackResult.damage()` are what Critfall
+  applied, before armor; the readout shows the same.
 - **The hurt** is driven damage: it skips the target's hurt cooldown, never re-rolls, and
   [`isDrivenDamage`](#detecting-driven-damage) is `true` during it. Hazards fire
   [`HazardRollEvent`](#hazardrollevent--adjusting-hazard-rolls) and no attack events
@@ -354,12 +376,43 @@ AttackResult result = RollService.performHazardAttack(player, darts);
   `Dart trap: d20 15+5=20 vs AC 14 — HIT 1d4 = 3`. Since 0.2.14 a save names its save key
   (`DEX save`); see [save names](#save-names).
 
+### Healing
+
+Since 0.2.20 a heal rolls on the combat roller and shows a readout, as a hit does:
+
+```java
+HealResult heal = RollService.performHeal(caster, target, "spell.critfall_spells.cure_wounds",
+        DiceExpression.parse("2d8+3"));
+heal.roll();     // the RollResult
+heal.healed();   // the health the target actually gained
+// Cure Wounds: 2d8+3 = 12 healed
+```
+
+- **The heal** goes through vanilla's `heal`: it stops at the target's maximum health and does nothing to a
+  dead target. On NeoForge it fires `LivingHealEvent`, so another mod can change or stop it. A roll below 0
+  heals nothing.
+- **Readout,** to the healer when it is a player, and to the target too under `roll_visibility: everyone`
+  (once when they are the same), unless `roll_visibility` is `off`. When the target gained less than the
+  roll, the readout shows both: `Cure Wounds: 2d8+3 = 12 → 5 healed`. The label is a translation key, or
+  plain text; `""` for none. It rides its own optional channel, `critfall:heal_feedback`; a client without
+  it gets the same text on the action bar.
+- `healer` may be the target itself. The healing is not scaled by `balance.global_damage_multiplier`.
+
 ## `AttackContext` and `AttackDelivery`
 
 `AttackContext` bundles the delivery method, the damage source, the weapon stack, the roll mode, and
 optional overrides. Factories: `AttackContext.melee/projectile/thrown/spell(source, weapon)`.
 Wither methods return a copy: `withMode(RollMode)`, `withAttackBonus(int)`, `withDamageDice(...)`,
-`withDefenderAcBonus(int)` (see below).
+`withDefenderAcBonus(int)` (see below), and since 0.2.20 `withLabel(String)`.
+
+#### Label
+
+`withLabel(String)` names a driven attack in its readout, so a spell cast through a held wand reads as the
+spell: `Fire Bolt: d20 13+5=18 vs AC 12 — HIT 1d10 = 6`. A translation key, or plain text (shown as is when
+no translation exists); `""`, the default, for none. Only `performAttack` sends a readout, so only it shows the
+label; listeners can read it from the event's `context().label()`. The label is on the wire as
+`RollFeedbackPayload.label()`, and `RollFeedbackPayload.withLabel(String)` adds one to a payload you send
+yourself with `sendRollFeedback`.
 
 #### Defender AC modifier
 
@@ -380,7 +433,8 @@ AttackResult result = RollService.performAttack(archer, target, ctx);
 - **Per-attack and non-persistent.** It affects only this `attackRoll`/`performAttack` call; it never
   mutates the entity's profile or carries over to the next attack.
 - **Effective AC** for the roll is `RollService.effectiveEntity(target).armorClass() + defenderAcBonus`,
-  plus a [modifier provider](#modifier-provider)'s `acModifier` when it gives one. Both apply.
+  plus a [modifier provider](#modifier-provider)'s `acModifier` when it gives one, and since 0.2.20 every
+  [AC source](#ac-sources). All apply.
 - **Negatives are allowed** (situational penalties); the value is not clamped.
 - **Defaults to `0`** — existing callers that never call it are unaffected, byte for byte.
 - **Interaction with the roll.** The modifier shifts the to-hit *threshold* only; it is independent of
@@ -456,6 +510,38 @@ RollService.registerModifierProvider(new ModifierProvider() {
 - **Readouts** show the modifier and AC actually used: `d20 13-5=8 vs AC 10`, `HIT 1d6+5 = 9` (`1d6+1`
   plus 4), `save d20 8+5=13 vs DC 13`, `d20 7+3=10 vs AC 12` (AC 10 plus 2).
 
+### AC sources
+
+Since 0.2.20 any number of mods can add to a defender's AC, beside the one provider slot: a spell, a
+blessing, a curse. Register an `ArmorClassSource`, server side:
+
+```java
+RollService.addArmorClassSource((defender, attacker, armorClassSoFar) ->
+        hasShieldOfFaith(defender) ? 2 : 0);
+
+// A floor: Barkskin's "AC can't be less than 17"
+RollService.addArmorClassSource((defender, attacker, armorClassSoFar) ->
+        hasBarkskin(defender) ? Math.max(0, 17 - armorClassSoFar) : 0);
+```
+
+- **Return what you add,** `0` for nothing, negative to lower the AC (Slow). Not clamped.
+- **Order:** Critfall's own AC, then the provider's `acModifier`, then each source in the order added.
+  `armorClassSoFar` is the AC before your source, so a floor works whatever else applies.
+- **Asked** on every attack roll (melee, projectile, thrown, spell; real time and driven), on every
+  [hazard attack](#hazards), and by `RollService.armorClass`. `attacker` is `null` for a hazard attack and
+  for `armorClass(defender, null)`. An attack's `withDefenderAcBonus` and a
+  [raise after the roll](#postattackrollevent--a-reaction-after-the-roll) come on top and are not in
+  `armorClassSoFar`.
+- **Not counted** in `effectiveEntity`, `armorClassBreakdown` or `/critfall inspect`'s own AC line: those
+  stay Critfall's own, like the provider's modifier. Use `RollService.armorClass` to show the AC with
+  everything.
+- **Do not call** `RollService.armorClass`, `attackRoll` or anything else that asks the sources from inside
+  `add`: it would ask your source again.
+- **Bad answers:** a source that throws or answers beyond ±1,000,000 counts as `0` and is logged once.
+- **Adding the same source twice** adds it once. `RollService.removeArmorClassSource(source)` takes it out.
+- **Server toggle:** `modifier_providers.enabled: false` ignores the sources too.
+- **Readouts** show the AC with the sources counted: `d20 12+5=17 vs AC 19`.
+
 ## Suppression (`CombatSuppression`)
 
 The per-entity "an orchestrator owns this entity's combat" flag. While an entity is
@@ -489,7 +575,7 @@ it, so a listener sees **every** attack from either path. A listener that throws
 |-------|------|--------------|
 | `CombatInteractionEvent` | a damaging combat interaction is detected, before everything else (since 0.2.2) | observe |
 | `PreAttackRollEvent`  | before the d20 | change `attackBonus`, force `mode` (advantage/disadvantage), or `cancel()`; since 0.2.14 also `grantAdvantage()`, `imposeDisadvantage()`, `addBonus(int)`, `rerollOnes()` |
-| `PostAttackRollEvent` | after resolving, before damage | change `finalDamage`, or `veto()` |
+| `PostAttackRollEvent` | after resolving, before damage | change `finalDamage`, or `veto()`; since 0.2.20 also `raiseArmorClass(int)` |
 | `FumbleEvent`         | outcome is a fumble | observe |
 | `CritEvent`           | outcome is a crit | observe |
 | `HazardRollEvent`     | before the d20 of a [hazard](#hazards) save or attack (since 0.2.13) | `grantAdvantage()`, `imposeDisadvantage()`; since 0.2.14 also `addBonus(int)`, `rerollOnes()` |
@@ -557,6 +643,30 @@ CritfallEvents.onPreAttackRoll(event -> {
 
 A canceled `PreAttackRollEvent` means the attack does not happen (no damage, no outcome tables).
 A vetoed `PostAttackRollEvent` means it resolved but applies no damage and runs no outcome tables.
+
+### `PostAttackRollEvent` — a reaction after the roll
+
+Since 0.2.20 a listener can raise the AC the roll already made is measured against, as Shield does: the
+attacker rolled, the defender reacts.
+
+```java
+CritfallEvents.onPostAttackRoll(event -> {
+    AttackResult roll = event.result();
+    boolean shieldHelps = roll.isHit() && roll.natural() != 20 && roll.attackTotal() < roll.armorClass() + 5;
+    if (shieldHelps && hasShieldReady(event.target())) {
+        event.raiseArmorClass(5);   // d20 13+3=16 vs AC 19 (14+5) — MISS
+    }
+});
+```
+
+- A hit the new AC is above becomes a `MISS`: no damage, `finalDamage()` drops to `0`, and no crit event
+  or crit outcome. A natural 20 still hits while `crits.nat20_always_hits` is on.
+- `result()` shows the change at once, to this listener and every one after it, so a second reaction sees
+  the miss. The raise counts in `armorClass()` and `defenderAcBonus()`, so `baseArmorClass()` stays the
+  defender's own AC and the readout shows the split: `vs AC 19 (14+5)`.
+- Several raises add up. A negative amount throws; raising a miss only raises the AC shown.
+- It works on every attack: a player's or a mob's real time hit, and `attackRoll` and `performAttack`.
+  Hazard attacks fire no `PostAttackRollEvent`.
 
 ### `HazardRollEvent` — adjusting hazard rolls
 

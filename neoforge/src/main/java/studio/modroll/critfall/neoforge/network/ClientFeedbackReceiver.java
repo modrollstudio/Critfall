@@ -12,6 +12,7 @@ import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.feedback.ClientConfig;
 import studio.modroll.critfall.feedback.FlavorText;
+import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 import studio.modroll.critfall.neoforge.client.CritfallClient;
 
@@ -34,6 +35,14 @@ public final class ClientFeedbackReceiver {
     }
 
     public static void receiveCheck(CheckFeedbackPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (CritfallClient.config().rolls()) {
+                Minecraft.getInstance().gui.setOverlayMessage(CombatText.actionBar(payload), false);
+            }
+        });
+    }
+
+    public static void receiveHeal(HealFeedbackPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
             if (CritfallClient.config().rolls()) {
                 Minecraft.getInstance().gui.setOverlayMessage(CombatText.actionBar(payload), false);

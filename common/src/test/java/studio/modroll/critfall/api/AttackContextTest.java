@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Optional;
+import java.util.OptionalInt;
 import net.minecraft.world.item.ItemStack;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -67,12 +69,32 @@ class AttackContextTest {
         assertThrows(
                 NullPointerException.class,
                 () -> new AttackContext(
-                        null,
-                        null,
-                        ItemStack.EMPTY,
-                        RollMode.NORMAL,
-                        java.util.OptionalInt.empty(),
-                        java.util.Optional.empty(),
-                        0));
+                        null, null, ItemStack.EMPTY, RollMode.NORMAL, OptionalInt.empty(), Optional.empty(), 0));
+    }
+
+    @Test
+    void labelIsEmptyUnlessGivenAndWithersKeepIt() {
+        AttackContext plain = AttackContext.spell(null, ItemStack.EMPTY);
+        assertEquals("", plain.label());
+        AttackContext named = plain.withLabel("Fire Bolt")
+                .withMode(RollMode.ADVANTAGE)
+                .withAttackBonus(5)
+                .withDamageDice(DiceExpression.parse("1d10"))
+                .withDefenderAcBonus(2);
+        assertEquals("Fire Bolt", named.label());
+        assertEquals("", plain.label(), "the wither returns a copy");
+        assertEquals(
+                "",
+                new AttackContext(
+                                AttackDelivery.MELEE,
+                                null,
+                                ItemStack.EMPTY,
+                                RollMode.NORMAL,
+                                OptionalInt.empty(),
+                                Optional.empty(),
+                                0)
+                        .label(),
+                "the constructor from before 0.2.20 has no label");
+        assertThrows(NullPointerException.class, () -> plain.withLabel(null));
     }
 }

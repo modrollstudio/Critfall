@@ -43,6 +43,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import studio.modroll.critfall.RollRuntime;
+import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.combat.AttackDice;
 import studio.modroll.critfall.combat.Derivation;
 import studio.modroll.critfall.combat.Rules;
@@ -161,6 +162,14 @@ public final class CritfallCommands {
                                 ? profileAc.getAsInt() + " (profile)"
                                 : Derivation.armorClass(armor, toughness) + " (derived: armor " + armor + ", toughness "
                                         + toughness + ")"));
+        int ownAc = RollService.effectiveEntity(living).armorClass();
+        int withOtherMods = RollService.armorClass(living, null);
+        if (withOtherMods != ownAc) {
+            int added = withOtherMods - ownAc;
+            send(
+                    source,
+                    "  Armor Class with other mods: " + withOtherMods + " (" + (added > 0 ? "+" : "") + added + ")");
+        }
 
         OptionalInt profileBonus = profile.map(EntityProfile::attackBonus).orElse(OptionalInt.empty());
         double attackDamage = attribute(living, Attributes.ATTACK_DAMAGE);
