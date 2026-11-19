@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tracks when each attacker last triggered a fumble so further nat 1s within
- * {@code fumbles.cooldown_ticks} stay plain misses (PLAN.md §9.1 — real-time attack rates make
+ * {@code fumbles.cooldown_ticks} stay plain misses (real-time attack rates make
  * back-to-back fumble consequences miserable). Keyed by entity UUID against the level's game
  * time. Entries only matter within the cooldown window, so the map self-prunes expired entries
  * once it grows past {@link #PRUNE_SIZE} (audit 0.2 finding A1: transient mobs on a long-running

@@ -47,7 +47,7 @@ import studio.modroll.critfall.feedback.FlavorKills;
 import studio.modroll.critfall.outcome.OutcomeExecutor;
 
 /**
- * The public entry point for driving and observing Critfall combat (PLAN §4.4/§12). Other mods and
+ * The public entry point for driving and observing Critfall combat. Other mods and
  * KubeJS scripts use this: roll dice, run a full attack, query effective profiles, suppress the
  * automatic pipeline for entities an orchestrator owns, and emit feedback. All rolls go through the
  * injectable combat roller — this class adds no randomness of its own.

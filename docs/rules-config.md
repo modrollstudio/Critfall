@@ -98,7 +98,7 @@ modifier. Immunities, `global_damage_multiplier` and resistances apply after tha
 ## fumbles — with real-time frequency safeguards
 
 Tabletop assumes 2–3 attack rolls a minute; Minecraft melee makes 30+, so a raw 5% nat-1
-consequence would fire constantly (PLAN.md §9.1). Three safeguards ship **on by default**:
+consequence would fire constantly. Three safeguards ship **on by default**:
 
 - `confirmation_roll` — a nat 1 only triggers consequences if a second d20 rolls **below** `dc`
   (default 10, valid 2–20). Roughly halves fumble frequency; a saved fumble is a plain miss.
@@ -107,7 +107,7 @@ consequence would fire constantly (PLAN.md §9.1). Three safeguards ship **on by
 - `durability_break.mode` — what a fumble does to the weapon once `durability_break.enabled` is
   on (off by default since 0.2.17): `set_to_1` drops the weapon to 1 remaining durability (dramatic);
   `percent_loss` removes `percent`% of max durability per fumble instead, so repeated fumbles
-  wear gear down rather than trashing it. The PLAN.md shorthand `"mode": "percent_loss:25"` is
+  wear gear down rather than trashing it. The shorthand `"mode": "percent_loss:25"` is
   also accepted. Neither mode ever fully breaks the weapon mid-swing.
 - `nat1_always_misses: false` lets a high attack bonus land even on a natural 1 (house rule).
 
@@ -147,7 +147,7 @@ armor by default, or not at all when the flag is on.
 ## fallbacks
 
 What happens when no datapack profile matches: `derive` (default) computes plausible stats from
-vanilla attributes (PLAN.md §4.3); `vanilla_passthrough` leaves the damage event untouched —
+vanilla attributes; `vanilla_passthrough` leaves the damage event untouched —
 `unknown_entity` checks the defender, `unknown_weapon` checks the attacker's dice sources
 (melee and projectile), `unknown_spell` checks spell-classified damage whose type no spell
 profile matches (`derive` rolls an attack with dice derived from the vanilla amount).
@@ -220,6 +220,6 @@ it. Turning the flag back on afterwards stays: a version 2 file is never migrate
     vanilla amount.
   - Only while `crits.enabled` is on: with Critfall's crits off, jump crits are vanilla's again.
 
-The other sources sketched in PLAN.md (`attack_from_behind`, `target_blinded`, `sneak_attack`,
+The other `advantage_sources` keys (`attack_from_behind`, `target_blinded`, `sneak_attack`,
 `low_attack_cooldown_disadvantage`) are recognised but not implemented yet; setting them only
 logs a warning.

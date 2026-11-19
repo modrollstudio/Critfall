@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceLocation;
  * A trigger bound to a weighted list of effects, loaded from
  * {@code data/<ns>/critfall/outcome_table/*.json}. One generic system for fumbles AND crit
  * effects — profiles reference tables per trigger ({@code fumble_table}, {@code crit_table}) and
- * the M4 executor applies whichever table's trigger matches the roll.
+ * {@code OutcomeExecutor} applies whichever table's trigger matches the roll.
  */
 public record OutcomeTable(ResourceLocation id, Trigger trigger, List<WeightedEffect> effects) {
 

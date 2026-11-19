@@ -30,7 +30,7 @@ import studio.modroll.critfall.feedback.FeedbackSink;
 
 /**
  * End-to-end tests of the damage interception: real entities, real {@code LivingEntity.hurt},
- * scripted RNG (PLAN.md §6). Stats come from the shipped default datapack: husk (zombies profile)
+ * scripted RNG. Stats come from the shipped default datapack: husk (zombies profile)
  * attacks with +3 and 1d4+1 melee dice; pig (livestock profile) has AC 10; wolf has AC 12.
  * Every rules.json flag has a test proving that turning it off restores vanilla behavior for
  * that mechanic only.

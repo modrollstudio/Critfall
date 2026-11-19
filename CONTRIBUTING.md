@@ -28,7 +28,7 @@ The GameTest suite lives once in `common/src/gametest` and runs on both loaders:
 
 ## Ground rules
 
-These are enforced in review (see `PLAN.md` for the full spec):
+These are enforced in review:
 
 - **Data over code.** All gameplay/balance values come from datapack JSON or the rules config — never hardcode balance numbers in Java.
 - **Injectable RNG.** No direct `new Random()` or `level.random` in game logic. Tests must be able to force a nat 1 or a nat 20.

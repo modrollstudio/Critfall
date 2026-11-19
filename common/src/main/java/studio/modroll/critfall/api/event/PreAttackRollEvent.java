@@ -5,7 +5,7 @@ import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.dice.RollMode;
 
 /**
- * Fired before the d20 is rolled (PLAN §4.4). Listeners may raise/lower the attack bonus, force
+ * Fired before the d20 is rolled. Listeners may raise/lower the attack bonus, force
  * advantage/disadvantage, or cancel the attack entirely (a canceled attack deals no damage and runs
  * no outcome tables). Since 0.2.14 they can also {@link #grantAdvantage grant advantage} or {@link
  * #imposeDisadvantage impose disadvantage}, combined the 5e way like {@link HazardRollEvent}, {@link #addBonus

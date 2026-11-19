@@ -5,7 +5,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Per-target anti-spam gate for narrative flavor lines (PLAN §4.5): at most one non-priority flavor
+ * Per-target anti-spam gate for narrative flavor lines: at most one non-priority flavor
  * line per {@code cooldown_ticks} per target. Priority lines (nat 20 crit / nat 1 fumble) bypass this
  * in {@link FeedbackBuilder}. Keyed by target UUID against the level game time — same pattern and
  * same lifecycle as {@link studio.modroll.critfall.combat.FumbleCooldowns}: expired entries are

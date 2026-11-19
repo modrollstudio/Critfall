@@ -5,7 +5,7 @@ package studio.modroll.critfall.combat;
  * identically on both loaders. NeoForge backs this with {@code LivingIncomingDamageEvent}; Fabric
  * backs it from a {@code LivingEntity#hurt} mixin. {@code bypassArmor} zeroes only vanilla base
  * armor reduction — enchantment protection, the Resistance effect, and absorption still apply,
- * matching the M2 armor decision (docs/design-decisions.md).
+ * matching the armor decision (docs/design-decisions.md).
  */
 public interface IncomingDamage {
 

@@ -3,11 +3,10 @@ package studio.modroll.critfall.api.feedback;
 import java.util.Optional;
 
 /**
- * One player-facing announcement of a fired outcome consequence (PLAN §4.5: "a triggered outcome
- * states which consequence fired"). {@code key} is a translation key resolved client-side (or shown
- * literally in the modless fallback); {@code arg} is an optional already-resolved name (a redirect
- * victim, an applied status effect). Flat strings only — this crosses the network in the feedback
- * payload and must round-trip without registry access.
+ * One player-facing announcement of a fired outcome consequence. {@code key} is a translation key
+ * resolved client-side (or shown literally in the modless fallback); {@code arg} is an optional
+ * already-resolved name (a redirect victim, an applied status effect). Flat strings only — this
+ * crosses the network in the feedback payload and must round-trip without registry access.
  */
 public record ConsequenceLine(String key, Optional<String> arg) {
 

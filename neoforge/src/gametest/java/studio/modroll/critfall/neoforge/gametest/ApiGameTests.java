@@ -12,7 +12,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.gametest.ApiScenarios;
 
-/** NeoForge registration shim: delegates to the shared {@link ApiScenarios} bodies (M8). */
+/** NeoForge registration shim: delegates to the shared {@link ApiScenarios} bodies. */
 @GameTestHolder(Critfall.MOD_ID)
 @PrefixGameTestTemplate(false)
 public class ApiGameTests {

@@ -6,10 +6,9 @@ import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.dice.DiceExpression;
 
 /**
- * Fallback derivation (PLAN.md §4.3): plausible tabletop stats computed from vanilla attribute
- * values so the mod works with zero configuration in any modpack. The numbers here are the M2
- * hardcoded defaults — M3 replaces them with datapack profiles and keeps these only as the
- * last-resort fallback.
+ * Fallback derivation: plausible tabletop stats computed from vanilla attribute
+ * values so the mod works with zero configuration in any modpack. Datapack profiles override
+ * these numbers; they are only the last-resort fallback.
  */
 public final class Derivation {
 

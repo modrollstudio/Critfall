@@ -53,7 +53,7 @@ public final class AttackDice {
     }
 
     /**
-     * Dice for a projectile impact (M5). Precedence: the launcher's item profile (bow, crossbow,
+     * Dice for a projectile impact. Precedence: the launcher's item profile (bow, crossbow,
      * trident, or the thrown item itself), then the attacker's entity profile ranged dice, then
      * empty — the caller applies the {@code fallbacks.unknown_weapon} rule. Ammo with its own
      * item profile ADDS its dice on top ({@code ammoDice}).

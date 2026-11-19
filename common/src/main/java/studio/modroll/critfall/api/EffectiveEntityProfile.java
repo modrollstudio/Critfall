@@ -10,7 +10,7 @@ import studio.modroll.critfall.data.EntityProfile;
 
 /**
  * The resolved combat stats for an entity — each field is the datapack profile value if present, or
- * the attribute-derived fallback otherwise (PLAN §4.3), matching what the live pipeline uses. Query
+ * the attribute-derived fallback otherwise, matching what the live pipeline uses. Query
  * these via {@link RollService#effectiveEntity}.
  */
 public record EffectiveEntityProfile(

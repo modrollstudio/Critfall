@@ -14,7 +14,7 @@ import studio.modroll.critfall.combat.FumbleCooldowns;
 import studio.modroll.critfall.combat.Rules;
 
 /**
- * Dry-run mode (PLAN §8.2.3): rolls are computed and shown, but vanilla damage still applies and no
+ * Dry-run mode: rolls are computed and shown, but vanilla damage still applies and no
  * outcome effect fires. Forcing the very scenario that normally sets a weapon to 1 durability
  * ({@link CombatScenarios#fumbleConfirmationFailureTriggersConsequence}, faces {@code 1,5,1}) proves
  * suppression two ways: the weapon stays whole, the vanilla hit lands, and only {@code 1,5} are

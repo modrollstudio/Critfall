@@ -8,7 +8,7 @@ import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.gametest.FeedbackScenarios;
 import studio.modroll.critfall.gametest.FlavorScenarios;
 
-/** NeoForge registration shim: delegates to the shared {@link FeedbackScenarios} bodies (M8). */
+/** NeoForge registration shim: delegates to the shared {@link FeedbackScenarios} bodies. */
 @GameTestHolder(Critfall.MOD_ID)
 @PrefixGameTestTemplate(false)
 public class FeedbackGameTests {

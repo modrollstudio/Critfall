@@ -51,7 +51,7 @@ changes combat for everyone on it. `resetRoller()` restores the default randomly
 ### Effective-profile queries
 
 The resolved combat stats for any entity/item — the datapack profile value, or the attribute-derived
-fallback (PLAN §4.3) when a field is absent. These are exactly the values the live pipeline uses.
+fallback when a field is absent. These are exactly the values the live pipeline uses.
 
 ```java
 EffectiveEntityProfile eff = RollService.effectiveEntity(livingEntity);
@@ -458,7 +458,7 @@ RollService.registerModifierProvider(new ModifierProvider() {
 
 ## Suppression (`CombatSuppression`)
 
-The per-entity "an orchestrator owns this entity's combat" flag from PLAN §12. While an entity is
+The per-entity "an orchestrator owns this entity's combat" flag. While an entity is
 suppressed, Critfall's automatic real-time interception **stands down** for any attack it is
 involved in (as attacker or target) — so an external mod (e.g. the turn-based companion) can drive
 combat itself via `performAttack`.

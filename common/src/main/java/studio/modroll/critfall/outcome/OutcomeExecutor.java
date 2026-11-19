@@ -28,7 +28,7 @@ import studio.modroll.critfall.data.OutcomeTable;
 import studio.modroll.critfall.data.ProfileStore;
 
 /**
- * Applies outcome tables (PLAN.md §4.2/M4) after an attack roll resolved: gathers the tables the
+ * Applies outcome tables after an attack roll resolved: gathers the tables the
  * attack's profiles reference, fires those whose trigger matches, and inflicts one weighted-picked
  * effect per fired table. Fumbles and crit effects are this same mechanism — only the trigger in
  * the table differs. All decisions are made in {@link OutcomeSelector}; this class only touches

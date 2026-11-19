@@ -10,7 +10,7 @@ import studio.modroll.critfall.gametest.DryRunScenarios;
 import studio.modroll.critfall.gametest.GenerateScenarios;
 import studio.modroll.critfall.gametest.ReportScenarios;
 
-/** NeoForge registration shim: delegates to the shared {@link CommandScenarios} bodies (M8). */
+/** NeoForge registration shim: delegates to the shared {@link CommandScenarios} bodies. */
 @GameTestHolder(Critfall.MOD_ID)
 @PrefixGameTestTemplate(false)
 public class CommandGameTests {

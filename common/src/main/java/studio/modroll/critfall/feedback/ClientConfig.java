@@ -1,7 +1,7 @@
 package studio.modroll.critfall.feedback;
 
 /**
- * Client-only feedback toggles (M6), loaded from {@code config/critfall/client.json}. Each layer is
+ * Client-only feedback toggles, loaded from {@code config/critfall/client.json}. Each layer is
  * independently switchable — kitchen-sink packs hate HUD spam. The server never reads this; it only
  * governs how the client renders a received feedback payload.
  */

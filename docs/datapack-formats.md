@@ -91,7 +91,7 @@ crosshair points at (up to 32 blocks, blocks occlude).
 ```
 
 Every stat is **optional** — an absent field falls back to attribute derivation for that field
-only (PLAN.md §4.3), so you can pin just the AC and leave the rest derived. Constraints:
+only, so you can pin just the AC and leave the rest derived. Constraints:
 `armor_class` ≥ 1, `crit_range` in 2–20. `damage.melee` covers direct attacks; `damage.ranged`
 covers the entity's item-less projectiles (ghast fireballs, shulker bullets — a held launcher's
 item profile wins over it, same precedence as melee). `save_bonus` is added to the entity's d20

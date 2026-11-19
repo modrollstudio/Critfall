@@ -6,7 +6,7 @@ public enum DamageCategory {
     EXEMPT,
     /** Tagged {@code #critfall:always_hits} — skips the to-hit roll but still rolls damage dice. */
     ALWAYS_HITS,
-    /** Arrow, trident, fireball… — rolled on impact from the launcher/ammo profiles (M5). */
+    /** Arrow, trident, fireball… — rolled on impact from the launcher/ammo profiles. */
     PROJECTILE,
     /** No living attacker (cactus, fall, world hazards) — never rolled. */
     ENVIRONMENTAL,
@@ -14,7 +14,7 @@ public enum DamageCategory {
     MELEE,
     /**
      * Tagged {@code #critfall:spell}, or any other indirect living-caused damage. Resolved via
-     * spell profiles (M5): attack roll or saving throw.
+     * spell profiles: attack roll or saving throw.
      */
     SPELL
 }

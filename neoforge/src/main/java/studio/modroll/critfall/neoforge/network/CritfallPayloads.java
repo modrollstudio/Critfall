@@ -9,7 +9,7 @@ import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
 /**
- * Registers the M6 feedback payloads as OPTIONAL S2C channels so vanilla / non-mod clients are never
+ * Registers the feedback payloads as OPTIONAL S2C channels so vanilla / non-mod clients are never
  * disconnected for not understanding them. The client receiver is only wired on the physical client
  * ({@link FMLEnvironment#dist}); on a dedicated server the codec is still registered (so the server
  * can send) but the client class is never loaded.

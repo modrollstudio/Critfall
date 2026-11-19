@@ -27,7 +27,7 @@ import studio.modroll.critfall.data.ProfileStore;
 import studio.modroll.critfall.data.SpellProfile;
 
 /**
- * End-to-end tests of M5 spell handling. Indirect living-caused damage (caster != direct entity,
+ * End-to-end tests of spell handling. Indirect living-caused damage (caster != direct entity,
  * the shape Iron's Spells / Ars Nouveau projectile spells produce) classifies as SPELL: without a
  * spell profile it falls back to an attack roll with derived dice; a profile can switch it to the
  * saving-throw resolution. The husk caster uses the zombies profile (+3), the pig target AC 10.

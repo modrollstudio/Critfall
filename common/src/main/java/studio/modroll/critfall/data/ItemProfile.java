@@ -13,8 +13,8 @@ import studio.modroll.critfall.api.dice.DiceExpression;
 
 /**
  * Weapon/item stats, loaded from {@code data/<ns>/critfall/item_profile/*.json} (see
- * docs/datapack-formats.md). The referenced fumble/crit outcome tables are executed from M4;
- * until then they are validated and shown by {@code /critfall check} only.
+ * docs/datapack-formats.md). The referenced fumble/crit outcome tables are applied by
+ * {@code OutcomeExecutor} and shown by {@code /critfall check}.
  */
 public record ItemProfile(
         ResourceLocation id,

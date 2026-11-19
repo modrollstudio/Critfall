@@ -40,7 +40,7 @@ import studio.modroll.critfall.feedback.CapturingFeedbackSink;
 import studio.modroll.critfall.feedback.FeedbackSink;
 
 /**
- * Drives combat purely through the public API (PLAN §12): the automatic damage interception is
+ * Drives combat purely through the public API: the automatic damage interception is
  * suppressed, and {@link RollService#performAttack} rolls, applies damage, and reports the result.
  * Scripted RNG exhaustion proves exactly one roll happens (no double-roll from the auto pipeline).
  */
