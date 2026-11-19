@@ -200,8 +200,9 @@ it. Turning the flag back on afterwards stays: a version 2 file is never migrate
 ## modifier_providers
 
 - `enabled` (default `true`): whether a [modifier provider](api.md#modifier-provider) registered by
-  another mod is asked for attack, damage, save and AC modifiers. `false` ignores it, so every roll uses
-  Critfall's own bonus and AC. Without a provider this flag changes nothing.
+  another mod is asked for attack, damage, save and AC modifiers, and since 0.2.20 whether the
+  [AC sources](api.md#ac-sources) other mods add count. `false` ignores them, so every roll uses Critfall's
+  own bonus and AC. Without a provider or a source this flag changes nothing.
 
 ## advantage_sources
 

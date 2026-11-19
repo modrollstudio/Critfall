@@ -141,7 +141,7 @@ class FeedbackPayloadCodecTest {
                 new RollFeedbackPayload(AttackOutcome.HIT, 13, 16, 10, 5, "1d6", true, Optional.empty(), List.of())
                         .taken(),
                 "callers that predate the field leave it unknown");
-        assertEquals("critfall:roll_feedback_v4", RollFeedbackPayload.TYPE.id().toString());
+        assertEquals("critfall:roll_feedback_v5", RollFeedbackPayload.TYPE.id().toString());
     }
 
     @Test
@@ -356,5 +356,24 @@ class FeedbackPayloadCodecTest {
             CheckFeedbackPayload.STREAM_CODEC.encode(buf, payload);
             assertEquals(payload, CheckFeedbackPayload.STREAM_CODEC.decode(buf));
         }
+    }
+
+    @Test
+    void healPayloadRoundTrips() {
+        HealFeedbackPayload heal = new HealFeedbackPayload("spell.critfall_spells.cure_wounds", "2d8+3", 12, 5.5F);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        HealFeedbackPayload.STREAM_CODEC.encode(buf, heal);
+        assertEquals(heal, HealFeedbackPayload.STREAM_CODEC.decode(buf));
+    }
+
+    @Test
+    void rollLabelRoundTripsAndDefaultsToNone() {
+        RollFeedbackPayload plain =
+                new RollFeedbackPayload(AttackOutcome.HIT, 13, 18, 10, 6, "1d10", true, Optional.empty(), List.of());
+        assertEquals("", plain.label(), "callers that predate the field have no label");
+        RollFeedbackPayload named = plain.withLabel("Fire Bolt");
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        RollFeedbackPayload.STREAM_CODEC.encode(buf, named);
+        assertEquals(named, RollFeedbackPayload.STREAM_CODEC.decode(buf));
     }
 }

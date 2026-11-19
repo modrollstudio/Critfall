@@ -15,6 +15,7 @@ import studio.modroll.critfall.api.combat.HazardSaveResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.combat.SuccessDamage;
 import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.RollResult;
 import studio.modroll.critfall.api.event.CritfallEvents;
 import studio.modroll.critfall.api.event.HazardRollEvent;
 import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
@@ -51,10 +52,8 @@ public final class Hazards {
         boolean takesDamage = !save.saved() || hazard.onSuccess() == SuccessDamage.HALF;
         if (takesDamage && hazard.dealsDamage()) {
             // A failed save always hurts; the floor comes before resistances, so immunity still stands.
-            damage = Math.max(
-                            CombatEngine.MIN_HIT_DAMAGE,
-                            roller.roll(hazard.damage()).total())
-                    * multiplier(rules, target, source);
+            RollResult rolled = hazard.rolledDamage().orElseGet(() -> roller.roll(hazard.damage()));
+            damage = Math.max(CombatEngine.MIN_HIT_DAMAGE, rolled.total()) * multiplier(rules, target, source);
             if (save.saved()) {
                 damage = (float) Math.floor(damage / 2);
             }
@@ -79,8 +78,8 @@ public final class Hazards {
     }
 
     /**
-     * The hazard rolls against the target's AC ({@code ownArmorClass} plus the provider's modifier), with
-     * listeners' bonuses. A hazard with no damage hits for none.
+     * The hazard rolls against the target's AC ({@code ownArmorClass} plus the provider's modifier and the AC
+     * sources), with listeners' bonuses. A hazard with no damage hits for none.
      */
     public static AttackResult attack(LivingEntity target, HazardAttack hazard, int ownArmorClass) {
         Rules rules = RollRuntime.rules();

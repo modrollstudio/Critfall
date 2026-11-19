@@ -12,8 +12,9 @@ import studio.modroll.critfall.data.EntityProfile;
  * show it without copying the formula. A derived AC is {@code base + armorPart + toughnessPart} (never below 1), with
  * the divisors of the current {@code rules.json}: {@code 10 + floor(armor / 4) + floor(toughness / 4)} by default.
  * When the entity's profile sets {@code armor_class}, {@link #derived()} is false, the parts are 0, and {@link #base()}
- * and {@link #total()} are the profile's value. A {@link ModifierProvider}'s AC modifier is not included. Query it via
- * {@link RollService#armorClassBreakdown}. Since 0.2.18.
+ * and {@link #total()} are the profile's value. A {@link ModifierProvider}'s AC modifier is not included, nor since
+ * 0.2.20 an {@link ArmorClassSource}'s; {@link RollService#armorClass} counts both. Query it via {@link
+ * RollService#armorClassBreakdown}. Since 0.2.18.
  *
  * @param base 10 for a derived AC, else the profile's AC
  * @param armorPart what the armor attribute adds

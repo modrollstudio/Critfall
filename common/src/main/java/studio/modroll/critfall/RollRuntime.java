@@ -1,7 +1,10 @@
 package studio.modroll.critfall;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
+import studio.modroll.critfall.api.ArmorClassSource;
 import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.combat.Rules;
@@ -26,6 +29,8 @@ public final class RollRuntime {
     private static volatile Rules rules = Rules.DEFAULTS;
 
     private static volatile ModifierProvider modifierProvider;
+
+    private static final CopyOnWriteArrayList<ArmorClassSource> armorClassSources = new CopyOnWriteArrayList<>();
 
     private RollRuntime() {}
 
@@ -68,5 +73,19 @@ public final class RollRuntime {
         ModifierProvider previous = modifierProvider;
         modifierProvider = provider;
         return previous;
+    }
+
+    /** In the order added. */
+    public static List<ArmorClassSource> armorClassSources() {
+        return armorClassSources;
+    }
+
+    /** False when {@code source} was already added. */
+    public static boolean addArmorClassSource(ArmorClassSource source) {
+        return armorClassSources.addIfAbsent(source);
+    }
+
+    public static boolean removeArmorClassSource(ArmorClassSource source) {
+        return armorClassSources.remove(source);
     }
 }

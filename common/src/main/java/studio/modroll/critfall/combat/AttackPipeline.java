@@ -99,6 +99,7 @@ public final class AttackPipeline {
                 CombatEngine.resolveAttack(roller, rules, params.toInput(pre.attackBonus(), mode, pre.rerollsOnes()));
 
         PostAttackRollEvent post = CritfallEvents.firePostAttackRoll(attacker, target, ctx, result);
+        result = post.result();
         if (post.isVetoed()) {
             return new Bundle(result, List.of(), false);
         }

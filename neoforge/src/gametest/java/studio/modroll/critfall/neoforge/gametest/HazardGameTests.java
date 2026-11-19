@@ -128,4 +128,14 @@ public class HazardGameTests {
     public void unsourcedHazardSaveCreditsNobody(GameTestHelper helper) {
         HazardScenarios.unsourcedHazardSaveCreditsNobody(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void sharedDamageRollHitsEveryTargetWithItsOwnSave(GameTestHelper helper) {
+        HazardScenarios.sharedDamageRollHitsEveryTargetWithItsOwnSave(helper);
+    }
+
+    @GameTest(template = TEMPLATE)
+    public void armorReducesHazardDamageUnlessBypassed(GameTestHelper helper) {
+        HazardScenarios.armorReducesHazardDamageUnlessBypassed(helper);
+    }
 }

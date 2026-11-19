@@ -59,7 +59,7 @@ public interface ModifierProvider {
      * {@link studio.modroll.critfall.api.combat.AttackResult#baseArmorClass}, and an {@link
      * AttackContext#withDefenderAcBonus} stacks on top. Not clamped; a value beyond ±1,000,000 is a bad
      * answer. Since 0.2.10. {@code attacker} is null for a {@link RollService#performHazardAttack hazard
-     * attack} (since 0.2.13).
+     * attack} (since 0.2.13). Since 0.2.20 each {@link ArmorClassSource} adds to the AC after this modifier.
      */
     default OptionalInt acModifier(LivingEntity defender, LivingEntity attacker) {
         return OptionalInt.empty();

@@ -366,7 +366,7 @@ public final class JumpAttackScenarios {
      * attack-strength ticker would otherwise read zero). {@code falling} sets up vanilla's jump crit:
      * airborne with some fall distance; the rest of the conditions hold for a fresh player in air.
      */
-    private static Player attacker(GameTestHelper helper, boolean falling) {
+    static Player attacker(GameTestHelper helper, boolean falling) {
         Player player =
                 new Player(
                         helper.getLevel(),
