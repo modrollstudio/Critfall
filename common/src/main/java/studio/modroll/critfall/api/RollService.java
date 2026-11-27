@@ -292,10 +292,19 @@ public final class RollService {
      * (naming the save) to the target, and returns both. Since 0.2.13.
      */
     public static HazardSaveResult performHazardSave(LivingEntity target, HazardSave hazard) {
-        return Hazards.save(
-                target,
-                Objects.requireNonNull(hazard, "hazard"),
-                effectiveEntity(target).saveBonus());
+        return rollHazardSave(target, hazard).land();
+    }
+
+    /**
+     * {@link #performHazardSave} in two steps: the save, its {@link studio.modroll.critfall.api.event.HazardRollEvent}
+     * and the damage dice now, the damage and the readout when it {@link Rolled#land lands}. Resistances count as
+     * they stand then. Since 0.2.21.
+     */
+    public static Rolled<HazardSaveResult> rollHazardSave(LivingEntity target, HazardSave hazard) {
+        Objects.requireNonNull(hazard, "hazard");
+        Hazards.RolledSave rolled =
+                Hazards.rollSave(target, hazard, effectiveEntity(target).saveBonus());
+        return new Rolled<>(() -> Hazards.landSave(target, hazard, rolled));
     }
 
     /**
@@ -322,9 +331,20 @@ public final class RollService {
      * @param label names the heal in the readout: a translation key, or plain text; empty for none
      */
     public static HealResult performHeal(LivingEntity healer, LivingEntity target, String label, DiceExpression dice) {
+        return rollHeal(healer, target, label, dice).land();
+    }
+
+    /** {@link #performHeal} in two steps: the dice now, the heal and the readout when it {@link Rolled#land lands}. Since 0.2.21. */
+    public static Rolled<HealResult> rollHeal(
+            LivingEntity healer, LivingEntity target, String label, DiceExpression dice) {
         Objects.requireNonNull(healer, "healer");
         Objects.requireNonNull(label, "label");
         RollResult roll = RollRuntime.roller().roll(Objects.requireNonNull(dice, "dice"));
+        return new Rolled<>(() -> heal(healer, target, label, dice, roll));
+    }
+
+    private static HealResult heal(
+            LivingEntity healer, LivingEntity target, String label, DiceExpression dice, RollResult roll) {
         float before = target.getHealth();
         if (roll.total() > 0) {
             target.heal(roll.total());
@@ -354,8 +374,25 @@ public final class RollService {
      * Returns the resolved {@link AttackResult}.
      */
     public static AttackResult performAttack(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
+        return rollAttack(attacker, target, ctx).land();
+    }
+
+    /**
+     * {@link #performAttack} in two steps: the attack and damage rolls, their events and the outcome tables now, the
+     * damage and the readout when it {@link Rolled#land lands}. Since 0.2.21.
+     */
+    public static Rolled<AttackResult> rollAttack(LivingEntity attacker, LivingEntity target, AttackContext ctx) {
         DiceExpression dice = damageDice(attacker, target, ctx);
         AttackPipeline.Bundle bundle = resolve(attacker, target, ctx, dice);
+        return new Rolled<>(() -> land(attacker, target, ctx, dice, bundle));
+    }
+
+    private static AttackResult land(
+            LivingEntity attacker,
+            LivingEntity target,
+            AttackContext ctx,
+            DiceExpression dice,
+            AttackPipeline.Bundle bundle) {
         AttackResult result = bundle.result();
         if (!bundle.apply()) {
             return result; // canceled/vetoed by a listener
