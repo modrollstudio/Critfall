@@ -153,6 +153,27 @@ modifier set they are equal and `defenderAcBonus()` is `0`.
 > the cooldown just as a normal successful hit would, so vanilla i-frame behaviour for ordinary
 > real-time damage is unchanged.
 
+### Rolled now, landed later
+
+Since 0.2.21 each driven roll that hurts or heals also comes in two steps, for something that takes time to
+arrive, such as a spell's bolt: roll it as it goes off, land it when it gets there.
+
+```java
+Rolled<AttackResult> bolt = RollService.rollAttack(caster, target, ctx);   // the dice and the events, now
+// ... the bolt flies ...
+AttackResult result = bolt.land();                                          // the damage and the readout
+```
+
+- `rollAttack(attacker, target, ctx)`, `rollHazardSave(target, hazard)` and `rollHeal(healer, target, label,
+  dice)` roll exactly as `performAttack`, `performHazardSave` and `performHeal` do: the d20, the damage or
+  healing dice, the events (`PreAttackRollEvent`, `PostAttackRollEvent`, `CritEvent`, `FumbleEvent`,
+  `HazardRollEvent`) and an attack's outcome tables. Nothing is hurt or healed and no readout is shown yet.
+- `land()` applies it and shows the readout, with no dice of its own, so the result is the one rolled. A save's
+  resistances, armor and the global multiplier count as they stand when it lands. It lands once; a second
+  `land()` throws `IllegalStateException`.
+- A roll you never land does nothing more: drop it when the target is gone by the time it would arrive.
+- The `perform` calls are `roll...(...).land()`.
+
 Fine-grained helpers are also available: `savingThrow(target, saveBonus, dc)` (and
 `savingThrow(target, saveBonus, dc, RollMode)` to roll the save with advantage/disadvantage),
 `fireOutcomes(attacker, target, result, damageDice, weapon)`, and

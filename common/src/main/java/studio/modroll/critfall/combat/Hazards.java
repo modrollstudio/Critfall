@@ -1,5 +1,6 @@
 package studio.modroll.critfall.combat;
 
+import java.util.Optional;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.damagesource.DamageSource;
@@ -34,26 +35,38 @@ public final class Hazards {
 
     private Hazards() {}
 
+    /** A save rolled by {@link #rollSave}: its result, and the damage dice when it takes damage. */
+    public record RolledSave(SaveResult save, Optional<RollResult> damage) {}
+
     /**
-     * The target saves (provider modifier, else {@code ownSaveBonus}, plus listeners' bonuses); a fail takes
-     * the dice, a success half or none. A hazard with no damage deals none either way.
+     * The target saves (provider modifier, else {@code ownSaveBonus}, plus listeners' bonuses); a fail rolls the dice,
+     * a success too when it takes half. A hazard with no damage rolls none.
      */
-    public static HazardSaveResult save(LivingEntity target, HazardSave hazard, int ownSaveBonus) {
+    public static RolledSave rollSave(LivingEntity target, HazardSave hazard, int ownSaveBonus) {
         Rules rules = RollRuntime.rules();
         DiceRoller roller = RollRuntime.roller();
-        DamageSource source =
-                source(target, hazard.damageType(), hazard.source().orElse(null));
         int saveBonus = Modifiers.saveBonus(rules, target, hazard.saveKey(), ownSaveBonus);
         HazardRollEvent event = CritfallEvents.fireHazardRoll(new HazardRollEvent(target, hazard));
         SaveResult save = CombatEngine.resolveSave(
                 roller, saveBonus + event.bonus(), hazard.dc(), event.mode(), event.rerollsOnes());
-
-        float damage = 0;
         boolean takesDamage = !save.saved() || hazard.onSuccess() == SuccessDamage.HALF;
-        if (takesDamage && hazard.dealsDamage()) {
+        Optional<RollResult> damage = takesDamage && hazard.dealsDamage()
+                ? Optional.of(hazard.rolledDamage().orElseGet(() -> roller.roll(hazard.damage())))
+                : Optional.empty();
+        return new RolledSave(save, damage);
+    }
+
+    /** Applies a rolled save's damage, a success's halved, and shows the readout. */
+    public static HazardSaveResult landSave(LivingEntity target, HazardSave hazard, RolledSave rolled) {
+        Rules rules = RollRuntime.rules();
+        DamageSource source =
+                source(target, hazard.damageType(), hazard.source().orElse(null));
+        SaveResult save = rolled.save();
+        float damage = 0;
+        if (rolled.damage().isPresent()) {
             // A failed save always hurts; the floor comes before resistances, so immunity still stands.
-            RollResult rolled = hazard.rolledDamage().orElseGet(() -> roller.roll(hazard.damage()));
-            damage = Math.max(CombatEngine.MIN_HIT_DAMAGE, rolled.total()) * multiplier(rules, target, source);
+            damage = Math.max(CombatEngine.MIN_HIT_DAMAGE, rolled.damage().get().total())
+                    * multiplier(rules, target, source);
             if (save.saved()) {
                 damage = (float) Math.floor(damage / 2);
             }

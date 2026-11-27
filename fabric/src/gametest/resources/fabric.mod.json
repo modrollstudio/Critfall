@@ -17,6 +17,7 @@
       "studio.modroll.critfall.fabric.gametest.FeedbackGameTests",
       "studio.modroll.critfall.fabric.gametest.HazardGameTests",
       "studio.modroll.critfall.fabric.gametest.HealGameTests",
+      "studio.modroll.critfall.fabric.gametest.RolledGameTests",
       "studio.modroll.critfall.fabric.gametest.JumpAttackGameTests",
       "studio.modroll.critfall.fabric.gametest.ModifierProviderGameTests",
       "studio.modroll.critfall.fabric.gametest.OutcomeGameTests",
