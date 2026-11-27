@@ -2,6 +2,15 @@
 
 Decisions with lasting consequences, and why they were made. Newest first.
 
+## 0.2.23: An attack's damage dice on its result
+
+**Decision:** `AttackResult` carries the damage dice it rolled, as `damageRolls()`, a list of `DieRoll` in roll
+order. The record's earlier constructors stay and leave it empty.
+
+**Why:** Chromatic Orb leaps when two of its d8s show the same number, so a spell has to see the faces, not only
+the total. Rolling the dice itself would roll outside Critfall. The faces were already rolled inside the engine;
+keeping them costs nothing and changes no roll.
+
 ## 0.2.22: Damage with no roll to hit
 
 **Decision:** `performDamage` and `rollDamage` hurt a target by dice with no d20, credited to the attacker, and

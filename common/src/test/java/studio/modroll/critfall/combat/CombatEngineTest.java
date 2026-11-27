@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 import studio.modroll.critfall.api.combat.AttackOutcome;
@@ -13,6 +14,7 @@ import studio.modroll.critfall.api.combat.ContestSide;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.DieRoll;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.dice.SequenceRandom;
 import studio.modroll.critfall.combat.CombatEngine.AttackInput;
@@ -67,6 +69,34 @@ class CombatEngineTest {
         assertEquals(14, result.attackTotal());
         assertEquals(4, result.damage());
         assertTrue(rng.isExhausted());
+    }
+
+    @Test
+    void hitKeepsItsDamageDiceFaces() {
+        SequenceRandom rng = SequenceRandom.ofDieFaces(13, 5, 2, 5);
+        AttackResult result = resolve(rng, Rules.DEFAULTS, 1, 10, RollMode.NORMAL, DiceExpression.parse("3d8+1"));
+        assertEquals(13, result.damage());
+        assertEquals(List.of(5, 2, 5), faces(result));
+    }
+
+    @Test
+    void doubledCritKeepsBothSetsOfFaces() {
+        Rules rules = TestRules.withCrits(new Rules.Crits(true, Rules.CritRule.DOUBLE_DICE, true, true, true));
+        SequenceRandom rng = SequenceRandom.ofDieFaces(20, 3, 4, 5, 6);
+        AttackResult result = resolve(rng, rules, 0, 10, RollMode.NORMAL, DiceExpression.parse("2d6+1"));
+        assertEquals(List.of(3, 4, 5, 6), faces(result));
+    }
+
+    @Test
+    void missAndMaximizedCritRollNoDamageDice() {
+        assertEquals(
+                List.of(), faces(resolve(SequenceRandom.ofDieFaces(5), Rules.DEFAULTS, 1, 10, RollMode.NORMAL, D6)));
+        assertEquals(
+                List.of(), faces(resolve(SequenceRandom.ofDieFaces(20), Rules.DEFAULTS, 0, 10, RollMode.NORMAL, D6)));
+    }
+
+    private static List<Integer> faces(AttackResult result) {
+        return result.damageRolls().stream().map(DieRoll::value).toList();
     }
 
     @Test

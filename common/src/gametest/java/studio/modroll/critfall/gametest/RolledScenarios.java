@@ -58,6 +58,10 @@ public final class RolledScenarios {
                 if (!result.isHit() || result.damage() != 5) {
                     helper.fail("expected a hit for 5, got " + result);
                 }
+                if (result.damageRolls().size() != 1
+                        || result.damageRolls().getFirst().value() != 4) {
+                    helper.fail("expected the damage die's face, 4, on the result, got " + result.damageRolls());
+                }
                 expectHealth(helper, pig, pig.getMaxHealth() - 5.0F);
                 expectReadout(
                         helper,
