@@ -1,5 +1,7 @@
 package studio.modroll.critfall.combat;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.OptionalInt;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
@@ -7,6 +9,7 @@ import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
+import studio.modroll.critfall.api.dice.DieRoll;
 import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.dice.RollResult;
@@ -94,18 +97,25 @@ public final class CombatEngine {
             AttackOutcome outcome = fumble ? AttackOutcome.FUMBLE : AttackOutcome.MISS;
             return new AttackResult(outcome, natural, attackTotal, armorClass, defenderAcBonus, 0, roll);
         }
+        boolean crit = natural >= input.critRange() && rules.crits().enabled();
+        AttackOutcome outcome = crit ? AttackOutcome.CRIT : AttackOutcome.HIT;
         // With damage dice off the vanilla amount applies downstream — draw nothing from the RNG.
-        if (natural >= input.critRange() && rules.crits().enabled()) {
-            int damage = rules.damageDice()
-                    ? Math.max(MIN_HIT_DAMAGE, critDamage(roller, rules.crits().rule(), input.damageDice()))
-                    : 0;
-            return new AttackResult(
-                    AttackOutcome.CRIT, natural, attackTotal, armorClass, defenderAcBonus, damage, roll);
+        if (!rules.damageDice()) {
+            return new AttackResult(outcome, natural, attackTotal, armorClass, defenderAcBonus, 0, roll);
         }
-        int damage = rules.damageDice()
-                ? Math.max(MIN_HIT_DAMAGE, roller.roll(input.damageDice()).total())
-                : 0;
-        return new AttackResult(AttackOutcome.HIT, natural, attackTotal, armorClass, defenderAcBonus, damage, roll);
+        List<DieRoll> dice = new ArrayList<>();
+        int damage = crit
+                ? critDamage(roller, rules.crits().rule(), input.damageDice(), dice)
+                : rolled(roller.roll(input.damageDice()), dice);
+        return new AttackResult(
+                outcome,
+                natural,
+                attackTotal,
+                armorClass,
+                defenderAcBonus,
+                Math.max(MIN_HIT_DAMAGE, damage),
+                roll,
+                dice);
     }
 
     public static SaveResult resolveSave(DiceRoller roller, int saveBonus, int dc) {
@@ -169,15 +179,21 @@ public final class CombatEngine {
         return confirmation < fumbles.confirmationDc();
     }
 
-    private static int critDamage(DiceRoller roller, Rules.CritRule rule, DiceExpression dice) {
+    /** A crit's damage under {@code rule}; the dice it rolls go into {@code rolled}. */
+    private static int critDamage(DiceRoller roller, Rules.CritRule rule, DiceExpression dice, List<DieRoll> rolled) {
         return switch (rule) {
             case MAX_DICE -> dice.maxValue();
             case DOUBLE_DICE -> {
-                RollResult first = roller.roll(dice);
+                int first = rolled(roller.roll(dice), rolled);
                 RollResult second = roller.roll(dice);
-                yield first.total() + second.total() - second.modifier();
+                yield first + rolled(second, rolled) - second.modifier();
             }
-            case DOUBLE_TOTAL -> 2 * roller.roll(dice).total();
+            case DOUBLE_TOTAL -> 2 * rolled(roller.roll(dice), rolled);
         };
+    }
+
+    private static int rolled(RollResult result, List<DieRoll> rolled) {
+        rolled.addAll(result.dice());
+        return result.total();
     }
 }

@@ -1,5 +1,7 @@
 package studio.modroll.critfall.api.combat;
 
+import java.util.List;
+import studio.modroll.critfall.api.dice.DieRoll;
 import studio.modroll.critfall.api.dice.RollDetail;
 
 /**
@@ -16,6 +18,8 @@ import studio.modroll.critfall.api.dice.RollDetail;
  * @param damage rolled damage on HIT/CRIT, at least 1 (0 with damage dice off, when vanilla applies);
  *     0 on MISS/FUMBLE
  * @param roll how the d20 was rolled (mode, kept face, dropped face)
+ * @param damageRolls every damage die rolled, in roll order, a crit's extra dice too; empty on a miss, with damage
+ *     dice off, or under the {@code max_dice} crit rule, which rolls none. Since 0.2.23
  */
 public record AttackResult(
         AttackOutcome outcome,
@@ -24,7 +28,23 @@ public record AttackResult(
         int armorClass,
         int defenderAcBonus,
         int damage,
-        RollDetail roll) {
+        RollDetail roll,
+        List<DieRoll> damageRolls) {
+
+    public AttackResult {
+        damageRolls = List.copyOf(damageRolls);
+    }
+
+    public AttackResult(
+            AttackOutcome outcome,
+            int natural,
+            int attackTotal,
+            int armorClass,
+            int defenderAcBonus,
+            int damage,
+            RollDetail roll) {
+        this(outcome, natural, attackTotal, armorClass, defenderAcBonus, damage, roll, List.of());
+    }
 
     public AttackResult(
             AttackOutcome outcome, int natural, int attackTotal, int armorClass, int defenderAcBonus, int damage) {
@@ -51,6 +71,7 @@ public record AttackResult(
 
     /** A copy with the damage replaced — used to apply {@code PostAttackRollEvent} adjustments. */
     public AttackResult withDamage(int newDamage) {
-        return new AttackResult(outcome, natural, attackTotal, armorClass, defenderAcBonus, newDamage, roll);
+        return new AttackResult(
+                outcome, natural, attackTotal, armorClass, defenderAcBonus, newDamage, roll, damageRolls);
     }
 }

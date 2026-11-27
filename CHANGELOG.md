@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `AttackResult.damageRolls()`: every damage die a hit rolled, a crit's extra dice too, so a mod can read the
+  faces. For Critfall: Spells' Chromatic Orb, which leaps to another target when two of its d8s match.
+
 ## [0.2.22] - 2026-11-27
 
 ### Added

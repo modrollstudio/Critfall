@@ -133,7 +133,9 @@ the **effective** AC the roll was made against; `defenderAcBonus()` is the situa
 was applied (see [Defender AC modifier](#defender-ac-modifier)), and `baseArmorClass()` is
 `armorClass() - defenderAcBonus()` — the defender's own AC before the modifier, including a
 [provided AC modifier](#modifier-provider) and, since 0.2.20, the [AC sources](#ac-sources). With no
-modifier set they are equal and `defenderAcBonus()` is `0`.
+modifier set they are equal and `defenderAcBonus()` is `0`. Since 0.2.23, `damageRolls()` lists every damage
+die the hit rolled, a crit's extra dice too, so a mod can read the faces (Chromatic Orb leaps on a pair); it is
+empty on a miss, with damage dice off, and under the `max_dice` crit rule, which rolls none.
 
 > **Armor note.** `performAttack` applies damage exactly like the automatic pipeline: vanilla armor
 > reduces the resulting `hurt` by default, and is bypassed on both paths when
