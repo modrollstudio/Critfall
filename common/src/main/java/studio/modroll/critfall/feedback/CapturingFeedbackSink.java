@@ -19,6 +19,7 @@ public final class CapturingFeedbackSink implements FeedbackSink {
     private volatile HealFeedbackPayload lastHeal;
     private volatile LivingEntity lastHealer;
     private volatile LivingEntity lastHealTarget;
+    private volatile DamageFeedbackPayload lastDamage;
 
     @Override
     public void roll(
@@ -44,6 +45,12 @@ public final class CapturingFeedbackSink implements FeedbackSink {
         this.lastHeal = payload;
         this.lastHealer = healer;
         this.lastHealTarget = target;
+    }
+
+    @Override
+    public void damage(
+            LivingEntity attacker, LivingEntity target, DamageFeedbackPayload payload, Rules.FeedbackVisibility v) {
+        this.lastDamage = payload;
     }
 
     public RollFeedbackPayload lastRoll() {
@@ -75,6 +82,10 @@ public final class CapturingFeedbackSink implements FeedbackSink {
         return lastHealTarget;
     }
 
+    public DamageFeedbackPayload lastDamage() {
+        return lastDamage;
+    }
+
     public void reset() {
         lastRoll = null;
         lastSave = null;
@@ -83,5 +94,6 @@ public final class CapturingFeedbackSink implements FeedbackSink {
         lastHeal = null;
         lastHealer = null;
         lastHealTarget = null;
+        lastDamage = null;
     }
 }

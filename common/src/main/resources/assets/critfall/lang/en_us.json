@@ -11,6 +11,7 @@
   "critfall.feedback.check_success": "SUCCESS",
   "critfall.feedback.check_failed": "FAILED",
   "critfall.feedback.healed": "healed",
+  "critfall.feedback.damage": "damage",
 
   "critfall.save.critfall.spell": "Spell save",
   "critfall.save.critfall.strength": "STR save",

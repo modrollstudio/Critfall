@@ -2,6 +2,16 @@
 
 Decisions with lasting consequences, and why they were made. Newest first.
 
+## 0.2.22: Damage with no roll to hit
+
+**Decision:** `performDamage` and `rollDamage` hurt a target by dice with no d20, credited to the attacker, and
+show their own readout on a new optional channel, `critfall:damage_feedback`, like a heal's.
+
+**Why:** Magic Missile never misses. A mod hurting with a damage source of its own would skip Critfall's
+resistances by damage type and show no readout, so Spells could not stay on the public API. The damage is
+applied as a hazard save's is, so armor, resistances and the global multiplier treat it the same. A new
+packet, rather than another field on the heal's, leaves every existing packet as it was.
+
 ## 0.2.21: A roll can land later
 
 **Decision:** `rollAttack`, `rollHazardSave` and `rollHeal` do everything their `perform` call does up to the

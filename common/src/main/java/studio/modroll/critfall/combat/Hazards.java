@@ -12,15 +12,18 @@ import studio.modroll.critfall.api.HazardAttack;
 import studio.modroll.critfall.api.HazardSave;
 import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.DamageResult;
 import studio.modroll.critfall.api.combat.HazardSaveResult;
 import studio.modroll.critfall.api.combat.SaveResult;
 import studio.modroll.critfall.api.combat.SuccessDamage;
+import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.critfall.api.dice.RollResult;
 import studio.modroll.critfall.api.event.CritfallEvents;
 import studio.modroll.critfall.api.event.HazardRollEvent;
 import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.data.ProfileLookup;
+import studio.modroll.critfall.feedback.DamageFeedbackPayload;
 import studio.modroll.critfall.feedback.FeedbackSink;
 
 /**
@@ -88,6 +91,28 @@ public final class Hazards {
                 false);
         FeedbackSink.get().check(target, payload, rules.feedback().visibility());
         return new HazardSaveResult(save, (int) damage);
+    }
+
+    /**
+     * Applies damage {@code attacker} rolled with no roll to hit (at least 1, then the target's resistances and the global
+     * multiplier), credited to {@code attacker}, and shows the readout to {@code attacker}.
+     */
+    public static DamageResult landDamage(
+            LivingEntity attacker,
+            LivingEntity target,
+            String label,
+            DiceExpression dice,
+            RollResult roll,
+            ResourceKey<DamageType> type) {
+        Rules rules = RollRuntime.rules();
+        DamageSource source = source(target, type, attacker);
+        float damage = Math.max(CombatEngine.MIN_HIT_DAMAGE, roll.total()) * multiplier(rules, target, source);
+        float before = target.getHealth();
+        apply(target, source, damage);
+        DamageFeedbackPayload payload = new DamageFeedbackPayload(
+                label, dice.toString(), (int) damage, Math.max(0.0F, before - target.getHealth()));
+        FeedbackSink.get().damage(attacker, target, payload, rules.feedback().visibility());
+        return new DamageResult(roll, (int) damage);
     }
 
     /**

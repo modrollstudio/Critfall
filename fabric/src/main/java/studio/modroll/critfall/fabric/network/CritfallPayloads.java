@@ -3,6 +3,7 @@ package studio.modroll.critfall.fabric.network;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.feedback.DamageFeedbackPayload;
 import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
@@ -20,5 +21,6 @@ public final class CritfallPayloads {
         PayloadTypeRegistry.playS2C().register(SaveFeedbackPayload.TYPE, SaveFeedbackPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(CheckFeedbackPayload.TYPE, CheckFeedbackPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(HealFeedbackPayload.TYPE, HealFeedbackPayload.STREAM_CODEC);
+        PayloadTypeRegistry.playS2C().register(DamageFeedbackPayload.TYPE, DamageFeedbackPayload.STREAM_CODEC);
     }
 }
