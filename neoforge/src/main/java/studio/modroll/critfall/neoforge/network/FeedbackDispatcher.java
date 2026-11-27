@@ -10,6 +10,7 @@ import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.combat.Rules;
+import studio.modroll.critfall.feedback.DamageFeedbackPayload;
 import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
@@ -98,6 +99,33 @@ public final class FeedbackDispatcher {
         }
     }
 
+    /** Damage with no roll to hit goes to the attacker, and under {@code everyone} to the target, as a roll does. */
+    public static void dispatchDamage(
+            LivingEntity attacker,
+            LivingEntity target,
+            DamageFeedbackPayload payload,
+            Rules.FeedbackVisibility visibility) {
+        if (visibility == Rules.FeedbackVisibility.OFF) {
+            return;
+        }
+        if (attacker instanceof ServerPlayer player) {
+            sendDamage(player, payload);
+        }
+        if (visibility == Rules.FeedbackVisibility.EVERYONE
+                && target != attacker
+                && target instanceof ServerPlayer player) {
+            sendDamage(player, payload);
+        }
+    }
+
+    private static void sendDamage(ServerPlayer player, DamageFeedbackPayload payload) {
+        if (hasChannel(player, DamageFeedbackPayload.TYPE)) {
+            PacketDistributor.sendToPlayer(player, payload);
+        } else {
+            actionBarSink.accept(player, CombatText.actionBar(payload));
+        }
+    }
+
     private static void sendHeal(ServerPlayer player, HealFeedbackPayload payload) {
         if (hasChannel(player, HealFeedbackPayload.TYPE)) {
             PacketDistributor.sendToPlayer(player, payload);
@@ -168,6 +196,15 @@ public final class FeedbackDispatcher {
                     HealFeedbackPayload payload,
                     Rules.FeedbackVisibility visibility) {
                 dispatchHeal(healer, target, payload, visibility);
+            }
+
+            @Override
+            public void damage(
+                    LivingEntity attacker,
+                    LivingEntity target,
+                    DamageFeedbackPayload payload,
+                    Rules.FeedbackVisibility visibility) {
+                dispatchDamage(attacker, target, payload, visibility);
             }
         };
     }

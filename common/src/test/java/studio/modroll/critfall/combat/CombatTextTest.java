@@ -13,6 +13,7 @@ import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.api.feedback.FlavorName;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.feedback.DamageFeedbackPayload;
 import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
@@ -333,6 +334,18 @@ class CombatTextTest {
     void healShowsWhatWasGainedWhenItIsLessThanTheRoll() {
         HealFeedbackPayload heal = new HealFeedbackPayload("", "2d8+3", 12, 5.0F);
         assertEquals("2d8+3 = 12 → 5 healed", CombatText.actionBar(heal).getString());
+    }
+
+    @Test
+    void damageShowsTheDiceAndWhatWasTakenWhenItDiffers() {
+        assertEquals(
+                "Magic Missile: 3d4+3 = 9 damage",
+                CombatText.actionBar(new DamageFeedbackPayload("Magic Missile", "3d4+3", 9, 9.0F))
+                        .getString());
+        assertEquals(
+                "3d4+3 = 9 → 4 damage",
+                CombatText.actionBar(new DamageFeedbackPayload("", "3d4+3", 9, 4.0F))
+                        .getString());
     }
 
     @Test

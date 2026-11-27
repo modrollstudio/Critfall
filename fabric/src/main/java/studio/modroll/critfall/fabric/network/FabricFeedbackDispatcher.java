@@ -9,6 +9,7 @@ import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.combat.CombatText;
 import studio.modroll.critfall.combat.Rules;
+import studio.modroll.critfall.feedback.DamageFeedbackPayload;
 import studio.modroll.critfall.feedback.FeedbackSink;
 import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
@@ -59,6 +60,20 @@ public final class FabricFeedbackDispatcher {
                     Rules.FeedbackVisibility visibility) {
                 dispatch(healer, target == healer ? null : target, visibility, player -> sendHeal(player, payload));
             }
+
+            /** Damage with no roll to hit goes to the attacker, and under {@code everyone} to the target. */
+            @Override
+            public void damage(
+                    LivingEntity attacker,
+                    LivingEntity target,
+                    DamageFeedbackPayload payload,
+                    Rules.FeedbackVisibility visibility) {
+                dispatch(
+                        attacker,
+                        target == attacker ? null : target,
+                        visibility,
+                        player -> sendDamage(player, payload));
+            }
         };
     }
 
@@ -96,6 +111,14 @@ public final class FabricFeedbackDispatcher {
 
     private static void sendCheck(ServerPlayer player, CheckFeedbackPayload payload) {
         if (hasChannel(player, CheckFeedbackPayload.TYPE)) {
+            ServerPlayNetworking.send(player, payload);
+        } else {
+            player.displayClientMessage(CombatText.actionBar(payload), true);
+        }
+    }
+
+    private static void sendDamage(ServerPlayer player, DamageFeedbackPayload payload) {
+        if (hasChannel(player, DamageFeedbackPayload.TYPE)) {
             ServerPlayNetworking.send(player, payload);
         } else {
             player.displayClientMessage(CombatText.actionBar(payload), true);

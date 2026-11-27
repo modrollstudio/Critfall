@@ -367,6 +367,15 @@ class FeedbackPayloadCodecTest {
     }
 
     @Test
+    void damagePayloadRoundTrips() {
+        DamageFeedbackPayload damage =
+                new DamageFeedbackPayload("spell.critfall_spells.magic_missile", "3d4+3", 9, 7.5F);
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        DamageFeedbackPayload.STREAM_CODEC.encode(buf, damage);
+        assertEquals(damage, DamageFeedbackPayload.STREAM_CODEC.decode(buf));
+    }
+
+    @Test
     void rollLabelRoundTripsAndDefaultsToNone() {
         RollFeedbackPayload plain =
                 new RollFeedbackPayload(AttackOutcome.HIT, 13, 18, 10, 6, "1d10", true, Optional.empty(), List.of());

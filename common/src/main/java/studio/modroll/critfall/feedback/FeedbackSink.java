@@ -40,6 +40,16 @@ public interface FeedbackSink {
             HealFeedbackPayload payload,
             Rules.FeedbackVisibility visibility) {}
 
+    /**
+     * Damage with no roll to hit, shown to {@code attacker} when it is a player and {@code visibility} is not off, and to
+     * a player {@code target} too under {@code everyone}, as a roll is.
+     */
+    default void damage(
+            LivingEntity attacker,
+            LivingEntity target,
+            DamageFeedbackPayload payload,
+            Rules.FeedbackVisibility visibility) {}
+
     FeedbackSink NOOP = new FeedbackSink() {
         @Override
         public void roll(LivingEntity a, LivingEntity t, RollFeedbackPayload p, Rules.FeedbackVisibility v) {}

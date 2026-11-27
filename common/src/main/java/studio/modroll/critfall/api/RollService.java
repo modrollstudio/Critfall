@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import net.minecraft.core.Holder;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,6 +20,7 @@ import studio.modroll.critfall.Critfall;
 import studio.modroll.critfall.RollRuntime;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
+import studio.modroll.critfall.api.combat.DamageResult;
 import studio.modroll.critfall.api.combat.HazardSaveResult;
 import studio.modroll.critfall.api.combat.HealResult;
 import studio.modroll.critfall.api.combat.SaveResult;
@@ -357,6 +360,37 @@ public final class RollService {
                         new HealFeedbackPayload(label, dice.toString(), roll.total(), healed),
                         RollRuntime.rules().feedback().visibility());
         return new HealResult(roll, healed);
+    }
+
+    /**
+     * {@code attacker} deals {@code dice} of {@code type} to {@code target} with no roll to hit, as Magic Missile does:
+     * at least 1, then the target's resistances and the global multiplier, hurt as a driven attack is. Shows the
+     * readout to {@code attacker} and, under {@code roll_visibility: everyone}, to the target: {@code Magic Missile:
+     * 3d4+3 = 9 damage}. Since 0.2.22.
+     *
+     * @param label names the damage in the readout: a translation key, or plain text; empty for none
+     */
+    public static DamageResult performDamage(
+            LivingEntity attacker,
+            LivingEntity target,
+            String label,
+            DiceExpression dice,
+            ResourceKey<DamageType> type) {
+        return rollDamage(attacker, target, label, dice, type).land();
+    }
+
+    /** {@link #performDamage} in two steps: the dice now, the damage and the readout when it {@link Rolled#land lands}. Since 0.2.22. */
+    public static Rolled<DamageResult> rollDamage(
+            LivingEntity attacker,
+            LivingEntity target,
+            String label,
+            DiceExpression dice,
+            ResourceKey<DamageType> type) {
+        Objects.requireNonNull(attacker, "attacker");
+        Objects.requireNonNull(label, "label");
+        Objects.requireNonNull(type, "type");
+        RollResult roll = RollRuntime.roller().roll(Objects.requireNonNull(dice, "dice"));
+        return new Rolled<>(() -> Hazards.landDamage(attacker, target, label, dice, roll, type));
     }
 
     /** Resolves an attack (fires the pre/post/crit/fumble events) WITHOUT applying damage or feedback. */

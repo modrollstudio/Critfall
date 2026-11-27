@@ -9,6 +9,7 @@ import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
 import studio.modroll.critfall.feedback.ClientConfig;
 import studio.modroll.critfall.feedback.ClientConfigLoader;
+import studio.modroll.critfall.feedback.DamageFeedbackPayload;
 import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
@@ -42,5 +43,7 @@ public final class CritfallFabricClient implements ClientModInitializer {
                 .execute(() -> ClientFeedbackReceiver.renderCheck(payload)));
         ClientPlayNetworking.registerGlobalReceiver(HealFeedbackPayload.TYPE, (payload, context) -> context.client()
                 .execute(() -> ClientFeedbackReceiver.renderHeal(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(DamageFeedbackPayload.TYPE, (payload, context) -> context.client()
+                .execute(() -> ClientFeedbackReceiver.renderDamage(payload)));
     }
 }
