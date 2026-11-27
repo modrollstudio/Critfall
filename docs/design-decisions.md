@@ -2,6 +2,17 @@
 
 Decisions with lasting consequences, and why they were made. Newest first.
 
+## 0.2.21: A roll can land later
+
+**Decision:** `rollAttack`, `rollHazardSave` and `rollHeal` do everything their `perform` call does up to the
+hurt: the dice, the events, an attack's outcome tables. The `Rolled` they return applies the damage or the heal
+and shows the readout on `land()`, once. The `perform` calls are rolling and landing in one.
+
+**Why:** A spell's bolt flies before it hits, and Spells rolls as the spell goes off, so nothing in flight can
+change the result, then lands the hit on arrival, or drops it when the target is gone. The events stay with the
+roll because they change it (advantage, Shield's raise). A save's resistances are read on landing, as a hit's
+armor is, since that is when the hurt happens. One small generic handle keeps the API to three new calls.
+
 ## 0.2.20: AC sources count in rolls, not in the entity's own AC
 
 **Decision:** Other mods add to AC through any number of `ArmorClassSource`s, asked after the one

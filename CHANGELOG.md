@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `RollService.rollAttack`, `rollHazardSave` and `rollHeal`: the dice and their events now, and a `Rolled` that
+  lands the damage or the heal and the readout later with `land()`. For a spell's bolt that rolls as it goes off
+  and hits when it arrives.
+
 ## [0.2.20] - 2026-11-19
 
 What Critfall: Spells needs: AC from several mods, reactions after the roll, one damage roll for an area, a
