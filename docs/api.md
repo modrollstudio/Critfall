@@ -164,8 +164,9 @@ Rolled<AttackResult> bolt = RollService.rollAttack(caster, target, ctx);   // th
 AttackResult result = bolt.land();                                          // the damage and the readout
 ```
 
-- `rollAttack(attacker, target, ctx)`, `rollHazardSave(target, hazard)` and `rollHeal(healer, target, label,
-  dice)` roll exactly as `performAttack`, `performHazardSave` and `performHeal` do: the d20, the damage or
+- `rollAttack(attacker, target, ctx)`, `rollHazardSave(target, hazard)`, `rollHeal(healer, target, label,
+  dice)` and `rollDamage(attacker, target, label, dice, type)` roll exactly as `performAttack`,
+  `performHazardSave`, `performHeal` and `performDamage` do: the d20, the damage or
   healing dice, the events (`PreAttackRollEvent`, `PostAttackRollEvent`, `CritEvent`, `FumbleEvent`,
   `HazardRollEvent`) and an attack's outcome tables. Nothing is hurt or healed and no readout is shown yet.
 - `land()` applies it and shows the readout, with no dice of its own, so the result is the one rolled. A save's
@@ -418,6 +419,28 @@ heal.healed();   // the health the target actually gained
   plain text; `""` for none. It rides its own optional channel, `critfall:heal_feedback`; a client without
   it gets the same text on the action bar.
 - `healer` may be the target itself. The healing is not scaled by `balance.global_damage_multiplier`.
+
+### Damage with no roll to hit
+
+Since 0.2.22 a creature can deal damage that never misses, as Magic Missile does:
+
+```java
+DamageResult hit = RollService.performDamage(caster, target, "spell.critfall_spells.magic_missile",
+        DiceExpression.parse("3d4+3"), forceDamageType);
+hit.roll();     // the RollResult
+hit.damage();   // what Critfall applied
+// Magic Missile: 3d4+3 = 9 damage
+```
+
+- **The damage** is at least 1, then the target's resistances, immunities and vulnerabilities by damage type
+  and `balance.global_damage_multiplier`, as a hazard save's is. It hurts as a driven attack does, credited
+  to the attacker: no d20, no re-roll, and armor reduces it unless `balance.disable_vanilla_armor_reduction`
+  is on. It fires no attack events and no outcome tables, and starts no combat interaction.
+- **Readout,** to the attacker when it is a player, and to the target too under `roll_visibility: everyone`,
+  unless `roll_visibility` is `off`. When the target lost a different amount, the readout shows both:
+  `Magic Missile: 3d4+3 = 9 → 4 damage`. It rides its own optional channel, `critfall:damage_feedback`; a
+  client without it gets the same text on the action bar.
+- `rollDamage` is the two step form: the dice now, the damage and the readout on `land()`.
 
 ## `AttackContext` and `AttackDelivery`
 

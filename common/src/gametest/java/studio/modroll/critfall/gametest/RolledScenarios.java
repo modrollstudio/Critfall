@@ -19,6 +19,7 @@ import studio.modroll.critfall.api.ModifierProvider;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.Rolled;
 import studio.modroll.critfall.api.combat.AttackResult;
+import studio.modroll.critfall.api.combat.DamageResult;
 import studio.modroll.critfall.api.combat.HazardSaveResult;
 import studio.modroll.critfall.api.combat.HealResult;
 import studio.modroll.critfall.api.dice.DiceExpression;
@@ -118,6 +119,33 @@ public final class RolledScenarios {
                     helper,
                     sink.lastHeal() == null ? null : CombatText.actionBar(sink.lastHeal()),
                     "Cure Wounds: 1d4+1 = 4 healed");
+        });
+        helper.succeed();
+    }
+
+    public static void damageRollsNowAndLandsLater(GameTestHelper helper) {
+        Player attacker = helper.makeMockPlayer(GameType.SURVIVAL);
+        Pig pig = CombatScenarios.spawnCalm(helper, EntityType.PIG, 3, 3);
+        withSink(sink -> {
+            // 1d4+1 rolls 3 + 1 = 4.
+            Rolled<DamageResult> rolled = roll(
+                    helper,
+                    () -> RollService.rollDamage(
+                            attacker, pig, "Magic Missile", DiceExpression.parse("1d4+1"), DamageTypes.MAGIC),
+                    3);
+            expectHealth(helper, pig, 10.0F);
+            if (sink.lastDamage() != null) {
+                helper.fail("nothing may show before the damage lands");
+            }
+            DamageResult result = rolled.land();
+            if (result.damage() != 4) {
+                helper.fail("expected 4 damage, got " + result);
+            }
+            expectHealth(helper, pig, 6.0F);
+            expectReadout(
+                    helper,
+                    sink.lastDamage() == null ? null : CombatText.actionBar(sink.lastDamage()),
+                    "Magic Missile: 1d4+1 = 4 damage");
         });
         helper.succeed();
     }

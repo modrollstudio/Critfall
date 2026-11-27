@@ -9,6 +9,7 @@ import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.feedback.CheckFeedbackPayload;
 import studio.modroll.critfall.api.feedback.ConsequenceLine;
 import studio.modroll.critfall.api.feedback.RollFeedbackPayload;
+import studio.modroll.critfall.feedback.DamageFeedbackPayload;
 import studio.modroll.critfall.feedback.HealFeedbackPayload;
 import studio.modroll.critfall.feedback.SaveFeedbackPayload;
 
@@ -143,6 +144,16 @@ public final class CombatText {
         return labelled(p.label())
                 .append(p.diceNotation() + " = " + p.rolled() + taken(p.rolled(), p.healed()) + " ")
                 .append(Component.translatableWithFallback("critfall.feedback.healed", "healed"));
+    }
+
+    /**
+     * Renders damage with no roll to hit: {@code Magic Missile: 3d4+3 = 9 damage}, or {@code = 9 → 7 damage} when the
+     * target lost a different amount.
+     */
+    public static Component actionBar(DamageFeedbackPayload p) {
+        return labelled(p.label())
+                .append(p.diceNotation() + " = " + p.dealt() + taken(p.dealt(), p.taken()) + " ")
+                .append(Component.translatableWithFallback("critfall.feedback.damage", "damage"));
     }
 
     /** {@code "Fire Bolt: "} for a label, a translation key or plain text; nothing for an empty one. */

@@ -28,4 +28,9 @@ public class RolledGameTests {
     public void healRollsNowAndLandsLater(GameTestHelper helper) {
         RolledScenarios.healRollsNowAndLandsLater(helper);
     }
+
+    @GameTest(template = TEMPLATE)
+    public void damageRollsNowAndLandsLater(GameTestHelper helper) {
+        RolledScenarios.damageRollsNowAndLandsLater(helper);
+    }
 }

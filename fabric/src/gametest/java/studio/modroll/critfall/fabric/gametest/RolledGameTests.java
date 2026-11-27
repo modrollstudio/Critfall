@@ -22,4 +22,9 @@ public class RolledGameTests implements FabricGameTest {
     public void healRollsNowAndLandsLater(GameTestHelper helper) {
         RolledScenarios.healRollsNowAndLandsLater(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE)
+    public void damageRollsNowAndLandsLater(GameTestHelper helper) {
+        RolledScenarios.damageRollsNowAndLandsLater(helper);
+    }
 }
